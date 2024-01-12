@@ -11,20 +11,27 @@ public class KVServer implements IKVServer {
 	 *           currently not contained in the cache. Options are "FIFO", "LRU",
 	 *           and "LFU".
 	 */
+	private int port;
+	private int cacheSize;
+	private CacheStrategy strategy;
+
 	public KVServer(int port, int cacheSize, String strategy) {
 		// TODO Auto-generated method stub
+		this.port = port; // Set port
+        this.cacheSize = cacheSize; // Set cache size
+        this.cacheStrategy = cacheStrategy; // Set cache strategy
 	}
 	
 	@Override
 	public int getPort(){
 		// TODO Auto-generated method stub
-		return -1;
+		return this.port; // Return port
 	}
 
 	@Override
     public String getHostname(){
 		// TODO Auto-generated method stub
-		return null;
+		return InetAddress.getLocalHost().getHostName(); // Return hostname
 	}
 
 	@Override
@@ -36,7 +43,7 @@ public class KVServer implements IKVServer {
 	@Override
     public int getCacheSize(){
 		// TODO Auto-generated method stub
-		return -1;
+		return this.cacheSize; // Return cache size
 	}
 
 	@Override
