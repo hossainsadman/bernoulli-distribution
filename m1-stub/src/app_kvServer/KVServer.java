@@ -1,5 +1,15 @@
 package app_kvServer;
 
+import java.io.IOException;
+import java.net.BindException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+import server.ClientConnection;
+
+import org.apache.log4j.Logger; // import Logger
+
 public class KVServer implements IKVServer {
 	/**
 	 * Start KV Server at given port
@@ -11,21 +21,24 @@ public class KVServer implements IKVServer {
 	 *           currently not contained in the cache. Options are "FIFO", "LRU",
 	 *           and "LFU".
 	 */
-	private int port;
-	private int cacheSize;
-	private CacheStrategy strategy;
+	private ServerSocket serverSocket; // Socket IPC
+	private int port; // Port number
+	private int cacheSize; // Cache size
+	private CacheStrategy strategy; // Strategy (given by definition in ./IKVServer.java)
+	private boolean running; // Check whether the server is currently running or not
+    private static Logger logger = Logger.getRootLogger();
 
 	public KVServer(int port, int cacheSize, String strategy) {
 		// TODO Auto-generated method stub
 		this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
-        this.cacheStrategy = cacheStrategy; // Set cache strategy
+        this.strategy = strategy; // Set cache strategy
 	}
 	
 	@Override
 	public int getPort(){
 		// TODO Auto-generated method stub
-		return this.port; // Return port
+		return port; // Return port
 	}
 
 	@Override
@@ -37,13 +50,13 @@ public class KVServer implements IKVServer {
 	@Override
     public CacheStrategy getCacheStrategy(){
 		// TODO Auto-generated method stub
-		return IKVServer.CacheStrategy.None;
+		return strategy;
 	}
 
 	@Override
     public int getCacheSize(){
 		// TODO Auto-generated method stub
-		return this.cacheSize; // Return cache size
+		return cacheSize; // Return cache size
 	}
 
 	@Override
@@ -79,14 +92,49 @@ public class KVServer implements IKVServer {
 		// TODO Auto-generated method stub
 	}
 
+    private boolean initServer(){
+    	try {
+            serverSocket = new ServerSocket(port);
+			logger.info("[Success] Server is listening on port: " + serverSocket.getLocalPort());    
+            return true;
+        } catch (IOException e) {
+        	logger.error("[Error] Server Socket cannot be opened: ");
+            if (e instanceof BindException){
+            	logger.error("Port " + port + " is already bound.");
+            }
+            return false;
+        }
+    }
+
 	@Override
     public void run(){
 		// TODO Auto-generated method stub
+		running = initServer();
+        
+        if (serverSocket != null){
+	        while (running){
+	            try {
+	                Socket client = serverSocket.accept();                
+	                ClientConnection connection = new ClientConnection(client);
+	                new Thread(connection).start();
+	                logger.info("[Success] Connected to " + client.getInetAddress().getHostName() + " on port " + client.getPort());
+	            } catch (IOException e){
+	            	logger.error("[Error] Unable to establish connection.\n", e);
+	            }
+	        }
+        }
+        logger.info("Server is stopped.");
 	}
 
 	@Override
     public void kill(){
 		// TODO Auto-generated method stub
+		running = false;
+		try {
+			serverSocket.close();
+		} catch (IOException e){
+			logger.error("[Error] Unable to close socket on port: " + port, e);
+		}
 	}
 
 	@Override
