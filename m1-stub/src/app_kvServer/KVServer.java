@@ -80,7 +80,7 @@ public class KVServer implements IKVServer {
 	@Override
     public boolean inCache(String key){
 		// TODO Auto-generated method stub
-		return false;
+		return cache.containsKey(key);
 	}
 
 
@@ -107,7 +107,7 @@ public class KVServer implements IKVServer {
     public void putKV(String key, String value) throws Exception{
 		// TODO Auto-generated method stub
 		File file = new File(dirPath + File.separator + key);
-		if (inStorage(key)){
+		if (inStorage(key)){ // Key is already in storage
 			throw new Exception("[Exception] Key already in storage.");
 		} else {
 			try (FileWriter writer = new FileWriter(file)){
@@ -121,11 +121,23 @@ public class KVServer implements IKVServer {
 	@Override
     public void clearCache(){
 		// TODO Auto-generated method stub
+		for (String key: cache.keySet()){
+			cache.remove(key);
+		}
 	}
 
 	@Override
     public void clearStorage(){
 		// TODO Auto-generated method stub
+		File dir = new File(dirPath);
+		for (File file: dir.listFiles()){
+			if (file.isDirectory()){
+				for (File kv: file.listFiles()){
+					kv.delete();
+				}
+			}
+			file.delete();
+		}
 	}
 
     private boolean initServer(){
@@ -176,5 +188,11 @@ public class KVServer implements IKVServer {
 	@Override
     public void close(){
 		// TODO Auto-generated method stub
+		running = false;
+		try {
+			serverSocket.close();
+		} catch (IOException e){
+			logger.error("[Error] Unable to close socket on port: " + port, e);
+		}
 	}
 }
