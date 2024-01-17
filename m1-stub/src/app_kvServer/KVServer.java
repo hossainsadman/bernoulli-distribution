@@ -1,10 +1,12 @@
 package app_kvServer;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
 import server.ClientConnection;
 
@@ -21,18 +23,22 @@ public class KVServer implements IKVServer {
 	 *           currently not contained in the cache. Options are "FIFO", "LRU",
 	 *           and "LFU".
 	 */
+
 	private ServerSocket serverSocket; // Socket IPC
 	private int port; // Port number
 	private int cacheSize; // Cache size
 	private CacheStrategy strategy; // Strategy (given by definition in ./IKVServer.java)
 	private boolean running; // Check whether the server is currently running or not
+	private Map<String, String> cache = new HashMap<>();
     private static Logger logger = Logger.getRootLogger();
+	private final String dirPath;
 
 	public KVServer(int port, int cacheSize, String strategy) {
 		// TODO Auto-generated method stub
 		this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
         this.strategy = strategy; // Set cache strategy
+		dirPath = System.getProperty("user.dir");
 	}
 	
 	@Override
@@ -62,7 +68,8 @@ public class KVServer implements IKVServer {
 	@Override
     public boolean inStorage(String key){
 		// TODO Auto-generated method stub
-		return false;
+		File file = new File(dirPath + File.separator + key);
+		return file.exists();
 	}
 
 	@Override
@@ -74,12 +81,27 @@ public class KVServer implements IKVServer {
 	@Override
     public String getKV(String key) throws Exception{
 		// TODO Auto-generated method stub
-		return "";
+
+		String path = dirPath + File.seperator + key;
+		if (!inStorage(key)){
+			throw new Exception("Key not in storage.");
+		} 
+
+		StringBuilder contentBuilder = new StringBuilder();
+		try (BufferedReader reader = new BufferedReader(new FileReader(filePath))){
+			String line;
+			while ((line = reader.readLine()) != null){
+				contentBuilder.append(line).append("\n");
+			}
+		}
+
+		return contentBuilder.toString().trim();
 	}
 
 	@Override
     public void putKV(String key, String value) throws Exception{
 		// TODO Auto-generated method stub
+		// PUT request given KV
 	}
 
 	@Override
@@ -89,7 +111,7 @@ public class KVServer implements IKVServer {
 
 	@Override
     public void clearStorage(){
-		// TODO Auto-generated method stub
+		// TODO Auto-generated method stu
 	}
 
     private boolean initServer(){
