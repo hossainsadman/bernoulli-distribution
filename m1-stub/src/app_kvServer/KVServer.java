@@ -88,7 +88,7 @@ public class KVServer implements IKVServer {
 		} 
 
 		StringBuilder contentBuilder = new StringBuilder();
-		try (BufferedReader reader = new BufferedReader(new FileReader(filePath))){
+		try (BufferedReader reader = new BufferedReader(new FileReader(path))){
 			String line;
 			while ((line = reader.readLine()) != null){
 				contentBuilder.append(line).append("\n");
@@ -101,7 +101,14 @@ public class KVServer implements IKVServer {
 	@Override
     public void putKV(String key, String value) throws Exception{
 		// TODO Auto-generated method stub
-		// PUT request given KV
+		File file = new File(dirPath + File.separator + key);
+		if (file.exists()){
+			throw new Exception("Key already in storage.");
+		} else {
+			try (FileWriter writer = new FileWriter(file)){
+				writer.write(value);
+			}
+		}
 	}
 
 	@Override
