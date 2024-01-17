@@ -65,10 +65,15 @@ public class KVServer implements IKVServer {
 		return cacheSize; // Return cache size
 	}
 
+	private File getStorageAddressOfKey(String key){
+		File file = new File(dirPath + File.separator + key);
+		return file;
+	}
+
 	@Override
     public boolean inStorage(String key){
 		// TODO Auto-generated method stub
-		File file = new File(dirPath + File.separator + key);
+		File file = getStorageAddressOfKey(key);
 		return file.exists();
 	}
 
@@ -78,15 +83,15 @@ public class KVServer implements IKVServer {
 		return false;
 	}
 
+
 	@Override
     public String getKV(String key) throws Exception{
 		// TODO Auto-generated method stub
-
-		String path = dirPath + File.seperator + key;
 		if (!inStorage(key)){
-			throw new Exception("Key not in storage.");
+			throw new Exception("[Exception] Key not in storage.");
 		} 
-
+		
+		String path = getStorageAddressOfKey(key);
 		StringBuilder contentBuilder = new StringBuilder();
 		try (BufferedReader reader = new BufferedReader(new FileReader(path))){
 			String line;
@@ -102,11 +107,13 @@ public class KVServer implements IKVServer {
     public void putKV(String key, String value) throws Exception{
 		// TODO Auto-generated method stub
 		File file = new File(dirPath + File.separator + key);
-		if (file.exists()){
-			throw new Exception("Key already in storage.");
+		if (inStorage(key)){
+			throw new Exception("[Exception] Key already in storage.");
 		} else {
 			try (FileWriter writer = new FileWriter(file)){
 				writer.write(value);
+			} catch (IOException e){
+				logger.error("[Error] Unable to write to file: " + file.getName(), e);
 			}
 		}
 	}
@@ -118,7 +125,7 @@ public class KVServer implements IKVServer {
 
 	@Override
     public void clearStorage(){
-		// TODO Auto-generated method stu
+		// TODO Auto-generated method stub
 	}
 
     private boolean initServer(){
@@ -129,7 +136,7 @@ public class KVServer implements IKVServer {
         } catch (IOException e) {
         	logger.error("[Error] Server Socket cannot be opened: ");
             if (e instanceof BindException){
-            	logger.error("Port " + port + " is already bound.");
+            	logger.error("[Error] Port " + port + " is already bound.");
             }
             return false;
         }
