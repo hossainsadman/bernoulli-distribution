@@ -7,7 +7,7 @@
             "type": "shell",
             "command": "ant build",
             "options": {
-                "cwd": "${workspaceFolder}/echoClient"
+                "cwd": "${workspaceFolder}/m0/echoClient"
             },
             "runOptions": {
                 "runOn": "folderOpen"
@@ -22,7 +22,7 @@
             "type": "shell",
             "command": "ant build",
             "options": {
-                "cwd": "${workspaceFolder}/echoServer"
+                "cwd": "${workspaceFolder}/m0/echoServer"
             },
             "runOptions": {
                 "runOn": "folderOpen"
@@ -32,19 +32,6 @@
                 "isDefault": false
             }
         },
-        {
-            "label": "m0 Build",
-            "type": "shell",
-            "command": "echo 'Building m0'",
-            "dependsOn": [
-                "m0 Build Client",
-                "m0 Build Server"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            }
-        },        
         // m0 build //        
         // m0 run //
         {
@@ -52,10 +39,10 @@
             "type": "shell",
             "command": "java -jar echoClient.jar",
             "options": {
-                "cwd": "${workspaceFolder}/echoClient"
+                "cwd": "${workspaceFolder}/m0/echoClient"
             },
             "dependsOn": [
-                "m0 Build",
+                "m0 Build Client",
             ],
             "group": {
                 "kind": "test",
@@ -66,12 +53,12 @@
         {
             "label": "m0 Run Server",
             "type": "shell",
-            "command": "java -jar echoServer.jar",
+            "command": "java -jar echoServer.jar 17000",
             "options": {
-                "cwd": "${workspaceFolder}/echoServer"
+                "cwd": "${workspaceFolder}/m0/echoServer"
             },
             "dependsOn": [
-                "m0 Build",
+                "m0 Build Server",
             ],
             "group": {
                 "kind": "test",

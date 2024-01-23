@@ -14,7 +14,7 @@ import client.KVCommInterface;
 import client.KVStore;
 
 public class KVClient implements IKVClient {
-    private static Logger logger = Logger.getRootLogger();
+	private static Logger logger = Logger.getRootLogger();
     private static final String PROMPT = "M1-Client> ";
 
     private BufferedReader stdin;
@@ -43,9 +43,11 @@ public class KVClient implements IKVClient {
             try {
                 String cmdLine = stdin.readLine();
                 System.out.println("Entered cmd: " + cmdLine);
+                logger.info(cmdLine);
             } catch (IOException e) {
                 exit = true;
                 System.out.println("I/O Error: " + e.getMessage());
+                logger.error("I/O Error: " + e.getMessage());
             }
         }
     }
