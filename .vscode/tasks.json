@@ -1,0 +1,146 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        // m0 build //
+        {
+            "label": "m0 Build Client",
+            "type": "shell",
+            "command": "ant build",
+            "options": {
+                "cwd": "${workspaceFolder}/echoClient"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "m0 Build Server",
+            "type": "shell",
+            "command": "ant build",
+            "options": {
+                "cwd": "${workspaceFolder}/echoServer"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "m0 Build",
+            "type": "shell",
+            "command": "echo 'Building m0'",
+            "dependsOn": [
+                "m0 Build Client",
+                "m0 Build Server"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },        
+        // m0 build //        
+        // m0 run //
+        {
+            "label": "m0 Run Client",
+            "type": "shell",
+            "command": "java -jar echoClient.jar",
+            "options": {
+                "cwd": "${workspaceFolder}/echoClient"
+            },
+            "dependsOn": [
+                "m0 Build",
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "m0 Run Server",
+            "type": "shell",
+            "command": "java -jar echoServer.jar",
+            "options": {
+                "cwd": "${workspaceFolder}/echoServer"
+            },
+            "dependsOn": [
+                "m0 Build",
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": []
+        },
+        // m0 run //
+        // m1 build //
+        {
+            "label": "m1 Build",
+            "type": "shell",
+            "command": "ant build",
+            "options": {
+                "cwd": "${workspaceFolder}/m1-stub"
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        // m1 build //
+        // m1 run //
+        {
+            "label": "m1 Run Client",
+            "type": "shell",
+            "command": "java -jar m1-client.jar",
+            "options": {
+                "cwd": "${workspaceFolder}/m1-stub"
+            },
+            "dependsOn": [
+                "m1 Build"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "m1 Run Server",
+            "type": "shell",
+            "command": "java -jar m1-server.jar",
+            "options": {
+                "cwd": "${workspaceFolder}/m1-stub"
+            },
+            "dependsOn": [
+                "m1 Build"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": []
+        },
+        // m1 run //
+        // m1 utilities //
+        {
+            "label": "m1 Clear Logs",
+            "type": "shell",
+            "command": "rm -rf ${workspaceFolder}/m1-stub/logs/*",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        }
+        // m1 utilities //
+    ]
+}
