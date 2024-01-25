@@ -3,12 +3,14 @@ package app_kvServer;
 import java.io.*;
 import java.net.BindException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
 import server.ClientConnection;
+// ant
 
 import org.apache.log4j.Logger; // import Logger
 
@@ -37,8 +39,22 @@ public class KVServer implements IKVServer {
 		// TODO Auto-generated method stub
 		this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
-        this.strategy = strategy; // Set cache strategy
-		dirPath = System.getProperty("user.dir");
+
+        switch (strategy){ // Set cache strategy
+            case "LRU":
+                this.strategy = CacheStrategy.LRU;
+                break;
+            case "LFU":
+                this.strategy = CacheStrategy.LFU;
+                break;
+            case "FIFO":
+                this.strategy = CacheStrategy.FIFO;
+                break;
+            default:
+                this.strategy = CacheStrategy.None;
+        }
+
+        dirPath = System.getProperty("user.dir");
 	}
 	
 	@Override
@@ -50,7 +66,13 @@ public class KVServer implements IKVServer {
 	@Override
     public String getHostname(){
 		// TODO Auto-generated method stub
-		return InetAddress.getLocalHost().getHostName(); // Return hostname
+        try {
+            InetAddress inetAddress = InetAddress.getLocalHost();
+            return inetAddress.getHostName(); // Return hostname
+        } catch (UnknownHostException e){
+            e.printStackTrace();
+            return "Unknown Host";
+        } 
 	}
 
 	@Override
@@ -91,8 +113,8 @@ public class KVServer implements IKVServer {
 			throw new Exception("[Exception] Key not in storage.");
 		} 
 		
-		String path = getStorageAddressOfKey(key);
-		StringBuilder contentBuilder = new StringBuilder();
+		File path = getStorageAddressOfKey(key);
+        StringBuilder contentBuilder = new StringBuilder();
 		try (BufferedReader reader = new BufferedReader(new FileReader(path))){
 			String line;
 			while ((line = reader.readLine()) != null){
@@ -112,9 +134,9 @@ public class KVServer implements IKVServer {
 		} else {
 			try (FileWriter writer = new FileWriter(file)){
 				writer.write(value);
-			} catch (IOException e){
-				logger.error("[Error] Unable to write to file: " + file.getName(), e);
-			}
+            } catch (IOException e) {
+                logger.error("[Error] Unable to write to file: " + file.getName(), e);
+            }
 		}
 	}
 
@@ -180,19 +202,23 @@ public class KVServer implements IKVServer {
 		running = false;
 		try {
 			serverSocket.close();
-		} catch (IOException e){
-			logger.error("[Error] Unable to close socket on port: " + port, e);
-		}
+        } catch (IOException e) {
+            logger.error("[Error] Unable to close socket on port: " + port, e);
+        }
 	}
 
 	@Override
-    public void close(){
-		// TODO Auto-generated method stub
-		running = false;
-		try {
-			serverSocket.close();
-		} catch (IOException e){
-			logger.error("[Error] Unable to close socket on port: " + port, e);
-		}
-	}
+    public void close() {
+        // TODO Auto-generated method stub
+        running = false;
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            logger.error("[Error] Unable to close socket on port: " + port, e);
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("W");
+    }
 }
