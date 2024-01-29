@@ -1,6 +1,14 @@
 package client;
 
+import java.io.IOException;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import org.apache.log4j.Logger; // import Logger
+
+import shared.messages.BasicKVMessage;
 import shared.messages.KVMessage;
+import shared.messages.KVMessage.StatusType;
+import shared.messages.MessageService;
 
 public class KVStore implements KVCommInterface {
 	/**
@@ -8,29 +16,58 @@ public class KVStore implements KVCommInterface {
 	 * @param address the address of the KVServer
 	 * @param port the port of the KVServer
 	 */
+	
+	private String address;
+	private int port;
+	private Socket socket;
+  private static Logger logger = Logger.getRootLogger();
+    private MessageService messageService = new MessageService();
+	
 	public KVStore(String address, int port) {
-		// TODO Auto-generated method stub
+		this.address = address;
+		this.port = port;
 	}
 
 	@Override
 	public void connect() throws Exception {
-		// TODO Auto-generated method stub
+		if (port < 0 || port > 65535) {
+			throw new IllegalArgumentException("Invalid port number: " + port);
+		}
+		try {
+			socket = new Socket(address, port);
+			logger.info("Connected to server: " + address + ":" + port);
+		} catch (UnknownHostException e) {
+			throw new UnknownHostException("Unknown host: " + address);
+		} catch (IOException e) {
+			throw new IOException("Unable to connect to the server", e);
+		}
 	}
 
 	@Override
 	public void disconnect() {
-		// TODO Auto-generated method stub
+		try {
+			if (socket != null && !socket.isClosed()) {
+				socket.close();
+				logger.info("Disconnected from server.");
+			}
+		} catch (IOException e) {
+			throw new Exception("Error when disconnecting from server");
+		}
 	}
 
 	@Override
 	public KVMessage put(String key, String value) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
+    // TODO: create BasicKVMessage here
+    BasicKVMessage message = new BasicKVMessage(StatusType.PUT, key, value);
+    this.messageService.sendMessage(socket, message);
+    return this.messageService.receiveBasicKVMessage(socket);
 	}
 
 	@Override
-	public KVMessage get(String key) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	public BasicKVMessage get(String key) throws Exception {
+    // TODO: create BasicKVMessage here
+    BasicKVMessage message = new BasicKVMessage(StatusType.GET, key, null);
+    this.messageService.sendMessage(socket, message);
+    return this.messageService.receiveBasicKVMessage(socket);
+  }
 }
