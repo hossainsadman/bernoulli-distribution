@@ -42,9 +42,9 @@ public class KVServer implements IKVServer {
 
 	public KVServer(int port, int cacheSize, String strategy) {
         // TODO Auto-generated method stub
-        if (port < 1024 || port > 65535){
+        if (port < 1024 || port > 65535)
             throw new IllegalArgumentException("Port number is out of range.");
-        }
+        
 		this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
 
@@ -145,6 +145,9 @@ public class KVServer implements IKVServer {
 	@Override
     public void putKV(String key, String value) throws Exception {
         // TODO Auto-generated method stub
+        if (this.cache == null)
+            return;
+
         File file = new File(dirPath + File.separator + key);
         if (inStorage(key)) { // Key is already in storage
             throw new Exception("[Exception] Key already in storage.");
@@ -156,16 +159,14 @@ public class KVServer implements IKVServer {
             }
         }
 
-        if (this.cache != null)
-            cache.put(key, value);
+        cache.put(key, value);
     }
 
 	@Override
     public void clearCache(){
 		// TODO Auto-generated method stub
-		for (String key: cache.keySet()){
+		for (String key: cache.keySet())
 			cache.remove(key);
-		}
 	}
 
 	@Override
@@ -174,9 +175,8 @@ public class KVServer implements IKVServer {
 		File dir = new File(dirPath);
 		for (File file: dir.listFiles()){
 			if (file.isDirectory()){
-				for (File kv: file.listFiles()){
+				for (File kv: file.listFiles())
 					kv.delete();
-				}
 			}
 			file.delete();
 		}
