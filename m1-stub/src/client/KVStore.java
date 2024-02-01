@@ -21,7 +21,10 @@ public class KVStore implements KVCommInterface {
 	private int port;
 	private Socket socket;
   private static Logger logger = Logger.getRootLogger();
-    private MessageService messageService = new MessageService();
+  private MessageService messageService = new MessageService();
+
+  private static final int MAX_KEY_BYTES = 20;
+  private static final int MAX_VALUE_BYTES = 120 * 1024; // 120 kB
 	
 	public KVStore(String address, int port) {
 		this.address = address;
@@ -56,18 +59,35 @@ public class KVStore implements KVCommInterface {
 	}
 
 	@Override
-	public KVMessage put(String key, String value) throws Exception {
-    // TODO: create BasicKVMessage here
+  public KVMessage put(String key, String value) throws Exception {
+    BasicKVMessage invalidParmetersError = this.validateKeyValuePair(key, value);
+    if (invalidParmetersError != null)
+      return invalidParmetersError;
+    
     BasicKVMessage message = new BasicKVMessage(StatusType.PUT, key, value);
     this.messageService.sendMessage(socket, message);
     return this.messageService.receiveBasicKVMessage(socket);
 	}
 
 	@Override
-	public BasicKVMessage get(String key) throws Exception {
-    // TODO: create BasicKVMessage here
+  public BasicKVMessage get(String key) throws Exception {
+    BasicKVMessage invalidParmetersError = this.validateKeyValuePair(key, value);
+    if (invalidParmetersError != null)
+      return invalidParmetersError;
+
     BasicKVMessage message = new BasicKVMessage(StatusType.GET, key, null);
     this.messageService.sendMessage(socket, message);
     return this.messageService.receiveBasicKVMessage(socket);
   }
+  
+  private BasicKVMessage validateKeyValuePair(String key, String value) {
+    if(key.length() > MAX_KEY_BYTES || key.isEmpty())
+      return new BasicKVMessage(StatusType.PUT_ERROR, "Key must be non-empty and less than or equal to 20 bytes", null);
+
+    if(value != null && value.length() > MAX_VALUE_BYTES)
+      return new BasicKVMessage(StatusType.PUT_ERROR, "Value must be less than or equal to 120 kilobytes", null);
+    
+    return null;
+  }
+
 }
