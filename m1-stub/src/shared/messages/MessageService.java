@@ -20,7 +20,7 @@ public class MessageService {
    * @param msg
    * @throws IOException
    */
-  public void sendMessage(Socket socket, BasicKVMessage msg) throws IOException {
+  public void sendBasicKVMessage(Socket socket, BasicKVMessage msg) throws IOException {
     OutputStream output = socket.getOutputStream();
     byte[] msgBytes = msg.getMsgBytes();
     output.write(msgBytes, 0, msgBytes.length);
