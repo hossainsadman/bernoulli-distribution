@@ -1,9 +1,9 @@
 testPut: FAIL
-testPutDisconnected
+testPutDisconnected:
 testUpdate: FAIL
 testDelete: FAIL
 testGet: FAIL
 testGetUnsetValue: FAIL
 testConnectionSuccess: FAIL
-testUnknownHost
-testIllegalPort
+testUnknownHost:
+testIllegalPort:

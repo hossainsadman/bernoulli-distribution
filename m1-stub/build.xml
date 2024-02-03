@@ -110,7 +110,8 @@
   <target name="test" depends="build">
     <junit>
       <classpath refid="project.classpath" />
-      <formatter type="brief" usefile="false" />
+      <formatter type="plain" usefile="false" />
+      <!-- <formatter type="brief" usefile="false" /> -->
       <test name="testing.AllTests" />
     </junit>
   </target>
