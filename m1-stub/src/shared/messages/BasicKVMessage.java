@@ -48,10 +48,28 @@ public class BasicKVMessage implements KVMessage{
   }
 
   private void parseBytes(byte[] bytes) {
-    // TODO: parse bytes to status, key and value
-    this.status = null;
-    this.key = null;
-    this.value = null;
+    String receivedMsg = new String(bytes).trim(); 
+    String[] components = receivedMsg.split("\\s+");
+
+    if (components.length < 1) {
+      throw new IllegalArgumentException("Invalid message format: " + receivedMsg);
+    }
+
+    if (components.length > 0) {
+      try {
+        this.status = StatusType.valueOf(components[0]);
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("Invalid status: " + components[0]);
+      }
+    }
+
+    if (components.length > 1) {
+      this.key = components[1];
+    }
+
+    if (components.length > 2) {
+      this.value = components[2];
+    }
   }
 
   private byte[] addCtrChars(byte[] bytes) {

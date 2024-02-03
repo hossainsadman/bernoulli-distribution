@@ -91,5 +91,6 @@ public class MessageService {
 		}
 
 		msgBytes = tmp;
+    return msgBytes;
   }
 }
