@@ -53,22 +53,21 @@ public class KVClient implements IKVClient {
 
         sb.append(PROMPT).append("put <key> <value>");
 		sb.append("\t\t - insert a key-value pair into the server \n");
-		sb.append("\t\t\t\t\t - update (overwrite) current value if server already contains key \n");
-		sb.append("\t\t\t\t\t - delete entry for the given key if <value> = null \n");
+		sb.append(PROMPT).append("\t\t\t\t - update (overwrite) current value if server already contains key \n");
+		sb.append(PROMPT).append("\t\t\t\t - delete entry for the given key if <value> = null \n");
         
         sb.append(PROMPT).append("get <key>");
         sb.append("\t\t\t retrieve the value for the given key from the server \n");
 		
 		sb.append(PROMPT).append("logLevel");
 		sb.append("\t\t\t changes the logLevel \n");
-		sb.append("\t\t\t\t\t " + LogSetup.getPossibleLogLevels() + "\n");
-		// sb.append("ALL | DEBUG | INFO | WARN | ERROR | FATAL | OFF \n");
+		sb.append(PROMPT).append("\t\t\t\t " + LogSetup.getPossibleLogLevels() + "\n");
 
         sb.append(PROMPT).append("disconnect");
         sb.append("\t\t\t disconnect from the server \n");
 		
-		sb.append(PROMPT).append("quit ");
-		sb.append("\t\t\t stop the program");
+		sb.append(PROMPT).append("quit");
+		sb.append("\t\t\t\t stop the program");
 		System.out.println(sb.toString());
 	}
 
@@ -273,7 +272,6 @@ public class KVClient implements IKVClient {
             try {
                 String cmdLine = stdin.readLine();
 				this.handleCommand(cmdLine);
-				logger.info(cmdLine);
             } catch (IOException e) {
                 stop = true;
                 logger.error("I/O Error: " + e.getMessage());
