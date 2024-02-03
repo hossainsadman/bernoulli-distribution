@@ -53,7 +53,7 @@ public class KVServer implements IKVServer {
         // TODO Auto-generated method stub
         if (port < 1024 || port > 65535)
             throw new IllegalArgumentException("port is out of range.");
-            if (cacheSize < 0)
+        if (cacheSize < 0)
             throw new IllegalArgumentException("cacheSize is out of range.");
 
         this.port = port; // Set port
@@ -236,7 +236,7 @@ public class KVServer implements IKVServer {
     @Override
     public void run() {
         // TODO Auto-generated method stub
-        running = initServer();
+        running = true;
         try {
             serverSocket = new ServerSocket(port);
             logger.info("[Success] Server is listening on port: " + serverSocket.getLocalPort());
@@ -251,11 +251,11 @@ public class KVServer implements IKVServer {
             while (running){
                 try {
                     clientSocket = serverSocket.accept();
-                    ClientConnection connection = new ClientConnection(client);
+                    ClientConnection connection = new ClientConnection(clientSocket);
                     connections.add(connection);
                     new Thread(connection).start();
-                    logger.info("[Success] Connected to " + client.getInetAddress().getHostName() + " on port "
-                            + client.getPort());
+                    logger.info("[Success] Connected to " + clientSocket.getInetAddress().getHostName() + " on port "
+                            + clientSocket.getPort());
                 } catch (IOException e){
                     logger.error("[Error] Unable to establish connection.\n", e);
                 }

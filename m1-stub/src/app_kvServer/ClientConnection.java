@@ -55,8 +55,8 @@ public class ClientConnection implements Runnable {
 
             while (isOpen) {
                 try {
-                    TextMessage recvMessage = receiveMessage();
-                    processMessage(recvMessage);
+                    TextMessage recv = receiveMessage();
+                    processMessage(recv);
 
                     /*
                      * connection either terminated by the client or lost due to
@@ -72,12 +72,7 @@ public class ClientConnection implements Runnable {
             logger.error("Error! Connection could not be established!", ioe);
 
         } finally {
-
-            try {
-                closeConnection();
-            } catch (IOException ioe) {
-                logger.error("Error! Unable to tear down connection!", ioe);
-            }
+            closeConnection();
         }
     }
 
@@ -171,13 +166,15 @@ public class ClientConnection implements Runnable {
                 + msg.getMsg().trim() + "'");
         return msg;
     }
+    
+    // Process received messages, and send it back to the client
+    private void processMessage(TextMessage recv) throws IOException {
+        String[] tokens = recv.getMsg().trim().split("\\s+", 3);
+        TextMessage response;
 
-    private void processMessage(String command) throws IOException {
-        String[] tokens = command.trim().split("\\s+", 3);
-        String response;
+        if (tokens[0].equalsIgnoreCase("put") && tokens.length == 3 && tokens[1] != null && tokens[2] != null) { // PUT (WILL BE MODIFIED)
+            // String result = KVServer.putKV(tokens[1], tokens[2]);
 
-        if (tokens[0].equalsIgnoreCase("put") && tokens.length == 3) { // PUT (WILL BE MODIFIED)
-            String result = putKV(tokens[1], tokens[2]);
             // tuple successfully inserted
             // send acknowledgement to client: PUT_SUCCESS <key> <value>
 
@@ -188,17 +185,19 @@ public class ClientConnection implements Runnable {
             // send error message to client:
             // PUT_ERROR <key> <value>
             // Customize this response based on your application's specific needs
-            response = "PUT_SUCCESS " + tokens[1] + " " + tokens[2];
-        } else if (tokens[0].equalsIgnoreCase("get") && tokens.length == 2) { // GET (WILL BE MODIFIED)
-            String value = getKV(tokens[1]);
-            if (value == null) {
-                // send error message to client:
-                // GET_ERROR <key>
-                sendMessage(null);
-            } else {
-                // GET_SUCCESS <key> <value> to client.
-                sendMessage(null);
-            }
+            // response = "PUT_SUCCESS " + tokens[1] + " " + tokens[2];
+            return;
+        } else if (tokens[0].equalsIgnoreCase("get") && tokens.length == 2 && tokens[1] != null) { // GET (WILL BE MODIFIED)
+            // String value = KVServer.getKV(tokens[1]);
+
+            // if (value == null) {
+            //     // send error message to client:
+            //     // GET_ERROR <key>
+            //     sendMessage(null);
+            // } else {
+            //     // GET_SUCCESS <key> <value> to client.
+            //     sendMessage(null);
+            // }
         } else { // PUT (WILL BE MODIFIED)
             // KVMessage response = FAILED <error description>
             sendMessage(null);
