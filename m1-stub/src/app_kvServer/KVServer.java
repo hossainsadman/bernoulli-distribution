@@ -72,7 +72,10 @@ public class KVServer implements IKVServer {
             }
         }
 
-        dirPath = System.getProperty("user.dir");
+        dirPath = System.getProperty("user.dir") + File.separator + "db";
+        File dir = new File(dirPath);
+        if (!dir.mkdir()) 
+            new Exception("[Exception] Unable to create a directory.");
 	}
 	
 	@Override
@@ -127,26 +130,27 @@ public class KVServer implements IKVServer {
 	@Override
     public String getKV(String key) throws Exception{
 		// TODO Auto-generated method stub
-		if (!inStorage(key)){
-			throw new Exception("[Exception] Key not in storage.");
-		} 
-		
-		File path = getStorageAddressOfKey(key);
-        StringBuilder contentBuilder = new StringBuilder();
-		try (BufferedReader reader = new BufferedReader(new FileReader(path))){
-			String line;
-			while ((line = reader.readLine()) != null)
-				contentBuilder.append(line).append("\n");
-		}
+        if (!inStorage(key))
+            throw new Exception("[Exception] Key not in storage.");
+        
+        if (!inCache(key)){
+            File path = getStorageAddressOfKey(key);
+            StringBuilder contentBuilder = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new FileReader(path))){
+                String line;
+                while ((line = reader.readLine()) != null)
+                    contentBuilder.append(line).append("\n");
+            }
 
-		return contentBuilder.toString().trim();
+            return contentBuilder.toString().trim();
+        }
+
+        return cache.get(key);
 	}
 
 	@Override
     public void putKV(String key, String value) throws Exception {
         // TODO Auto-generated method stub
-        if (this.cache == null)
-            return;
 
         File file = new File(dirPath + File.separator + key);
         if (inStorage(key)) { // Key is already in storage
@@ -159,12 +163,27 @@ public class KVServer implements IKVServer {
             }
         }
 
-        cache.put(key, value);
+        if (this.cache != null)
+            cache.put(key, value);
+    }
+
+    private void printStorageAndCache(){
+        // TODO Auto-generated method stub
+        System.out.println("Storage: \n");
+        // for (String ke
+        //     System.out.println("\t" + key + cache.get(key));
+        
+        System.out.println("Cache: \n");
+        for (String key: cache.keySet())
+            System.out.println("\t" + key + cache.get(key));
     }
 
 	@Override
     public void clearCache(){
-		// TODO Auto-generated method stub
+        // TODO Auto-generated method stub
+        if (cache == null)
+            return;
+
 		for (String key: cache.keySet())
 			cache.remove(key);
 	}
@@ -240,7 +259,8 @@ public class KVServer implements IKVServer {
     public static void main(String[] args) {
         KVServer server = new KVServer(20010, 0, "nothing");
         try {
-            //server.putKV("W", "indeed");
+            server.clearStorage();
+            server.putKV("W", "indeed");
             System.out.println(server.getKV("W"));
         } catch (Exception e) {
             e.printStackTrace();
