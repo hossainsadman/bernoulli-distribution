@@ -106,7 +106,7 @@
   <!-- generate separate jar files for client and server application -->
   <target name="build-jar" depends="build-client-jar, build-server-jar" />
 
-  <!-- run test cases -->
+  <!-- run ALL test cases -->
   <target name="test" depends="build">
     <junit>
       <classpath refid="project.classpath" />
@@ -115,6 +115,16 @@
       <test name="testing.AllTests" />
     </junit>
   </target>
+
+  <!-- run SELECTEDtest cases -->
+<target name="testselect" depends="build">
+    <junit>
+        <classpath refid="project.classpath" />
+        <formatter type="plain" usefile="false" />
+        <!-- <formatter type="brief" usefile="false" /> -->
+        <test name="${testcase}" />
+    </junit>
+</target>
 
   <target name="run" >
     <java classname="${main.class}" classpathref="class.path"/>

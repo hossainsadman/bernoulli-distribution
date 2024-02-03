@@ -139,7 +139,54 @@
                 "kind": "build",
                 "isDefault": false
             }
-        }
+        },
         // m1 utilities //
-    ]
+        // m1 test //
+        {
+            "label": "m1 Test ALL",
+            "type": "shell",
+            "command": "ant test",
+            "options": {
+                "cwd": "${workspaceFolder}/m1-stub"
+            },
+            "dependsOn": [
+                "m1 Build"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+        },
+        {
+            "label": "m1 Run Select Test",
+            "type": "shell",
+            "command": "ant testselect -Dtestcase=testing.${input:selectTest}",
+            "options": {
+                "cwd": "${workspaceFolder}/m1-stub"
+            },
+            "dependsOn": [
+                "m1 Build"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+        },
+        // m1 test //
+    ],
+    "inputs": [
+        {
+          "id": "selectTest",
+          "type": "pickString",
+          "description": "Which test file to run?",
+          "options": [
+            "AllTests",
+            "ConnectionTest",
+            "InteractionTest",
+            "KeyValueTest",
+          ]
+        }
+      ]
 }
