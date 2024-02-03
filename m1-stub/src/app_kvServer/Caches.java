@@ -16,6 +16,7 @@ public class Caches {
         public boolean containsKey(K key); // check if the cache contains a given key
 
         public Set<String> keySet(); // return a set of all keys in the cache
+        public Set<Map.Entry<K, V>> entrySet(); // return a set of all kvs in the cache
     }
 
     // LRU Cache
@@ -25,7 +26,7 @@ public class Caches {
 
         public LRUCache(final int capacity){
             this.capacity = capacity;
-            this.kvs = new LinkedHashMap<String, String>(capacity, 0.75f, false){
+            this.kvs = new LinkedHashMap<String, String>(capacity, 0.75f, true){ // access order = true
                 @Override // returns true after removing its eldest entry
                 protected boolean removeEldestEntry(Map.Entry<String, String> eldest){
                     if (size() > capacity){ // if size exceeds capacity, remove eldest (least recently accessed)
@@ -66,8 +67,13 @@ public class Caches {
         }
 
         @Override
-        public Set<String> keySet(){
+        public Set<String> keySet() {
             return kvs.keySet();
+        }
+        
+        @Override
+        public Set<Map.Entry<String, String>> entrySet(){
+            return kvs.entrySet();
         }
     }
 
@@ -179,8 +185,13 @@ public class Caches {
         }
 
         @Override
-        public Set<String> keySet(){
+        public Set<String> keySet() {
             return kvs.keySet();
+        }
+
+        @Override
+        public Set<Map.Entry<String, String>> entrySet(){
+            return kvs.entrySet();
         }
     }
 
@@ -236,8 +247,13 @@ public class Caches {
         }
 
         @Override
-        public Set<String> keySet(){
+        public Set<String> keySet() {
             return kvs.keySet();
+        }
+        
+        @Override
+        public Set<Map.Entry<String, String>> entrySet() {
+            return kvs.entrySet();
         }
     }
 }

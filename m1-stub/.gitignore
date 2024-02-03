@@ -1,2 +1,3 @@
-./db/*
-./db
+/db
+/m1-client.jar
+/m1-server.jar
