@@ -27,14 +27,12 @@ public class KVClient implements IKVClient {
 
     @Override
     public void newConnection(String hostname, int port) throws Exception{
-        // TODO Auto-generated method stub ///
         kvStore = new KVStore(hostname, port);
         kvStore.connect();
     }
 
     @Override
     public KVCommInterface getStore() {
-        // TODO Auto-generated method stub
         return kvStore;
     }
 
@@ -110,7 +108,11 @@ public class KVClient implements IKVClient {
 	}
 
 	public void quit() {
-    	logger.info("calling quit");
+    	logger.info("Disconnecting from server and shutting down client...");
+		if (kvStore != null) {
+			kvStore.disconnect();
+			kvStore = null;
+		}
         stop = true;
         return;
     }
@@ -173,7 +175,13 @@ public class KVClient implements IKVClient {
 
                     try {
                         if (checkValidKey(tokens[1], value.toString())) {
-							System.out.println("PUT: " + tokens[1] + " " + value.toString());
+							// System.out.println("PUT: " + tokens[1] + " " + value.toString());
+							KVMessage msg = kvStore.put(tokens[1], value.toString());
+							if (msg == null) {
+								printError("PUT ERROR");
+							} else {
+								System.out.println(PROMPT + "PUT SUCCESS");
+							}
                         } else {
                             printError("Invalid key-value pair!");
                             logger.error("Invalid key-value pair!");
@@ -193,7 +201,13 @@ public class KVClient implements IKVClient {
                 if (kvStore != null) {
                     try {
                         if (checkValidKey(tokens[1])) {
-							System.out.println("GET: " + tokens[1]);
+							// System.out.println("GET: " + tokens[1]);
+							Message msg = kvStore.get(tokens[1]);
+							if (msg == null) {
+                                printError("GET ERROR");
+                            } else {
+								System.out.println(PROMPT + "GET SUCCESS: " + msg.getValue());
+							} 
                         } else {
                             printError("Invalid key!");
                             logger.error("Invalid key!");
@@ -228,7 +242,17 @@ public class KVClient implements IKVClient {
             }
 
 		} else if (tokens[0].equals("disconnect")) {
-            kvStore.disconnect();
+            try {
+				if (kvStore != null) {
+					kvStore.disconnect();
+					kvStore = null;
+					System.out.println(PROMPT + "Disconnected from server!");
+				} else {
+					printError("Not connected to server!");
+				}
+			} catch (Exception e) {
+				logger.error("Disconnect from server failed!", e);
+			}
 
         } else if (tokens[0].length() == 0) {
             // do nothing
