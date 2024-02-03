@@ -9,9 +9,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.net.ServerSocket;
 import java.net.Socket;
 import org.apache.log4j.Logger; // import Logger
@@ -36,6 +38,9 @@ public class KVServer implements IKVServer {
      */
 
     private ServerSocket serverSocket; // Socket IPC
+    private Socket clientSocket;
+    private static final List<ClientConnection> connections = new CopyOnWriteArrayList<>();
+
     private int port; // Port number
     private int cacheSize; // Cache size
     private CacheStrategy strategy; // Strategy (given by definition in ./IKVServer.java)
@@ -135,7 +140,7 @@ public class KVServer implements IKVServer {
     public String getKV(String key) throws Exception {
         // TODO Auto-generated method stub
         if (!inStorage(key))
-            throw new Exception("[Exception] Key not in storage.");
+            return null;
 
         if (!inCache(key)) {
             File path = getStorageAddressOfKey(key);
@@ -227,30 +232,27 @@ public class KVServer implements IKVServer {
             file.delete();
         }
     }
-
-    private boolean initServer() {
-        try {
-            serverSocket = new ServerSocket(port);
-            logger.info("[Success] Server is listening on port: " + serverSocket.getLocalPort());
-            return true;
-        } catch (IOException e) {
-            logger.error("[Error] Server Socket cannot be opened: ");
-            if (e instanceof BindException)
-                logger.error("[Error] Port " + port + " is already bound.");
-            return false;
-        }
-    }
-
+    
     @Override
     public void run() {
         // TODO Auto-generated method stub
         running = initServer();
+        try {
+            serverSocket = new ServerSocket(port);
+            logger.info("[Success] Server is listening on port: " + serverSocket.getLocalPort());
+        } catch (IOException e) {
+            logger.error("[Error] Server Socket cannot be opened: ");
+            if (e instanceof BindException)
+                logger.error("[Error] Port " + port + " is already bound.");
+            return;
+        }
 
         if (serverSocket != null){
             while (running){
                 try {
-                    Socket client = serverSocket.accept();
+                    clientSocket = serverSocket.accept();
                     ClientConnection connection = new ClientConnection(client);
+                    connections.add(connection);
                     new Thread(connection).start();
                     logger.info("[Success] Connected to " + client.getInetAddress().getHostName() + " on port "
                             + client.getPort());
@@ -277,12 +279,11 @@ public class KVServer implements IKVServer {
     @Override
     public void close() {
         // TODO Auto-generated method stub
-        running = false;
-        try {
-            serverSocket.close();
-        } catch (IOException e) {
-            logger.error("[Error] Unable to close socket on port: " + port, e);
-        }
+        for (ClientConnection conn: connections) 
+            conn.closeConnection();
+        clearCache();
+        clearStorage();
+        kill();
     }
 
     public static void main(String[] args) {
