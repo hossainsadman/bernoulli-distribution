@@ -12,6 +12,8 @@ import logger.LogSetup;
 
 import client.KVCommInterface;
 import client.KVStore;
+import shared.messages.BasicKVMessage;
+import shared.messages.KVMessage;
 
 public class KVClient implements IKVClient {
 	private static Logger logger = Logger.getRootLogger();
@@ -202,7 +204,7 @@ public class KVClient implements IKVClient {
                     try {
                         if (checkValidKey(tokens[1])) {
 							// System.out.println("GET: " + tokens[1]);
-							Message msg = kvStore.get(tokens[1]);
+							BasicKVMessage msg = kvStore.get(tokens[1]);
 							if (msg == null) {
                                 printError("GET ERROR");
                             } else {

@@ -99,7 +99,13 @@
                 "kind": "test",
                 "isDefault": false
             },
-            "problemMatcher": []
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true, 
+                "focus": true,
+                "group": "m1",
+                "panel": "dedicated"
+            },
         },
         {
             "label": "m1 Run Server",
@@ -115,7 +121,13 @@
                 "kind": "test",
                 "isDefault": false
             },
-            "problemMatcher": []
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true, 
+                "focus": true,
+                "group": "m1",
+                "panel": "dedicated"
+            },
         },
         // m1 run //
         // m1 utilities //

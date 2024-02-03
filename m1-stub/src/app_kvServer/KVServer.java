@@ -296,6 +296,19 @@ public class KVServer implements IKVServer {
         kill();
     }
 
+    public static void main(String[] args) {
+        // Testing LRU
+        System.out.println("LRU");
+        KVServer server = new KVServer(20010, 0, null);
+        try {
+            server.clearStorage();
+            server.run();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
     // public static void main(String[] args) {
     //     // Testing LRU
     //     System.out.println("LRU");
