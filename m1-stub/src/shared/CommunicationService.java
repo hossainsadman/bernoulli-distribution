@@ -26,6 +26,7 @@ public class CommunicationService {
 
   public void connect() throws IOException {
     if (port < 0 || port > 65535) {
+      logger.error(generateLogMessage("Invalid port number: " + port));
       throw new IllegalArgumentException(generateLogMessage("Invalid port number: " + port));
     }
 
@@ -33,8 +34,10 @@ public class CommunicationService {
       socket = new Socket(address, port);
       logger.info(generateLogMessage("Connected to server: " + address + ":" + port));
     } catch (UnknownHostException e) {
+      logger.error(generateLogMessage("Unknown host: " + address));
       throw new UnknownHostException(generateLogMessage("Unknown host: " + address));
     } catch (IOException e) {
+      logger.error(generateLogMessage("Unable to connect to the server"));
       throw new IOException(generateLogMessage("Unable to connect to the server"), e);
     }
   }
@@ -52,6 +55,7 @@ public class CommunicationService {
 
   public void sendMessage(BasicKVMessage msg) throws IOException {
     if (socket == null || socket.isClosed()) {
+      logger.error(generateLogMessage("Socket is not connected"));
       throw new IOException(generateLogMessage("Socket is not connected"));
     }
 
@@ -60,6 +64,7 @@ public class CommunicationService {
 
   public BasicKVMessage receiveMessage() throws IOException {
     if (socket == null || socket.isClosed()) {
+      logger.error(generateLogMessage("Socket is not connected"));
       throw new IOException(generateLogMessage("Socket is not connected"));
     }
 
@@ -67,6 +72,6 @@ public class CommunicationService {
   }
 
   private String generateLogMessage(String message){
-    return "[" + origin + "]" + message;
+    return "[" + origin + "] " + message;
   }
 }
