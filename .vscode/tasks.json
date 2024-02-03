@@ -186,6 +186,7 @@
             "ConnectionTest",
             "InteractionTest",
             "KeyValueTest",
+            "CacheTest",
           ]
         }
       ]
