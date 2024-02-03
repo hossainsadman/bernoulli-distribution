@@ -52,7 +52,14 @@ public class Caches {
 
         @Override
         public void put(String key, String value){
-            if (capacity <= 0) return; // edge case, if capacity is 0, return
+            if (capacity <= 0)
+                return; // edge case, if capacity is 0, return
+            
+            if (value.equals("null")){
+                remove(key);
+                return;
+            }
+
             kvs.put(key, value); 
         }
 
@@ -117,9 +124,9 @@ public class Caches {
             if (frequencyToKeys.get(frequency).size() == 0) { // empty now
                 frequencyToKeys.remove(frequency);
                 if (frequency == minFrequency)
-                    minFrequency++;
+                    ++minFrequency;
             }
-            frequency++;
+            ++frequency;
 
             keyFrequencies.put(key, frequency);
 
@@ -145,11 +152,6 @@ public class Caches {
             if (capacity <= 0)
                 return; // safety edge case, if capacity is 0, return
             
-            if (value.equals("null")) {
-                remove(key);
-                return;
-            }
-
             if (value.equals("null")) {
                 remove(key);
                 return;

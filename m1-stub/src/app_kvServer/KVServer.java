@@ -150,14 +150,16 @@ public class KVServer implements IKVServer {
                 String line;
                 while ((line = reader.readLine()) != null)
                     contentBuilder.append(line).append("\n");
-            } catch (Exception e) {
-                logger.error("unable to process GET request: ", e);
             }
-
+            
             return contentBuilder.toString().trim();
         }
 
-        return cache.get(key);
+        String value = cache.get(key);
+        if (value == null)
+            throw new Exception("tuple not found");
+            
+        return value;
     }
 
     @Override
@@ -171,9 +173,7 @@ public class KVServer implements IKVServer {
                 writer.write(value);
                 if (this.cache != null)
                     cache.put(key, value);
-            } catch (Exception e) {
-                logger.error("unable to process PUT UPDATE request: " + file.getName(), e);
-            }
+            } 
 
             return StatusType.PUT_UPDATE;
         }
@@ -183,8 +183,6 @@ public class KVServer implements IKVServer {
             writer.write(value);
             if (this.cache != null)
                 cache.put(key, value);
-        } catch (Exception e) {
-            logger.error("unable to process PUT request: " + file.getName(), e);
         }
         return StatusType.PUT_SUCCESS;
     }
