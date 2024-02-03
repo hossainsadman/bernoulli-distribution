@@ -207,7 +207,7 @@ public class KeyValueTest extends TestCase {
 		Exception ex = null;
 
 		try {
-			response = kvClient.get(key,);
+			response = kvClient.get(key);
 		} catch (Exception e) {
 			ex = e;
 		}
@@ -222,7 +222,7 @@ public class KeyValueTest extends TestCase {
 		Exception ex = null;
 
 		try {
-			response = kvClient.get(key,);
+			response = kvClient.get(key);
 		} catch (Exception e) {
 			ex = e;
 		}
