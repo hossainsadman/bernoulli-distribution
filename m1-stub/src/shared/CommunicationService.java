@@ -24,8 +24,12 @@ public class CommunicationService {
     this.origin = origin;
   }
 
+  public CommunicationService(Socket socket) {
+    this.socket = socket;
+  }
+
   public void connect() throws IOException {
-    if (port < 0 || port > 65535) {
+    if (port < 1024 || port > 65535) {
       logger.error(generateLogMessage("Invalid port number: " + port));
       throw new IllegalArgumentException(generateLogMessage("Invalid port number: " + port));
     }

@@ -3,25 +3,29 @@ package app_kvServer;
 import java.util.*;
 
 public class Caches {
-    // Interface definition
+    /**
+     * Cache Interface
+     */
     public static interface Cache<K, V> {
-        public V get(K key); // get the value of given key in the cache
+        public V get(K key); // gets the value of given key in the cache
 
-        public void put(K key, V value); // put a given KV pair in the cache
+        public void put(K key, V value); // puts a given KV pair in the cache
 
-        public void remove(K key); // remove a given key in the cache
+        public void remove(K key); // removes a given key in the cache
 
-        public boolean removeAll();
+        public boolean removeAll(); // removes every key in the cache
         
-        public int size(); // return the size of the cache
+        public int size(); // returns the size of the cache
 
-        public boolean containsKey(K key); // check if the cache contains a given key
+        public boolean containsKey(K key); // checks if the cache contains a given key
 
-        public Set<String> keySet(); // return a set of all keys in the cache
-        public Set<Map.Entry<K, V>> entrySet(); // return a set of all kvs in the cache
+        public Set<String> keySet(); // returns a set of all keys in the cache
+        public Set<Map.Entry<K, V>> entrySet(); // returns a set of all kvs in the cache
     }
 
-    // LRU Cache
+    /**
+     * LRU Cache Implementation
+     */
     public static class LRUCache implements Cache<String, String> {
         private final LinkedHashMap<String, String> kvs;
         private final int capacity;
@@ -88,7 +92,9 @@ public class Caches {
         }
     }
 
-    // LFU Cache
+    /**
+     * LFU Cache Implementation
+     */
     public static class LFUCache implements Cache<String, String> {
         private final Map<String, String> kvs;
         private final Map<String, Integer> keyFrequencies;
@@ -233,7 +239,9 @@ public class Caches {
         }
     }
 
-    // FIFO Cache
+    /**
+     * FIFO Cache Implementation
+     */
     public static class FIFOCache implements Cache<String, String> {
         private final Map<String, String> kvs;
         private final Queue<String> queue;

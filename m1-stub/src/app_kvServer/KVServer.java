@@ -22,6 +22,7 @@ import app_kvServer.Caches.LRUCache;
 import app_kvServer.ClientConnection;
 import static app_kvServer.Caches.*;
 import app_kvServer.IKVServer.CacheStrategy;
+import shared.messages.KVMessage.StatusType;
 
 public class KVServer implements IKVServer {
     /**
@@ -85,7 +86,7 @@ public class KVServer implements IKVServer {
         dirPath = System.getProperty("user.dir") + File.separator + "db";
         File dir = new File(dirPath);
         if (!dir.mkdir())
-            new Exception("[Exception] Unable to create a directory.");
+            new Exception("unable to create a directory.");
     }
 
     @Override
@@ -149,6 +150,8 @@ public class KVServer implements IKVServer {
                 String line;
                 while ((line = reader.readLine()) != null)
                     contentBuilder.append(line).append("\n");
+            } catch (Exception e) {
+                logger.error("unable to process GET request: ", e);
             }
 
             return contentBuilder.toString().trim();
@@ -158,26 +161,32 @@ public class KVServer implements IKVServer {
     }
 
     @Override
-    public void putKV(String key, String value) throws Exception {
+    public StatusType putKV(String key, String value) throws Exception {
         // TODO Auto-generated method stub
 
         File file = new File(dirPath + File.separator + key);
-        if (inStorage(key)) { // Key is already in storage
+
+        if (inStorage(key)) { // Key is already in storage (i.e. UPDATE)
             try (FileWriter writer = new FileWriter(file, false)) { // overwrite
                 writer.write(value);
-            } catch (IOException e) {
-                logger.error("[Error] Unable to write to file: " + file.getName(), e);
+                if (this.cache != null)
+                    cache.put(key, value);
+            } catch (Exception e) {
+                logger.error("unable to process PUT UPDATE request: " + file.getName(), e);
             }
-        } else {
-            try (FileWriter writer = new FileWriter(file)) {
-                writer.write(value);
-            } catch (IOException e) {
-                logger.error("[Error] Unable to write to file: " + file.getName(), e);
-            }
-        }
 
-        if (this.cache != null)
-            cache.put(key, value);
+            return StatusType.PUT_UPDATE;
+        }
+        
+        // Key is not in storage (i.e. PUT)
+        try (FileWriter writer = new FileWriter(file)){ 
+            writer.write(value);
+            if (this.cache != null)
+                cache.put(key, value);
+        } catch (Exception e) {
+            logger.error("unable to process PUT request: " + file.getName(), e);
+        }
+        return StatusType.PUT_SUCCESS;
     }
 
     // Helper Function to Monitor the State of Current KVs in Storage and Cache
@@ -251,13 +260,13 @@ public class KVServer implements IKVServer {
             while (running){
                 try {
                     clientSocket = serverSocket.accept();
-                    ClientConnection connection = new ClientConnection(clientSocket);
+                    ClientConnection connection = new ClientConnection(this, clientSocket);
                     connections.add(connection);
                     new Thread(connection).start();
-                    logger.info("[Success] Connected to " + clientSocket.getInetAddress().getHostName() + " on port "
+                    logger.info("Connected to " + clientSocket.getInetAddress().getHostName() + " on port "
                             + clientSocket.getPort());
                 } catch (IOException e){
-                    logger.error("[Error] Unable to establish connection.\n", e);
+                    logger.error("Unable to establish connection.\n", e);
                 }
             }
         }
@@ -271,7 +280,7 @@ public class KVServer implements IKVServer {
         try {
             serverSocket.close();
         } catch (IOException e) {
-            logger.error("[Error] Unable to close socket on port: " + port, e);
+            logger.error("Unable to close socket on port: " + port, e);
         }
     
     }
@@ -280,7 +289,7 @@ public class KVServer implements IKVServer {
     public void close() {
         // TODO Auto-generated method stub
         for (ClientConnection conn: connections) 
-            conn.closeConnection();
+            conn.close();
         clearCache();
         clearStorage();
         kill();
