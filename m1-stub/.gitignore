@@ -1,3 +1,7 @@
 /db
 /m1-client.jar
 /m1-server.jar
+/bin/
+/logs/
+/*.MF
+/*.jar
