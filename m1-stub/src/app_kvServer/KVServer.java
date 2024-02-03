@@ -153,12 +153,16 @@ public class KVServer implements IKVServer {
         // TODO Auto-generated method stub
 
         File file = new File(dirPath + File.separator + key);
-        if (inStorage(key)) { // Key is already in storage
-            throw new Exception("[Exception] Key already in storage.");
-        } else {
-            try (FileWriter writer = new FileWriter(file)) {
+        if (inStorage(key)){ // Key is already in storage
+            try (FileWriter writer = new FileWriter(file, false)) { // overwrite
                 writer.write(value);
-            } catch (IOException e) {
+            }  catch (IOException e) {
+                logger.error("[Error] Unable to write to file: " + file.getName(), e);
+            }
+        } else {
+            try (FileWriter writer = new FileWriter(file)){
+                writer.write(value);
+            } catch (IOException e){
                 logger.error("[Error] Unable to write to file: " + file.getName(), e);
             }
         }
@@ -260,7 +264,8 @@ public class KVServer implements IKVServer {
         KVServer server = new KVServer(20010, 0, "nothing");
         try {
             server.clearStorage();
-            server.putKV("W", "indeed");
+            server.putKV("W", "indeed"); 
+            server.putKV("W", "bruh"); 
             System.out.println(server.getKV("W"));
         } catch (Exception e) {
             e.printStackTrace();
