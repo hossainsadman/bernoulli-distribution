@@ -212,8 +212,7 @@ public class KVServer implements IKVServer {
         if (cache == null)
             return;
 
-        for (String key : cache.keySet())
-            cache.remove(key);
+        cache.removeAll();
     }
 
     @Override
@@ -299,6 +298,10 @@ public class KVServer implements IKVServer {
             System.out.println(LRUServer.getKV("1")); 
             LRUServer.putKV("4", "4"); // [1, 3, 4]
             LRUServer.printStorageAndCache();
+            LRUServer.clearCache();
+            LRUServer.printStorageAndCache(); // should be empty
+            LRUServer.putKV("1", "1");
+            LRUServer.printStorageAndCache(); // should be empty
             //LRUServer.kill();
         } catch (Exception e) {
             e.printStackTrace();
@@ -318,6 +321,8 @@ public class KVServer implements IKVServer {
             System.out.println(LFUServer.getKV("3")); // freq of 3 = 3
             LFUServer.putKV("4", "4");
             LFUServer.printStorageAndCache(); // should be 1, 3, 4
+            LFUServer.clearCache();
+            LFUServer.printStorageAndCache(); // should be 1, 3, 4
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -335,9 +340,10 @@ public class KVServer implements IKVServer {
             System.out.println(FIFOServer.getKV("3")); // SHOULD NOT CHANGE ANYTHING
             FIFOServer.putKV("4", "4");
             FIFOServer.printStorageAndCache(); // should be 2, 3, 4
+            FIFOServer.clearCache();
+            FIFOServer.printStorageAndCache(); // should be empty
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 }

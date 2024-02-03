@@ -11,6 +11,8 @@ public class Caches {
 
         public void remove(K key); // remove a given key in the cache
 
+        public boolean removeAll();
+        
         public int size(); // return the size of the cache
 
         public boolean containsKey(K key); // check if the cache contains a given key
@@ -54,6 +56,15 @@ public class Caches {
         public void remove(String key) {
             if (!containsKey(key)) return; // no such key
             kvs.remove(key);
+        }
+
+        public boolean removeAll() {
+            try {
+                kvs.clear();
+            } catch (Exception e) {
+                return false;
+            }
+            return true;
         }
 
         @Override
@@ -125,7 +136,18 @@ public class Caches {
 
         @Override
         public void put(String key, String value){
-            if (capacity <= 0) return;  // safety edge case, if capacity is 0, return
+            if (capacity <= 0)
+                return; // safety edge case, if capacity is 0, return
+            
+            if (value.equals("null")) {
+                remove(key);
+                return;
+            }
+
+            if (value.equals("null")) {
+                remove(key);
+                return;
+            }
 
             if (containsKey(key)) { // if key already exists
                 kvs.put(key, value);
@@ -166,6 +188,17 @@ public class Caches {
 
             if (frequency == minFrequency)
                 minFrequency = frequencyToKeys.isEmpty() ? 0 : Collections.min(frequencyToKeys.keySet());
+        }
+
+        public boolean removeAll() {
+            try {
+                kvs.clear();
+                keyFrequencies.clear();
+                frequencyToKeys.clear();
+            } catch (Exception e) {
+                return false;
+            }
+            return true;
         }
 
         @Override
@@ -213,13 +246,19 @@ public class Caches {
         }
 
         @Override
-        public String get(String key){
+        public String get(String key) {
             return kvs.getOrDefault(key, null);
         }
 
         @Override
         public void put(String key, String value) {
-            if (capacity <= 0) return; // edge case, if capacity is 0, return
+            if (capacity <= 0)
+                return; // edge case, if capacity is 0, return
+            
+            if (value.equals("null")) {
+                remove(key);
+                return;
+            }
             
             if (!containsKey(key)){
                 if (size() >= capacity){ 
@@ -234,11 +273,22 @@ public class Caches {
         }
 
         @Override
-        public void remove(String key){
-            if (!containsKey(key)) return; // no such key
-            
+        public void remove(String key) {
+            if (!containsKey(key))
+                return; // no such key
+
             kvs.remove(key);
             queue.remove(key);
+        }
+        
+        public boolean removeAll(){
+            try {
+                kvs.clear();
+                queue.clear();
+            } catch (Exception e) {
+                return false;
+            }
+            return true;
         }
 
         @Override
