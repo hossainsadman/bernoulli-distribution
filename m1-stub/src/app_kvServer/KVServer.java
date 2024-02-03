@@ -16,6 +16,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import org.apache.log4j.Logger; // import Logger
 
+import app_kvServer.Caches.LRUCache;
 import app_kvServer.ClientConnection;
 import static app_kvServer.Caches.*;
 import app_kvServer.IKVServer.CacheStrategy;
@@ -46,7 +47,9 @@ public class KVServer implements IKVServer {
     public KVServer(int port, int cacheSize, String strategy) {
         // TODO Auto-generated method stub
         if (port < 1024 || port > 65535)
-            throw new IllegalArgumentException("Port number is out of range.");
+            throw new IllegalArgumentException("port is out of range.");
+            if (cacheSize < 0)
+            throw new IllegalArgumentException("cacheSize is out of range.");
 
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
@@ -178,7 +181,9 @@ public class KVServer implements IKVServer {
         File[] db = dir.listFiles();
 
         System.out.println("Storage: ");
-        if (db != null){
+        if (db == null || db.length == 0) 
+            System.out.println("\tStorage is Empty.");
+        else {
             for (File kv: db){
                 System.out.print("\t" + "Key: " + kv.getName() +  ", "); // key
                 try {
@@ -188,15 +193,17 @@ public class KVServer implements IKVServer {
                     System.out.println("<Error>"); // could not access value for whatever reason
                 }
             }
-        } else {
-            System.out.println("\tStorage is Empty.");
-        }
+        } 
 
         System.out.println("Cache: ");
-        if (cache == null)
+        if (cache == null || cache.size() == 0) 
             System.out.println("\tCache is Empty.");
         for (Map.Entry<String, String> kv: cache.entrySet())
             System.out.println("\t" + "Key: " + kv.getKey() + ", Value: " + kv.getValue());
+
+        for (int i = 0; i < 40; ++i) // Divider for readability
+            System.out.print("-");
+        System.out.println();
     }
 
     @Override
@@ -280,22 +287,57 @@ public class KVServer implements IKVServer {
     }
 
     public static void main(String[] args) {
-        KVServer server = new KVServer(20010, 3, "LRU");
+        // Testing LRU
+        System.out.println("LRU");
+        KVServer LRUServer = new KVServer(20010, 3, "LRU");
         try {
-            server.clearStorage();
-            server.putKV("W", "indeed");
-            server.putKV("key0", "value0");
-            server.putKV("key1", "value1");
-            server.printStorageAndCache();
-            server.putKV("W", "bruh");
-            server.printStorageAndCache();
-            server.putKV("key2", "value2");
-            server.printStorageAndCache();
-            server.putKV("eagagawgg", "srgseGgwse");
-            System.out.println(server.getKV("W"));
-            server.printStorageAndCache();
+            LRUServer.clearStorage();
+            LRUServer.printStorageAndCache();
+            LRUServer.putKV("1", "1");
+            LRUServer.putKV("2", "2");
+            LRUServer.putKV("3", "3");
+            System.out.println(LRUServer.getKV("1")); 
+            LRUServer.putKV("4", "4"); // [1, 3, 4]
+            LRUServer.printStorageAndCache();
+            //LRUServer.kill();
         } catch (Exception e) {
             e.printStackTrace();
         }
+        
+        // Testing LFU
+        System.out.println("LFU");
+        KVServer LFUServer = new KVServer(20010, 3, "LFU");
+        try {
+            LFUServer.clearStorage();
+            LFUServer.printStorageAndCache();
+            LFUServer.putKV("1", "1");
+            LFUServer.putKV("2", "2");
+            LFUServer.putKV("3", "3");
+            System.out.println(LFUServer.getKV("1")); // freq of 1 = 2
+            System.out.println(LFUServer.getKV("3")); // freq of 3 = 2
+            System.out.println(LFUServer.getKV("3")); // freq of 3 = 3
+            LFUServer.putKV("4", "4");
+            LFUServer.printStorageAndCache(); // should be 1, 3, 4
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("FIFO");
+        KVServer FIFOServer = new KVServer(20010, 3, "FIFO");
+        try {
+            FIFOServer.clearStorage();
+            FIFOServer.printStorageAndCache();
+            FIFOServer.putKV("1", "1");
+            FIFOServer.putKV("2", "2");
+            FIFOServer.putKV("3", "3");
+            System.out.println(FIFOServer.getKV("1")); 
+            System.out.println(FIFOServer.getKV("3")); 
+            System.out.println(FIFOServer.getKV("3")); // SHOULD NOT CHANGE ANYTHING
+            FIFOServer.putKV("4", "4");
+            FIFOServer.printStorageAndCache(); // should be 2, 3, 4
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 }
