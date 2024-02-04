@@ -86,6 +86,15 @@ public class KVServer implements IKVServer {
         File dir = new File(dirPath);
         if (!dir.mkdir())
             new Exception("unable to create a directory.");
+
+        Thread serverThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                KVServer.this.run();
+            }
+        });
+
+        serverThread.start(); // Start the thread
     }
 
     @Override
