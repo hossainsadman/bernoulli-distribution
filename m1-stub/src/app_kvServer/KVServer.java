@@ -256,11 +256,11 @@ public class KVServer implements IKVServer {
         running = true;
         try {
             serverSocket = new ServerSocket(port);
-            logger.info("[Success] Server is listening on port: " + serverSocket.getLocalPort());
+            logger.info("Server is listening on port: " + serverSocket.getLocalPort());
         } catch (IOException e) {
-            logger.error("[Error] Server Socket cannot be opened: ");
+            logger.error("Server Socket cannot be opened: ");
             if (e instanceof BindException)
-                logger.error("[Error] Port " + port + " is already bound.");
+                logger.error("Port " + port + " is already bound.");
             return;
         }
 

@@ -25,7 +25,6 @@ public class CacheTest extends TestCase {
             assertTrue(LRUServer.getKV("4").equals("4"));
 
             LRUServer.putKV("3", "null"); // Removing key "3" from storage
-            LRUServer.printStorageAndCache();
         
             boolean exceptionOccurs = false;
             try {
