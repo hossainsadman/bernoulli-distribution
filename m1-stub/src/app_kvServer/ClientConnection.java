@@ -79,7 +79,7 @@ public class ClientConnection implements Runnable {
      */
     private void processMessage(BasicKVMessage recv) throws IOException {
         BasicKVMessage res;
-        String recvStatus = recv.getStatus();
+        StatusType recvStatus = recv.getStatus();
         String recvKey = recv.getKey();
         String recvVal = recv.getValue();
 
