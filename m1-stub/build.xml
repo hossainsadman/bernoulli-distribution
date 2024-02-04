@@ -116,6 +116,9 @@
     </junit>
   </target>
 
+<!-- DOES NOT WORK -->
+<!-- NEED TO RUN SERVER IN ALLTESTS.JAVA -->
+<!--   
   <!-- run SELECTEDtest cases -->
 <target name="testselect" depends="build">
     <junit>
@@ -124,7 +127,8 @@
         <!-- <formatter type="brief" usefile="false" /> -->
         <test name="${testcase}" />
     </junit>
-</target>
+</target> 
+-->
 
   <target name="run" >
     <java classname="${main.class}" classpathref="class.path"/>
