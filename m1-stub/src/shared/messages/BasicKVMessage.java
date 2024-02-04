@@ -1,5 +1,7 @@
 package shared.messages;
 
+import java.io.ObjectInputFilter.Status;
+
 public class BasicKVMessage implements KVMessage{
   private static final char LINE_FEED = 0x0A;
 	private static final char RETURN = 0x0D;
@@ -59,7 +61,7 @@ public class BasicKVMessage implements KVMessage{
       try {
         this.status = StatusType.valueOf(components[0]);
       } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException("Invalid status: " + components[0]);
+        this.status = StatusType.INVALID;
       }
     }
 
