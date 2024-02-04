@@ -138,20 +138,19 @@ public class KeyValueTest extends TestCase {
 	}
 	
 	@Test
-	public void testPutKeyAndValueWithNewlines() {
-		String key = "key\nwith\nnewlines";
-		String value = "value\nwith\nnewlines";
-		KVMessage response = null;
-		Exception ex = null;
+  public void testPutKeyAndValueWithNewlines() {
+    String key = "key\nwith\nnewlines1";
+    String value = "value\nwith\nnewlines";
+    KVMessage response = null;
+    Exception ex = null;
 
-		try {
-			response = kvClient.put(key, value);
-		} catch (Exception e) {
-			ex = e;
-		}
-
-		assertTrue(ex == null && response.getStatus() == StatusType.PUT_UPDATE);
-	}
+    try {
+      response = kvClient.put(key, value);
+    } catch (Exception e) {
+      ex = e;
+    }
+    assertTrue(ex == null && response.getStatus() == StatusType.PUT_SUCCESS);
+  }
 	
 	@Test
 	public void testPutKeyMaxLen() {

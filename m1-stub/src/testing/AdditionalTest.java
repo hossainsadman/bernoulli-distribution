@@ -68,7 +68,7 @@ public class AdditionalTest extends TestCase {
     }
     
     public void testUpdateAndDelete() {
-        String key = "updateAndDeleteValue";
+        String key = "updateAndDelVal";
         String initialValue = "this is first";
         String updatedValue = "this is second";
 
@@ -83,10 +83,10 @@ public class AdditionalTest extends TestCase {
         } catch (Exception e) {
             ex = e;
         }
-        
+        System.out.println("123");
         System.out.println(resUpdate.getKey() + ", " + resUpdate.getValue() + ", "  + resUpdate.getStatus());
         System.out.println(resDelete.getKey() + ", " + resDelete.getValue() + ", "  + resDelete.getStatus());
-        assertTrue(ex == null && resUpdate.getStatus() == StatusType.PUT_SUCCESS 
+        assertTrue(ex == null && resUpdate.getStatus() == StatusType.PUT_UPDATE 
                 && resDelete.getStatus() == StatusType.DELETE_SUCCESS
                 && resUpdate.getKey().equals(key)
                 && resUpdate.getValue().equals(updatedValue)

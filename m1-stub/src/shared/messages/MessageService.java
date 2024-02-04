@@ -46,13 +46,14 @@ public class MessageService {
 		byte[] msgBytes = null, tmp = null;
 		byte[] bufferBytes = new byte[BUFFER_SIZE];
 
-		/* read first char from stream */
+    /* read first char from stream */
+    byte prevRead = 0;
 		byte read = (byte) input.read();	
 		boolean reading = true;
 
-		while(read != 13  && reading) {/* CR, LF, error */
+		while(!(read == 13 && prevRead == 10) && reading) {/* CR, LF, error */
 			/* if buffer filled, copy to msg array */
-			if(index == BUFFER_SIZE) {
+      if (index == BUFFER_SIZE) {
 				if(msgBytes == null){
 					tmp = new byte[BUFFER_SIZE];
 					System.arraycopy(bufferBytes, 0, tmp, 0, BUFFER_SIZE);
@@ -65,7 +66,7 @@ public class MessageService {
 
 				msgBytes = tmp;
 				bufferBytes = new byte[BUFFER_SIZE];
-				index = 0;
+        index = 0;
 			} 
 
 			/* only read valid characters, i.e. letters and constants */
@@ -78,21 +79,20 @@ public class MessageService {
 			}
 
 			/* read next char from stream */
+      prevRead = read;
 			read = (byte) input.read();
 		}
 
-		if(msgBytes == null){
-			tmp = new byte[index + 1];
+    if (msgBytes == null) {
+			tmp = new byte[index];
 			System.arraycopy(bufferBytes, 0, tmp, 0, index);
-      tmp[index] = 13;
-		} else {
-			tmp = new byte[msgBytes.length + index + 1];
+    } else {
+			tmp = new byte[msgBytes.length + index];
 			System.arraycopy(msgBytes, 0, tmp, 0, msgBytes.length);
       System.arraycopy(bufferBytes, 0, tmp, msgBytes.length, index);
-      tmp[msgBytes.length + index] = 13;
 		}
 
-		msgBytes = tmp;
+    msgBytes = tmp;
     return msgBytes;
   }
 }

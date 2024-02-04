@@ -30,8 +30,8 @@ public class BasicKVMessage implements KVMessage {
   }
 
   public BasicKVMessage(byte[] bytes) {
-    this.msgBytes = bytes;
-    this.parseBytes(bytes);
+    this.msgBytes = addCtrChars(bytes);
+    this.parseBytes(msgBytes);
   }
 
   public byte[] getMsgBytes() {
