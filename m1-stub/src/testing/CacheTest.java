@@ -20,13 +20,18 @@ public class CacheTest extends TestCase {
 	        LRUServer.putKV("1", "1");
 	        LRUServer.putKV("2", "2");
 	        LRUServer.putKV("3", "3");
-	        System.out.println(LRUServer.getKV("1")); 
+	        assertTrue(LRUServer.getKV("1").equals("1")); 
+	        assertTrue(LRUServer.getKV("2").equals("2")); 
+	        assertTrue(LRUServer.getKV("3").equals("3")); 
 	        LRUServer.putKV("4", "4"); // [1, 3, 4]
-	        LRUServer.printStorageAndCache();
+	        assertTrue(LRUServer.getKV("4").equals("4")); 
+	        assertTrue(LRUServer.getKV("2").equals(null)); 
+	        assertTrue(LRUServer.getKV("1").equals("1")); 
+	        assertTrue(LRUServer.getKV("3").equals("3")); 
 	        LRUServer.clearCache();
-	        LRUServer.printStorageAndCache(); // should be empty
+            assertTrue(LRUServer.getKV("1").equals(null)); 
 	        LRUServer.putKV("1", "1");
-	        LRUServer.printStorageAndCache(); // should be empty			
+	        assertTrue(LRUServer.getKV("1").equals("1"));			
 		} catch (Exception e) {
 			ex = e;
 		}	
@@ -44,13 +49,13 @@ public class CacheTest extends TestCase {
             LFUServer.putKV("1", "1");
             LFUServer.putKV("2", "2");
             LFUServer.putKV("3", "3");
-            System.out.println(LFUServer.getKV("1")); // freq of 1 = 2
-            System.out.println(LFUServer.getKV("3")); // freq of 3 = 2
-            System.out.println(LFUServer.getKV("3")); // freq of 3 = 3
+            assertTrue(LFUServer.getKV("1").equals("1")); // freq of 1 = 2
+            assertTrue(LFUServer.getKV("3").equals("3")); // freq of 3 = 2
+            assertTrue(LFUServer.getKV("3").equals("3")); // freq of 3 = 3
             LFUServer.putKV("4", "4");
             LFUServer.printStorageAndCache(); // should be 1, 3, 4
-            LFUServer.clearCache();
-            LFUServer.printStorageAndCache(); // should be 1, 3, 4
+            assertTrue(LFUServer.getKV("2").equals(null));
+            assertTrue(LFUServer.getKV("4").equals("4")); // freq of 4 = 2
         } catch (Exception e) {
 			ex = e;
         }
@@ -68,13 +73,15 @@ public class CacheTest extends TestCase {
             FIFOServer.putKV("1", "1");
             FIFOServer.putKV("2", "2");
             FIFOServer.putKV("3", "3");
-            System.out.println(FIFOServer.getKV("1")); 
-            System.out.println(FIFOServer.getKV("3")); 
-            System.out.println(FIFOServer.getKV("3")); // SHOULD NOT CHANGE ANYTHING
+            assertTrue(FIFOServer.getKV("1").equals("1")); 
+            assertTrue(FIFOServer.getKV("2").equals("2")); 
+            assertTrue(FIFOServer.getKV("3").equals("3")); 
+            assertTrue(FIFOServer.getKV("4").equals(null)); 
             FIFOServer.putKV("4", "4");
-            FIFOServer.printStorageAndCache(); // should be 2, 3, 4
+            assertTrue(FIFOServer.getKV("4").equals("4")); 
+            assertTrue(FIFOServer.getKV("2").equals("2")); 
             FIFOServer.clearCache();
-            FIFOServer.printStorageAndCache(); // should be empty
+            assertTrue(FIFOServer.getKV("1").equals("1")); 
         } catch (Exception e) {
 			ex = e;
         }
