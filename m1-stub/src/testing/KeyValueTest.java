@@ -38,7 +38,7 @@ public class KeyValueTest extends TestCase {
 			ex = e;
 		}
 
-		assertTrue(ex == null && response.getStatus() == StatusType.PUT_SUCCESS);
+		assertTrue(ex == null && response.getStatus() == StatusType.INVALID_KEY);
 	}
 	
 	@Test
@@ -50,11 +50,11 @@ public class KeyValueTest extends TestCase {
 
 		try {
 			response = kvClient.put(key, value);
-		} catch (Exception e) {
-			ex = e;
-		}
+    } catch (Exception e) {
+      ex = e;
+    }
 
-		assertTrue(ex == null && response.getStatus() == StatusType.PUT_SUCCESS);
+		assertTrue(ex == null && response.getStatus() == StatusType.PUT_ERROR);
 	}
 	
 	@Test
@@ -70,7 +70,7 @@ public class KeyValueTest extends TestCase {
 			ex = e;
 		}
 
-		assertTrue(ex == null && response.getStatus() == StatusType.PUT_SUCCESS);
+		assertTrue(ex == null && response.getStatus() == StatusType.INVALID_KEY);
 	}
 	
 	@Test
@@ -101,12 +101,12 @@ public class KeyValueTest extends TestCase {
 			ex = e;
 		}
 
-		assertTrue(ex == null && response.getStatus() == StatusType.PUT_SUCCESS);
+		assertTrue(ex == null && response.getStatus() == StatusType.GET_SUCCESS);
 	}
 	
 	@Test
 	public void testPutKeyWithNewlines() {
-		String key = "key \n with \n newlines";
+		String key = "key \n with\n newline";
 		String value = "some_val";
 		KVMessage response = null;
 		Exception ex = null;
@@ -122,7 +122,7 @@ public class KeyValueTest extends TestCase {
 	
 	@Test
 	public void testGetKeyWithNewlines() {
-		String key = "key \n with \n newlines";
+		String key = "key \n with\n newline";
 		KVMessage response = null;
 		Exception ex = null;
 
@@ -132,13 +132,13 @@ public class KeyValueTest extends TestCase {
 			ex = e;
 		}
 
-		assertTrue(ex == null && response.getStatus() == StatusType.PUT_SUCCESS);
+		assertTrue(ex == null && response.getStatus() == StatusType.GET_SUCCESS);
 	}
 	
 	@Test
 	public void testPutValueWithNewlines() {
-		String key = "key \n with \n newlines";
-		String value = "some_val";
+		String key = "key";
+		String value = "some\nval\nwith newline";
 		KVMessage response = null;
 		Exception ex = null;
 
@@ -153,8 +153,8 @@ public class KeyValueTest extends TestCase {
 	
 	@Test
 	public void testPutKeyAndValueWithNewlines() {
-		String key = "key \n with \n newlines";
-		String value = "value \n with \n newlines";
+		String key = "key\nwith\nnewlines";
+		String value = "value\nwith\nnewlines";
 		KVMessage response = null;
 		Exception ex = null;
 
@@ -197,7 +197,7 @@ public class KeyValueTest extends TestCase {
 		}
 
 		assertNull(ex);
-		assertEquals(KVMessage.StatusType.PUT_ERROR, response.getStatus());
+		assertEquals(KVMessage.StatusType.INVALID_KEY, response.getStatus());
 	}
 	
 	@Test
@@ -212,7 +212,7 @@ public class KeyValueTest extends TestCase {
 			ex = e;
 		}
 		
-		assertTrue(ex == null && response.getStatus() == StatusType.PUT_SUCCESS);
+		assertTrue(ex == null && response.getStatus() == StatusType.GET_SUCCESS);
 	}
 	
 	@Test
@@ -228,6 +228,6 @@ public class KeyValueTest extends TestCase {
 		}
 
 		assertNull(ex);
-		assertEquals(KVMessage.StatusType.PUT_ERROR, response.getStatus());
+		assertEquals(KVMessage.StatusType.INVALID_KEY, response.getStatus());
 	}
 }

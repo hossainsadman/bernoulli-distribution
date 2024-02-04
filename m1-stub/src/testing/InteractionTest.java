@@ -37,7 +37,6 @@ public class InteractionTest extends TestCase {
         } catch (Exception e) {
             ex = e;
         }
-
 		assertTrue(ex == null && response.getStatus() == StatusType.PUT_SUCCESS);
 	}
 	
@@ -104,13 +103,13 @@ public class InteractionTest extends TestCase {
 		KVMessage response = null;
 		Exception ex = null;
 
-			try {
+      try {
 				kvClient.put(key, value);
 				response = kvClient.get(key);
 			} catch (Exception e) {
 				ex = e;
 			}
-		
+
 		assertTrue(ex == null && response.getValue().equals("bar"));
 	}
 

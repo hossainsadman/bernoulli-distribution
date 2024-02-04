@@ -101,15 +101,16 @@ public class ClientConnection implements Runnable {
                 else 
                     res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
             }
-
+        } else if(recvStatus == StatusType.PUT && recvVal == null){
+          res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
         } else if (recvStatus == StatusType.GET && recvKey != null) { // GET
             try {
                 String value = server.getKV(recvKey);
 
                 if (value == null) // tuple not found, send error message to client: GET_ERROR <key>
-                    res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, recvVal);
+                    res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, null);
                 else // tuple found: GET_SUCCESS <key> <value> to client.
-                    res = new BasicKVMessage(StatusType.GET_SUCCESS, recvKey, recvVal);
+                    res = new BasicKVMessage(StatusType.GET_SUCCESS, recvKey, value);
             } catch (Exception e) { // Something is wrong.
                 res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, recvVal);
             }

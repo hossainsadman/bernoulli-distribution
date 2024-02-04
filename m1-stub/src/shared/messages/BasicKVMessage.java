@@ -1,16 +1,17 @@
 package shared.messages;
 
 import java.io.ObjectInputFilter.Status;
+import java.nio.ByteBuffer;
 
-public class BasicKVMessage implements KVMessage{
+public class BasicKVMessage implements KVMessage {
   private static final char LINE_FEED = 0x0A;
-	private static final char RETURN = 0x0D;
+  private static final char RETURN = 0x0D;
 
-	private StatusType status;
+  private StatusType status;
   private String key;
-	private String value;
+  private String value;
 
-	String msg;
+  String msg;
   byte[] msgBytes;
 
   public BasicKVMessage(StatusType status, String key, String value) {
@@ -25,17 +26,17 @@ public class BasicKVMessage implements KVMessage{
       this.msg += " " + this.value;
     this.msg.trim();
 
-    this.msgBytes = toByteArray(this.msg);
+    this.msgBytes = toByteArray(status, key, value);
   }
-  
+
   public BasicKVMessage(byte[] bytes) {
-    this.msgBytes = addCtrChars(bytes);
+    this.msgBytes = bytes;
     this.parseBytes(bytes);
   }
 
   public byte[] getMsgBytes() {
-		return this.msgBytes;
-	}
+    return this.msgBytes;
+  }
 
   public String getKey() {
     return key;
@@ -50,48 +51,78 @@ public class BasicKVMessage implements KVMessage{
   }
 
   private void parseBytes(byte[] bytes) {
-    String receivedMsg = new String(bytes).trim(); 
-    String[] components = receivedMsg.split("\\s+");
+    try {
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        // Extract StatusType (20 bytes)
+        byte[] statusBytes = new byte[20];
+        buffer.get(statusBytes);
+        String statusStr = new String(statusBytes).trim();
+        this.status = StatusType.valueOf(statusStr);
 
-    if (components.length < 1) {
-      throw new IllegalArgumentException("Invalid message format: " + receivedMsg);
-    }
+        // Extract key length and key
+        int keyLength = buffer.getInt();
+        if (keyLength < 0 || keyLength > buffer.remaining()) {
+            throw new IllegalArgumentException("Invalid key length");
+        }
+        byte[] keyBytes = new byte[keyLength];
+        buffer.get(keyBytes);
+        this.key = new String(keyBytes);
 
-    if (components.length > 0) {
-      try {
-        this.status = StatusType.valueOf(components[0]);
-      } catch (IllegalArgumentException e) {
-        this.status = StatusType.INVALID_FORMAT;
-      }
-    }
+        int valueLength = buffer.getInt();
+        value = null;
+        if (valueLength > 0) {
+            byte[] valueBytes = new byte[valueLength];
+            buffer.get(valueBytes);
+            value = new String(valueBytes);
+        }
 
-    if (components.length > 1) {
-      this.key = components[1];
-    }
-
-    if (components.length > 2) {
-      this.value = components[2];
+    } catch (Exception e) {
+        System.err.println("Error parsing bytes: " + e.getMessage());
+        // Handle the error as needed, e.g., throw an exception or set default values.
     }
   }
 
+  
   private byte[] addCtrChars(byte[] bytes) {
-		byte[] ctrBytes = new byte[]{LINE_FEED, RETURN};
-		byte[] tmp = new byte[bytes.length + ctrBytes.length];
-		
-		System.arraycopy(bytes, 0, tmp, 0, bytes.length);
-		System.arraycopy(ctrBytes, 0, tmp, bytes.length, ctrBytes.length);
-		
-		return tmp;
-	}
+    byte[] ctrBytes = new byte[] { LINE_FEED, RETURN };
+    byte[] tmp = new byte[bytes.length + ctrBytes.length];
 
-  private byte[] toByteArray(String s){
-		byte[] bytes = s.getBytes();
-		byte[] ctrBytes = new byte[]{LINE_FEED, RETURN};
-		byte[] tmp = new byte[bytes.length + ctrBytes.length];
-		
-		System.arraycopy(bytes, 0, tmp, 0, bytes.length);
-		System.arraycopy(ctrBytes, 0, tmp, bytes.length, ctrBytes.length);
-		
-		return tmp;		
-	}
+    System.arraycopy(bytes, 0, tmp, 0, bytes.length);
+    System.arraycopy(ctrBytes, 0, tmp, bytes.length, ctrBytes.length);
+
+    return tmp;
+  }
+
+  private byte[] toByteArray(StatusType status, String key, String value) {
+    byte[] statusBytes = String.format("%-20s", status.name()).getBytes();
+
+    byte[] keyBytes = key.getBytes();
+    int keyLength = keyBytes.length;
+
+    // Convert value to bytes
+    byte[] valueBytes = (value != null) ? value.getBytes() : new byte[0];
+    int valueLength = valueBytes.length;
+
+    int totalLength = statusBytes.length + 4 + keyLength + 4 + valueLength;
+
+    ByteBuffer buffer = ByteBuffer.allocate(totalLength);
+
+    // Append StatusType bytes
+    buffer.put(statusBytes);
+
+    // Append key length and key bytes
+    buffer.putInt(keyLength);
+    buffer.put(keyBytes);
+
+    // Append value length and value bytes
+    if (value != null) {
+      buffer.putInt(valueLength);
+      buffer.put(valueBytes);
+    } else {
+      // If value is null, append 0 for length
+      buffer.putInt(0);
+    }
+
+    return addCtrChars(buffer.array());
+  }
 }

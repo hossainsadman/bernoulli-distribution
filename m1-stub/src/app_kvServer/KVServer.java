@@ -136,16 +136,42 @@ public class KVServer implements IKVServer {
 
     @Override
     public boolean inCache(String key) {
-        return cache != null && cache.containsKey(key);
+      return cache != null && cache.containsKey(key);
     }
+
+
+    private static String escape(String s) {
+      return s.replace("\\", "\\\\")
+        .replace("\t", "\\t")
+        .replace("\b", "\\b")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\f", "\\f")
+        .replace("\'", "\\'")
+        .replace("\"", "\\\"")
+        .replace(" ", "\\ "); 
+    }
+
+    public static String unescape(String s) {
+      return s.replace("\\\\", "\\")
+        .replace("\\t", "\t")
+        .replace("\\b", "\b")
+        .replace("\\n", "\n")
+        .replace("\\r", "\r")
+        .replace("\\f", "\f")
+        .replace("\\'", "'")   
+        .replace("\\\"", "\"")
+        .replace("\\ ", " ");
+    }
+
 
     @Override
     public String getKV(String key) throws Exception {
-        if (!inStorage(key) || key.contains(" "))
-            throw new Exception("tuple not found");
-        
-        if (!inCache(key)) {
-            File path = getStorageAddressOfKey(key);
+      if (!inStorage(escape(key)))
+      throw new Exception("tuple not found");
+      
+      if (!inCache(escape(key))) {
+          File path = getStorageAddressOfKey(escape(key));
             StringBuilder contentBuilder = new StringBuilder();
             try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
                 String line;
@@ -156,7 +182,7 @@ public class KVServer implements IKVServer {
             return contentBuilder.toString().trim();
         }
 
-        String value = cache.get(key);
+        String value = cache.get(escape(key));
         if (value == null)
             throw new Exception("tuple not found");
             
@@ -165,26 +191,23 @@ public class KVServer implements IKVServer {
 
     @Override
     public synchronized StatusType putKV(String key, String value) throws Exception {
-        File file = new File(dirPath + File.separator + key);
-
-        if (key.contains(" "))
-            throw new Exception("tuple not found");
+        File file = new File(dirPath + File.separator + escape(key));
 
         if (value.equals("null")) {
-            File fileToDel = new File(dirPath, key);
+            File fileToDel = new File(dirPath, escape(key));
             if (!fileToDel.exists() || fileToDel.isDirectory() || !fileToDel.delete())
                 throw new Exception("unable to delete tuple");
 
-            cache.remove(key);
+            cache.remove(escape(key));
 
             return StatusType.DELETE_SUCCESS;
         }
 
-        if (inStorage(key)) { // Key is already in storage (i.e. UPDATE)
+        if (inStorage(escape(key))) { // Key is already in storage (i.e. UPDATE)
             try (FileWriter writer = new FileWriter(file, false)) { // overwrite
                 writer.write(value);
                 if (this.cache != null)
-                    cache.put(key, value);
+                    cache.put(escape(key), value);
             } 
 
             return StatusType.PUT_UPDATE;
@@ -192,9 +215,9 @@ public class KVServer implements IKVServer {
         
         // Key is not in storage (i.e. PUT)
         try (FileWriter writer = new FileWriter(file)){ 
-            writer.write(value);
+          writer.write(value);
             if (this.cache != null)
-                cache.put(key, value);
+                cache.put(escape(key), value);
         }
         return StatusType.PUT_SUCCESS;
     }

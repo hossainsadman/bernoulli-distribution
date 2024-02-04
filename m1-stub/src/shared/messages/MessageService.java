@@ -50,7 +50,7 @@ public class MessageService {
 		byte read = (byte) input.read();	
 		boolean reading = true;
 
-		while(/*read != 13  && */ read != 10 && read !=-1 && reading) {/* CR, LF, error */
+		while(read != 13  && reading) {/* CR, LF, error */
 			/* if buffer filled, copy to msg array */
 			if(index == BUFFER_SIZE) {
 				if(msgBytes == null){
@@ -82,12 +82,14 @@ public class MessageService {
 		}
 
 		if(msgBytes == null){
-			tmp = new byte[index];
+			tmp = new byte[index + 1];
 			System.arraycopy(bufferBytes, 0, tmp, 0, index);
+      tmp[index] = 13;
 		} else {
-			tmp = new byte[msgBytes.length + index];
+			tmp = new byte[msgBytes.length + index + 1];
 			System.arraycopy(msgBytes, 0, tmp, 0, msgBytes.length);
-			System.arraycopy(bufferBytes, 0, tmp, msgBytes.length, index);
+      System.arraycopy(bufferBytes, 0, tmp, msgBytes.length, index);
+      tmp[msgBytes.length + index] = 13;
 		}
 
 		msgBytes = tmp;
