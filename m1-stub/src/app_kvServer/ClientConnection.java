@@ -83,7 +83,7 @@ public class ClientConnection implements Runnable {
         String recvKey = recv.getKey();
         String recvVal = recv.getValue();
 
-        if (recvStatus == StatusType.PUT && recvKey != null) { // PUT
+        if (recvStatus == StatusType.PUT && recvKey != null && recvVal != null) { // PUT
             
             /* 
                 tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS <key> <value>
@@ -93,10 +93,7 @@ public class ClientConnection implements Runnable {
 
             try {
                 StatusType putStatus;
-                if (recvVal == null)
-                    putStatus = server.putKV(recvKey, "");
-                else 
-                    putStatus = server.putKV(recvKey, recvVal);
+                putStatus = server.putKV(recvKey, recvVal);
                 res = new BasicKVMessage(putStatus, recvKey, recvVal);
             } catch (Exception e) {
                 if (recvVal.equals("null"))
@@ -105,7 +102,7 @@ public class ClientConnection implements Runnable {
                     res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
             }
 
-        } else if (recvStatus == StatusType.GET && recvKey != null && recvVal == null) { // GET
+        } else if (recvStatus == StatusType.GET && recvKey != null) { // GET
             try {
                 String value = server.getKV(recvKey);
 

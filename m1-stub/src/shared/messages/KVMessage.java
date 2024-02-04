@@ -12,7 +12,7 @@ public interface KVMessage {
 		PUT_ERROR, 		/* Put - request not successful */
 		DELETE_SUCCESS, /* Delete - request successful */
         DELETE_ERROR, /* Delete - request successful */
-        FAILED, /* Failed - Invalid message format */
+        FAILED, /* Failed - Server Response that something is wrong */
         INVALID_KEY, /* Message size exceeded for key */
         INVALID_VALUE, /* Message size exceeded for value */
         INVALID_FORMAT /* Message format unknown */

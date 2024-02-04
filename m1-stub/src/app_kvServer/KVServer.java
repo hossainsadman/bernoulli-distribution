@@ -141,7 +141,7 @@ public class KVServer implements IKVServer {
 
     @Override
     public String getKV(String key) throws Exception {
-        if (!inStorage(key))
+        if (!inStorage(key) || key.contains(" "))
             throw new Exception("tuple not found");
         
         if (!inCache(key)) {
@@ -166,6 +166,9 @@ public class KVServer implements IKVServer {
     @Override
     public synchronized StatusType putKV(String key, String value) throws Exception {
         File file = new File(dirPath + File.separator + key);
+
+        if (key.contains(" "))
+            throw new Exception("tuple not found");
 
         if (value.equals("null")) {
             File fileToDel = new File(dirPath, key);
