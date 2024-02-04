@@ -36,7 +36,9 @@ public class KVStore implements KVCommInterface {
 	}
 
 	@Override
-  public KVMessage put(String key, String value) throws Exception {
+    public KVMessage put(String key, String value) throws Exception {
+        key = key.replace(' ', '_');
+        value = value.replace(' ', '_');
     BasicKVMessage invalidParmetersError = this.validateKeyValuePair(key, value);
     if (invalidParmetersError != null)
       return invalidParmetersError;
@@ -48,6 +50,7 @@ public class KVStore implements KVCommInterface {
 
 	@Override
   public BasicKVMessage get(String key) throws Exception {
+    key = key.replace(' ', '_');
     BasicKVMessage invalidParmetersError = this.validateKeyValuePair(key, null);
     if (invalidParmetersError != null)
       return invalidParmetersError;
