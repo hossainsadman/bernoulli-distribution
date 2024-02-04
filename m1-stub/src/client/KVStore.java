@@ -48,7 +48,12 @@ public class KVStore implements KVCommInterface {
         this.communicationService.sendMessage(message);
 
         BasicKVMessage recv = this.communicationService.receiveMessage();
-        recv.changeKey(recv.getKey().replace("\\n", "\n"));
+        
+        recv.changeKey(recv.getKey().replace("\\n", "\n")); // Handle edge cases
+
+        if (recv.getValue() == null)
+            recv.changeValue("");
+
         return recv;
     }
 
@@ -64,6 +69,7 @@ public class KVStore implements KVCommInterface {
         this.communicationService.sendMessage(message);
 
         BasicKVMessage recv = this.communicationService.receiveMessage();
+
         recv.changeKey(recv.getKey().replace("\\n", "\n"));
         return recv;
     }

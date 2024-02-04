@@ -84,8 +84,6 @@ public class AdditionalTest extends TestCase {
             ex = e;
         }
 
-        System.out.println(resUpdate.getKey() + ", " + resUpdate.getValue() + ", " + resUpdate.getStatus());
-        System.out.println(resDelete.getKey() + ", " + resDelete.getValue() + ", " + resDelete.getStatus());
         assertTrue(ex == null && resUpdate.getStatus() == StatusType.PUT_UPDATE
                 && resDelete.getStatus() == StatusType.DELETE_SUCCESS
                 && resUpdate.getKey().equals(key)
@@ -94,7 +92,7 @@ public class AdditionalTest extends TestCase {
     }
 
     public void testUpdateWithInvalidValue() {
-        String key = "foo";
+        String key = "testUpdateInvalid";
         String initialValue = "bar";
         String invalidValue = "";
 
@@ -109,19 +107,16 @@ public class AdditionalTest extends TestCase {
             ex = e;
         }
 
-        System.out.println(resPut.getKey() + ", " + resPut.getValue() + ", " + resPut.getStatus());
-        System.out.println(resInvalid.getKey() + ", " + resInvalid.getValue() + ", " + resInvalid.getStatus());
         assertTrue(ex == null && resPut.getStatus() == StatusType.PUT_SUCCESS
                 && resInvalid.getStatus() == StatusType.PUT_ERROR
                 && resPut.getKey().equals(key)
                 && resPut.getValue().equals(initialValue)
                 && resInvalid.getKey().equals(key)
-                && resInvalid.getValue().equals(invalidValue)); // resInvalid.getValue() should be an empty string, not
-                                                                // null
+                && resInvalid.getValue().equals(invalidValue)); // resInvalid.getValue() should be an empty string, not null
     }
 
     public void testAccessDeletedValue() {
-        String key = "foo";
+        String key = "accessDeleted";
         String value = "bar";
 
         KVMessage response = null;
@@ -135,7 +130,6 @@ public class AdditionalTest extends TestCase {
             ex = e;
         }
 
-        System.out.println(response.getKey() + ", " + response.getValue() + ", " + response.getStatus());
         assertTrue(ex == null && response.getStatus() == StatusType.GET_ERROR
                 && response.getKey().equals(key));
     }

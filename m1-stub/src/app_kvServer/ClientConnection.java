@@ -103,8 +103,8 @@ public class ClientConnection implements Runnable {
                 else
                     res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
             }
-        } else if(recvStatus == StatusType.PUT && recvVal == null){
-          res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
+        } else if (recvStatus == StatusType.PUT && recvVal == null) {
+            res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
         } else if (recvStatus == StatusType.GET && recvKey != null) { // GET
             try {
                 String value = server.getKV(recvKey);

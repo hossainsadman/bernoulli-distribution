@@ -47,7 +47,11 @@ public class BasicKVMessage implements KVMessage {
   }
 
   public void changeKey(String key) {
-    this.key = key;
+      this.key = key;
+  }
+  
+  public void changeValue(String value) {
+    this.value = value;
   }
 
   public StatusType getStatus() {
