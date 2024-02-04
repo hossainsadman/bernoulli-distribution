@@ -51,7 +51,6 @@ public class KVServer implements IKVServer {
     private final String dirPath;
 
     public KVServer(int port, int cacheSize, String strategy) {
-        // TODO Auto-generated method stub
         if (port < 1024 || port > 65535)
             throw new IllegalArgumentException("port is out of range.");
         if (cacheSize < 0)
@@ -91,13 +90,11 @@ public class KVServer implements IKVServer {
 
     @Override
     public int getPort() {
-        // TODO Auto-generated method stub
         return port; // Return port
     }
 
     @Override
     public String getHostname() {
-        // TODO Auto-generated method stub
         try {
             InetAddress inetAddress = InetAddress.getLocalHost();
             return inetAddress.getHostName(); // Return hostname
@@ -109,13 +106,11 @@ public class KVServer implements IKVServer {
 
     @Override
     public CacheStrategy getCacheStrategy() {
-        // TODO Auto-generated method stub
-        return strategy;
+        return strategy; // Return strategy
     }
 
     @Override
     public int getCacheSize() {
-        // TODO Auto-generated method stub
         return cacheSize; // Return cache size
     }
 
@@ -126,20 +121,17 @@ public class KVServer implements IKVServer {
 
     @Override
     public boolean inStorage(String key) {
-        // TODO Auto-generated method stub
         File file = getStorageAddressOfKey(key);
         return file.exists();
     }
 
     @Override
     public boolean inCache(String key) {
-        // TODO Auto-generated method stub
         return cache != null && cache.containsKey(key);
     }
 
     @Override
     public String getKV(String key) throws Exception {
-        // TODO Auto-generated method stub
         if (!inStorage(key))
             throw new Exception("tuple not found");
         
@@ -164,8 +156,6 @@ public class KVServer implements IKVServer {
 
     @Override
     public synchronized StatusType putKV(String key, String value) throws Exception {
-        // TODO Auto-generated method stub
-
         File file = new File(dirPath + File.separator + key);
 
         if (value.equals("null")) {
@@ -197,7 +187,9 @@ public class KVServer implements IKVServer {
         return StatusType.PUT_SUCCESS;
     }
 
-    // Helper Function to Monitor the State of Current KVs in Storage and Cache
+    /*
+     * Helper Function to Monitor the State of Current KVs in Storage and Cache
+     */ 
     public void printStorageAndCache() {
         File dir = new File(dirPath);
         File[] db = dir.listFiles();
@@ -230,7 +222,6 @@ public class KVServer implements IKVServer {
 
     @Override
     public void clearCache() {
-        // TODO Auto-generated method stub
         if (cache == null)
             return;
 
@@ -239,7 +230,6 @@ public class KVServer implements IKVServer {
 
     @Override
     public void clearStorage() {
-        // TODO Auto-generated method stub
         File dir = new File(dirPath);
         for (File file : dir.listFiles()) {
             if (file.isDirectory()) {
@@ -252,7 +242,6 @@ public class KVServer implements IKVServer {
     
     @Override
     public void run() {
-        // TODO Auto-generated method stub
         running = true;
         try {
             serverSocket = new ServerSocket(port);
@@ -284,7 +273,6 @@ public class KVServer implements IKVServer {
 
     @Override
     public void kill() {
-        // TODO Auto-generated method stub
         running = false;
         try {
             serverSocket.close();
@@ -296,7 +284,6 @@ public class KVServer implements IKVServer {
 
     @Override
     public void close() {
-        // TODO Auto-generated method stub
         for (ClientConnection conn: connections) 
             conn.close();
         clearCache();
