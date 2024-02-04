@@ -60,11 +60,36 @@ public class AdditionalTest extends TestCase {
         } catch (Exception e) {
             ex = e;
         }
-        System.out.println(resPut.getKey());
-        System.out.println(resPut.getStatus());
-        assertTrue(ex == null && resPut.getStatus() == StatusType.PUT_SUCCESS 
+
+        assertTrue(ex == null && resPut.getStatus() == StatusType.PUT_SUCCESS
                 && resGet.getStatus() == StatusType.GET_SUCCESS
                 && resGet.getKey().equals(key)
                 && resGet.getValue().equals(value));
+    }
+    
+    public void testUpdateAndDelete() {
+        String key = "updateAndDeleteValue";
+        String initialValue = "this is first";
+        String updatedValue = "this is second";
+
+        KVMessage resUpdate = null;
+        KVMessage resDelete = null;
+        Exception ex = null;
+
+        try {
+            kvClient.put(key, initialValue);
+            resUpdate = kvClient.put(key, updatedValue);
+            resDelete = kvClient.put(key, "null");
+        } catch (Exception e) {
+            ex = e;
+        }
+        
+        System.out.println(resUpdate.getKey() + ", " + resUpdate.getValue() + ", "  + resUpdate.getStatus());
+        System.out.println(resDelete.getKey() + ", " + resDelete.getValue() + ", "  + resDelete.getStatus());
+        assertTrue(ex == null && resUpdate.getStatus() == StatusType.PUT_SUCCESS 
+                && resDelete.getStatus() == StatusType.DELETE_SUCCESS
+                && resUpdate.getKey().equals(key)
+                && resUpdate.getValue().equals(updatedValue)
+                && resDelete.getKey().equals(key));
     }
 }
