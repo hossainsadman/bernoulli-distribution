@@ -81,8 +81,10 @@ public class BasicKVMessage implements KVMessage {
         }
 
     } catch (Exception e) {
-        System.err.println("Error parsing bytes: " + e.getMessage());
-        // Handle the error as needed, e.g., throw an exception or set default values.
+      // Handle the error as needed
+      this.status = StatusType.FAILED;
+      this.key = "Message format is unknown";
+      this.value = null;
     }
   }
 
