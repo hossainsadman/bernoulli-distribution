@@ -58,13 +58,11 @@ public class ClientConnection implements Runnable {
                     BasicKVMessage recv = comm.receiveMessage();
                     processMessage(recv);
                 } catch (IOException ioe){
-                    logger.error("Error! Connection lost!");
                     isOpen = false;
                 }
             }
         } catch (IOException ioe){
-            logger.error("Error! Connection could not be established!", ioe);
-
+            logger.error("Connection could not be established.", ioe);
         } finally {
             close();
         }

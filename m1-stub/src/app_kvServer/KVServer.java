@@ -277,7 +277,7 @@ public class KVServer implements IKVServer {
             }
         }
         logger.info("Server is stopped.");
-        kill();
+        close();
     }
 
     @Override
