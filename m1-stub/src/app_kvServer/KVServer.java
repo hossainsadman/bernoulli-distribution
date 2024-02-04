@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.net.ServerSocket;
 import java.net.Socket;
+import logger.LogSetup;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger; // import Logger
 
 import app_kvServer.Caches.LRUCache;
@@ -327,10 +329,9 @@ public class KVServer implements IKVServer {
     }
 
     public static void main(String[] args) {
-        // Testing LRU
-        System.out.println("LRU");
         KVServer server = new KVServer(20010, 0, null);
         try {
+            new LogSetup("logs/server.log", Level.ALL);
             server.clearStorage();
             server.run();
         } catch (Exception e) {
