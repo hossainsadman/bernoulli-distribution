@@ -108,14 +108,34 @@ public class AdditionalTest extends TestCase {
         } catch (Exception e) {
             ex = e;
         }
-        
-        System.out.println(resPut.getKey() + ", " + resPut.getValue() + ", "  + resPut.getStatus());
-        System.out.println(resInvalid.getKey() + ", " + resInvalid.getValue() + ", "  + resInvalid.getStatus());
-        assertTrue(ex == null && resPut.getStatus() == StatusType.PUT_SUCCESS 
+
+        System.out.println(resPut.getKey() + ", " + resPut.getValue() + ", " + resPut.getStatus());
+        System.out.println(resInvalid.getKey() + ", " + resInvalid.getValue() + ", " + resInvalid.getStatus());
+        assertTrue(ex == null && resPut.getStatus() == StatusType.PUT_SUCCESS
                 && resInvalid.getStatus() == StatusType.PUT_ERROR
                 && resPut.getKey().equals(key)
                 && resPut.getValue().equals(initialValue)
                 && resInvalid.getKey().equals(key)
                 && resInvalid.getValue().equals(invalidValue)); // resInvalid.getValue() should be an empty string, not null
+    }
+    
+    public void testAccessDeletedValue() {
+        String key = "foo";
+        String value = "bar";
+
+        KVMessage response = null;
+        Exception ex = null;
+
+        try {
+            kvClient.put(key, value);
+            kvClient.put(key, "null");
+            response = kvClient.get(key);
+        } catch (Exception e) {
+            ex = e;
+        }
+        
+        System.out.println(response.getKey() + ", " + response.getValue() + ", "  + response.getStatus());
+        assertTrue(ex == null && response.getStatus() == StatusType.GET_ERROR
+                && response.getKey().equals(key)); 
     }
 }
