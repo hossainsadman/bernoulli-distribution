@@ -83,13 +83,39 @@ public class AdditionalTest extends TestCase {
         } catch (Exception e) {
             ex = e;
         }
-        
-        System.out.println(resUpdate.getKey() + ", " + resUpdate.getValue() + ", "  + resUpdate.getStatus());
-        System.out.println(resDelete.getKey() + ", " + resDelete.getValue() + ", "  + resDelete.getStatus());
-        assertTrue(ex == null && resUpdate.getStatus() == StatusType.PUT_SUCCESS 
+
+        System.out.println(resUpdate.getKey() + ", " + resUpdate.getValue() + ", " + resUpdate.getStatus());
+        System.out.println(resDelete.getKey() + ", " + resDelete.getValue() + ", " + resDelete.getStatus());
+        assertTrue(ex == null && resUpdate.getStatus() == StatusType.PUT_SUCCESS
                 && resDelete.getStatus() == StatusType.DELETE_SUCCESS
                 && resUpdate.getKey().equals(key)
                 && resUpdate.getValue().equals(updatedValue)
                 && resDelete.getKey().equals(key));
+    }
+    
+    public void testUpdateWithInvalidValue() {
+        String key = "foo";
+        String initialValue = "bar";
+        String invalidValue = "";
+
+        KVMessage resPut = null;
+        KVMessage resInvalid = null;
+        Exception ex = null;
+
+        try {
+            resPut = kvClient.put(key, initialValue);
+            resInvalid = kvClient.put(key, invalidValue);
+        } catch (Exception e) {
+            ex = e;
+        }
+        
+        System.out.println(resPut.getKey() + ", " + resPut.getValue() + ", "  + resPut.getStatus());
+        System.out.println(resInvalid.getKey() + ", " + resInvalid.getValue() + ", "  + resInvalid.getStatus());
+        assertTrue(ex == null && resPut.getStatus() == StatusType.PUT_SUCCESS 
+                && resInvalid.getStatus() == StatusType.PUT_ERROR
+                && resPut.getKey().equals(key)
+                && resPut.getValue().equals(initialValue)
+                && resInvalid.getKey().equals(key)
+                && resInvalid.getValue().equals(invalidValue)); // resInvalid.getValue() should be an empty string, not null
     }
 }
