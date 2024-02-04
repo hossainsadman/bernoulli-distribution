@@ -28,6 +28,7 @@ public class AllTests {
 		clientSuite.addTestSuite(InteractionTest.class); 
 		clientSuite.addTestSuite(AdditionalTest.class); 
 		clientSuite.addTestSuite(KeyValueTest.class); 
+		clientSuite.addTestSuite(CacheTest.class); 
 		return clientSuite;
 	}
 	

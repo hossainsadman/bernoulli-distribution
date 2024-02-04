@@ -143,7 +143,7 @@ public class Caches {
             if (!containsKey(key)) return null;
                 
             incrementFrequency(key);
-            printCurrState();
+            //printCurrState();
             return kvs.get(key);
         }
 
@@ -177,7 +177,7 @@ public class Caches {
             frequencyToKeys.get(1).add(key);
             minFrequency = 1;
 
-            printCurrState();
+            //printCurrState();
         }
 
         @Override

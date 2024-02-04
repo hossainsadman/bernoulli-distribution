@@ -96,9 +96,11 @@ public class ClientConnection implements Runnable {
 
         if (recv.getStatus() == StatusType.PUT && recvKey != null && recvVal != null) { // PUT
             
-            // tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS <key> <value>
-            // tuple successfully updated, send acknowledgement to client: PUT_UPDATE <key> <value>
-            // unable to insert tuple, send error message to client: PUT_ERROR <key> <value>
+            /* 
+                tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS <key> <value>
+                tuple successfully updated, send acknowledgement to client: PUT_UPDATE <key> <value>
+                unable to insert tuple, send error message to client: PUT_ERROR <key> <value> 
+            */
 
             try {
                 StatusType putStatus = server.putKV(recvKey, recvVal);

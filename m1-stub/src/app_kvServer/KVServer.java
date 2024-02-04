@@ -141,8 +141,8 @@ public class KVServer implements IKVServer {
     public String getKV(String key) throws Exception {
         // TODO Auto-generated method stub
         if (!inStorage(key))
-            return null;
-
+            throw new Exception("tuple not found");
+        
         if (!inCache(key)) {
             File path = getStorageAddressOfKey(key);
             StringBuilder contentBuilder = new StringBuilder();
@@ -167,6 +167,16 @@ public class KVServer implements IKVServer {
         // TODO Auto-generated method stub
 
         File file = new File(dirPath + File.separator + key);
+
+        if (value.equals("null")) {
+            File fileToDel = new File(dirPath, key);
+            if (!fileToDel.exists() || fileToDel.isDirectory() || !fileToDel.delete())
+                throw new Exception("unable to delete tuple");
+
+            cache.remove(key);
+
+            return StatusType.PUT_UPDATE;
+        }
 
         if (inStorage(key)) { // Key is already in storage (i.e. UPDATE)
             try (FileWriter writer = new FileWriter(file, false)) { // overwrite
