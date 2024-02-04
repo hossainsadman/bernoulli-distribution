@@ -84,12 +84,14 @@ public class ClientConnection implements Runnable {
         String recvVal = recv.getValue();
 
         if (recvStatus == StatusType.PUT && recvKey != null && recvVal != null) { // PUT
-            
-            /* 
-                tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS <key> <value>
-                tuple successfully updated, send acknowledgement to client: PUT_UPDATE <key> <value>
-                unable to insert tuple, send error message to client: PUT_ERROR <key> <value> 
-            */
+
+            /*
+             * tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS
+             * <key> <value>
+             * tuple successfully updated, send acknowledgement to client: PUT_UPDATE <key>
+             * <value>
+             * unable to insert tuple, send error message to client: PUT_ERROR <key> <value>
+             */
 
             try {
                 StatusType putStatus;
@@ -98,7 +100,7 @@ public class ClientConnection implements Runnable {
             } catch (Exception e) {
                 if (recvVal.equals("null"))
                     res = new BasicKVMessage(StatusType.DELETE_ERROR, recvKey, recvVal);
-                else 
+                else
                     res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
             }
         } else if(recvStatus == StatusType.PUT && recvVal == null){
@@ -112,14 +114,15 @@ public class ClientConnection implements Runnable {
                 else // tuple found: GET_SUCCESS <key> <value> to client.
                     res = new BasicKVMessage(StatusType.GET_SUCCESS, recvKey, value);
             } catch (Exception e) { // Something is wrong.
-                res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, recvVal);
+                res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, null);
             }
 
-        } else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE){  // message size exceeded
+        } else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { // message size
+                                                                                                     // exceeded
             res = new BasicKVMessage(StatusType.FAILED, recvKey, null);
-        } else {  // Message format unknown
+        } else { // Message format unknown
             res = new BasicKVMessage(StatusType.FAILED, "Message format is unknown.", null);
-        } 
+        }
 
         comm.sendMessage(res);
     }

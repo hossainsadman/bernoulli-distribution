@@ -38,24 +38,34 @@ public class KVStore implements KVCommInterface {
 
     @Override
     public KVMessage put(String key, String value) throws Exception {
+        key = key.replace("\n", "\\n");
+
         BasicKVMessage invalidParmetersError = this.validateKeyValuePair(key, value);
         if (invalidParmetersError != null)
             return invalidParmetersError;
 
         BasicKVMessage message = new BasicKVMessage(StatusType.PUT, key, value);
         this.communicationService.sendMessage(message);
-        return this.communicationService.receiveMessage();
+
+        BasicKVMessage recv = this.communicationService.receiveMessage();
+        recv.changeKey(recv.getKey().replace("\\n", "\n"));
+        return recv;
     }
 
     @Override
     public BasicKVMessage get(String key) throws Exception {
+        key = key.replace("\n", "\\n");
+        
         BasicKVMessage invalidParmetersError = this.validateKeyValuePair(key, null);
         if (invalidParmetersError != null)
             return invalidParmetersError;
 
         BasicKVMessage message = new BasicKVMessage(StatusType.GET, key, null);
         this.communicationService.sendMessage(message);
-        return this.communicationService.receiveMessage();
+
+        BasicKVMessage recv = this.communicationService.receiveMessage();
+        recv.changeKey(recv.getKey().replace("\\n", "\n"));
+        return recv;
     }
 
     private BasicKVMessage validateKeyValuePair(String key, String value) {
