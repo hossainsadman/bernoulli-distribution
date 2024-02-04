@@ -167,4 +167,31 @@ public class AdditionalTest extends TestCase {
                     && responses[i].getValue().equals("bar" + i));
         }
     }
+
+    public void testDeleteMultipleValues() {
+        KVMessage[] responses = new KVMessage[10];
+        Exception ex = null;
+
+        try {
+            for (int i = 0; i < responses.length; ++i) {
+                String key = "foo" + i;
+                String value = "bar" + i;
+                kvClient.put(key, value);
+            }
+
+            for (int i = 0; i < responses.length; ++i) {
+                responses[i] = kvClient.put("foo" + i, "null");
+            }
+
+        } catch (Exception e) {
+            ex = e;
+        }
+
+        assertTrue(ex == null);
+
+        for (int i = 0; i < responses.length; ++i) {
+            assertTrue(responses[i].getStatus() == StatusType.DELETE_SUCCESS
+                    && responses[i].getKey().equals("foo" + i));
+        }
+    }
 }
