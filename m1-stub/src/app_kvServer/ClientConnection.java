@@ -113,7 +113,7 @@ public class ClientConnection implements Runnable {
                 else // tuple found: GET_SUCCESS <key> <value> to client.
                     res = new BasicKVMessage(StatusType.GET_SUCCESS, recvKey, value);
             } catch (Exception e) { // Something is wrong.
-                res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, recvVal);
+                res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, null);
             }
 
         } else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { // message size
