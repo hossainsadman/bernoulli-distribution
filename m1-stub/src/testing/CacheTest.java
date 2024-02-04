@@ -59,7 +59,7 @@ public class CacheTest extends TestCase {
 	public void testLFUCache() {
 		Exception ex = null;
 		
-        KVServer LFUServer = new KVServer(20010, 3, "LFU");
+        KVServer LFUServer = new KVServer(20011, 3, "LFU");
         try {
             LFUServer.clearStorage();
             LFUServer.putKV("1", "1");
@@ -89,7 +89,7 @@ public class CacheTest extends TestCase {
 	public void testFIFOCache() {
 		Exception ex = null;
 		
-        KVServer FIFOServer = new KVServer(20010, 3, "FIFO");
+        KVServer FIFOServer = new KVServer(20012, 3, "FIFO");
         try {
             FIFOServer.clearStorage();
             FIFOServer.putKV("1", "1");

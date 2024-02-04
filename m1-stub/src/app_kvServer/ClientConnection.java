@@ -47,25 +47,15 @@ public class ClientConnection implements Runnable {
      * Loops until the connection is closed or aborted by the client.
      */
     public void run() {
-        try {
-            comm.sendMessage(new BasicKVMessage(StatusType.SUCCESS,
-                    "Connection to MSRG Echo server established: "
-                            + clientSocket.getLocalAddress() + " / "
-                            + clientSocket.getLocalPort(), null));
-
-            while (isOpen){
-                try {
-                    BasicKVMessage recv = comm.receiveMessage();
-                    processMessage(recv);
-                } catch (IOException ioe){
-                    isOpen = false;
-                }
+        while (isOpen){
+            try {
+                BasicKVMessage recv = comm.receiveMessage();
+                processMessage(recv);
+            } catch (IOException ioe){
+                isOpen = false;
             }
-        } catch (IOException ioe){
-            logger.error("Connection could not be established.", ioe);
-        } finally {
-            close();
         }
+        close();
     }
 
     /**
@@ -104,7 +94,10 @@ public class ClientConnection implements Runnable {
                 StatusType putStatus = server.putKV(recvKey, recvVal);
                 res = new BasicKVMessage(putStatus, recvKey, recvVal);
             } catch (Exception e) {
-                res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
+                if (recvVal.equals("null"))
+                    res = new BasicKVMessage(StatusType.DELETE_ERROR, recvKey, recvVal);
+                else 
+                    res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
             }
 
         } else if (recv.getStatus() == StatusType.GET && recvKey != null && recvVal == null) { // GET
@@ -120,7 +113,7 @@ public class ClientConnection implements Runnable {
             }
 
         } else { // KVMessage response = FAILED <error description>
-            // MEssage format unknown, message size exceeded
+            // Message format unknown, message size exceeded
             res = new BasicKVMessage(StatusType.FAILED, "Invalid message", null);
         }
 

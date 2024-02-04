@@ -34,9 +34,9 @@ public class InteractionTest extends TestCase {
 
 		try {
 			response = kvClient.put(key, value);
-		} catch (Exception e) {
-			ex = e;
-		}
+        } catch (Exception e) {
+            ex = e;
+        }
 
 		assertTrue(ex == null && response.getStatus() == StatusType.PUT_SUCCESS);
 	}

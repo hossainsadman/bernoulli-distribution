@@ -174,7 +174,7 @@ public class KVServer implements IKVServer {
 
             cache.remove(key);
 
-            return StatusType.PUT_UPDATE;
+            return StatusType.DELETE_SUCCESS;
         }
 
         if (inStorage(key)) { // Key is already in storage (i.e. UPDATE)
