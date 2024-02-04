@@ -36,17 +36,8 @@ public class KVStore implements KVCommInterface {
         this.communicationService.disconnect();
     }
 
-    private String handleInvalidKey(String key){
-        key = key.replace(' ', '_');
-        key = key.replace("\n", "\\n");
-        if (key.equals(""))
-            key = "_";
-        return key;
-    }
-
     @Override
     public KVMessage put(String key, String value) throws Exception {
-        key = handleInvalidKey(key);
         BasicKVMessage invalidParmetersError = this.validateKeyValuePair(key, value);
         if (invalidParmetersError != null)
             return invalidParmetersError;
@@ -58,7 +49,6 @@ public class KVStore implements KVCommInterface {
 
     @Override
     public BasicKVMessage get(String key) throws Exception {
-        key = handleInvalidKey(key);
         BasicKVMessage invalidParmetersError = this.validateKeyValuePair(key, null);
         if (invalidParmetersError != null)
             return invalidParmetersError;
@@ -70,11 +60,11 @@ public class KVStore implements KVCommInterface {
 
     private BasicKVMessage validateKeyValuePair(String key, String value) {
         if (key.length() > MAX_KEY_BYTES || key.isEmpty())
-            return new BasicKVMessage(StatusType.PUT_ERROR, "Key must be non-empty and less than or equal to 20 bytes",
+            return new BasicKVMessage(StatusType.INVALID_KEY, "Key must be non-empty and less than or equal to 20 bytes",
                     null);
 
         if (value != null && value.length() > MAX_VALUE_BYTES)
-            return new BasicKVMessage(StatusType.PUT_ERROR, "Value must be less than or equal to 120 kilobytes", null);
+            return new BasicKVMessage(StatusType.INVALID_VALUE, "Value must be less than or equal to 120 kilobytes", null);
 
         return null;
     }

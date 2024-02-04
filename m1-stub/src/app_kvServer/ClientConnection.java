@@ -47,11 +47,11 @@ public class ClientConnection implements Runnable {
      * Loops until the connection is closed or aborted by the client.
      */
     public void run() {
-        while (isOpen){
+        while (isOpen) {
             try {
                 BasicKVMessage recv = comm.receiveMessage();
                 processMessage(recv);
-            } catch (IOException ioe){
+            } catch (IOException ioe) {
                 isOpen = false;
             }
         }
@@ -73,16 +73,17 @@ public class ClientConnection implements Runnable {
             logger.error("Error! closing connection", e);
         }
     }
-    
+
     /**
      * Processes received messages, and send it back to the client.
      */
     private void processMessage(BasicKVMessage recv) throws IOException {
         BasicKVMessage res;
+        String recvStatus = recv.getStatus();
         String recvKey = recv.getKey();
         String recvVal = recv.getValue();
 
-        if (recv.getStatus() == StatusType.PUT && recvKey != null) { // PUT
+        if (recvStatus == StatusType.PUT && recvKey != null) { // PUT
             
             /* 
                 tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS <key> <value>
@@ -104,7 +105,7 @@ public class ClientConnection implements Runnable {
                     res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
             }
 
-        } else if (recv.getStatus() == StatusType.GET && recvKey != null && recvVal == null) { // GET
+        } else if (recvStatus == StatusType.GET && recvKey != null && recvVal == null) { // GET
             try {
                 String value = server.getKV(recvKey);
 
@@ -116,10 +117,11 @@ public class ClientConnection implements Runnable {
                 res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, recvVal);
             }
 
-        } else { // KVMessage response = FAILED <error description>
-            // Message format unknown, message size exceeded
-            res = new BasicKVMessage(StatusType.FAILED, "Invalid message", null);
-        }
+        } else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE){  // message size exceeded
+            res = new BasicKVMessage(StatusType.FAILED, recvKey, null);
+        } else {  // Message format unknown
+            res = new BasicKVMessage(StatusType.FAILED, "Message format is unknown.", null);
+        } 
 
         comm.sendMessage(res);
     }
