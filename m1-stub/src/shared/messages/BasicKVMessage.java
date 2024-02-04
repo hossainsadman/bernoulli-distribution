@@ -61,7 +61,7 @@ public class BasicKVMessage implements KVMessage{
       try {
         this.status = StatusType.valueOf(components[0]);
       } catch (IllegalArgumentException e) {
-        this.status = StatusType.INVALID;
+        this.status = StatusType.INVALID_FORMAT;
       }
     }
 
