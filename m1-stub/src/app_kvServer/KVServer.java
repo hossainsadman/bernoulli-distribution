@@ -19,6 +19,7 @@ import java.net.Socket;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger; // import Logger
+import org.apache.commons.cli.*;
 
 import app_kvServer.Caches.LRUCache;
 import app_kvServer.ClientConnection;
@@ -86,8 +87,69 @@ public class KVServer implements IKVServer {
 
         dirPath = System.getProperty("user.dir") + File.separator + "db";
         File dir = new File(dirPath);
-        if (!dir.mkdir())
-            new Exception("unable to create a directory.");
+        if (!dir.exists()) {
+            try {
+                if (!dir.mkdir()) {
+                    throw new Exception("Unable to create a directory.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        Thread serverThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                KVServer.this.run();
+            }
+        });
+
+        serverThread.start(); // Start the thread
+    }
+
+    public KVServer(int port, int cacheSize, String strategy, String dbPath) {
+        if (port < 1024 || port > 65535)
+            throw new IllegalArgumentException("port is out of range.");
+        if (cacheSize < 0)
+            throw new IllegalArgumentException("cacheSize is out of range.");
+
+        this.port = port; // Set port
+        this.cacheSize = cacheSize; // Set cache size
+
+        if (strategy == null) {
+            this.strategy = CacheStrategy.None;
+            this.cache = null;
+        } else {
+            switch (strategy) { // Set cache strategy
+                case "LRU":
+                    this.strategy = CacheStrategy.LRU;
+                    this.cache = new Caches.LRUCache(this.cacheSize);
+                    break;
+                case "LFU":
+                    this.strategy = CacheStrategy.LFU;
+                    this.cache = new Caches.LFUCache(this.cacheSize);
+                    break;
+                case "FIFO":
+                    this.strategy = CacheStrategy.FIFO;
+                    this.cache = new Caches.FIFOCache(this.cacheSize);
+                    break;
+                default:
+                    this.strategy = CacheStrategy.None;
+                    this.cache = null;
+            }
+        }
+
+        dirPath = System.getProperty("user.dir") + File.separator + dbPath;
+        File dir = new File(dirPath);
+        if (!dir.exists()) {
+            try {
+                if (!dir.mkdir()) {
+                    throw new Exception("Unable to create a directory.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         Thread serverThread = new Thread(new Runnable() {
             @Override
@@ -331,12 +393,85 @@ public class KVServer implements IKVServer {
         kill();
     }
 
-    public static void main(String[] args) {
-        KVServer server = new KVServer(20010, 0, null);
+    private static Level getLogLevel(String levelString) {
+        if (levelString.equals(Level.ALL.toString())) {
+            return Level.ALL;
+        } else if (levelString.equals(Level.DEBUG.toString())) {
+            return Level.DEBUG;
+        } else if (levelString.equals(Level.INFO.toString())) {
+            return Level.INFO;
+        } else if (levelString.equals(Level.WARN.toString())) {
+            return Level.WARN;
+        } else if (levelString.equals(Level.ERROR.toString())) {
+            return Level.ERROR;
+        } else if (levelString.equals(Level.FATAL.toString())) {
+            return Level.FATAL;
+        } else if (levelString.equals(Level.OFF.toString())) {
+            return Level.OFF;
+        } else {
+            return Level.ALL;
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        Options options = new Options();
+        
+        Option help = new Option("h", "help", false, "display help");
+        help.setRequired(false);
+        options.addOption(help);
+        
+        Option address = new Option("a", "address", true, "address to listen to");
+        address.setRequired(false);
+        options.addOption(address);
+
+        Option port = new Option("p", "port", true, "server port");
+        port.setRequired(false);
+        options.addOption(port);
+
+        Option logFile = new Option("l", "logFile", true, "log file path");
+        logFile.setRequired(false);
+        options.addOption(logFile);
+
+        Option logLevel = new Option("ll", "logLevel", true, "log level");
+        logLevel.setRequired(false);
+        options.addOption(logLevel);
+
+        Option dataPath = new Option("d", "dir", true, "directory to persist data");
+        dataPath.setRequired(false);
+        options.addOption(dataPath);
+
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd;
+
         try {
-            new LogSetup("logs/server.log", Level.ALL);
+            cmd = parser.parse(options, args);
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            formatter.printHelp("utility-name", options);
+            System.exit(1);
+            return;
+        }
+
+        if (cmd.hasOption("help")) {
+            formatter.printHelp("m1-server.jar", options);
+            System.exit(0);
+        }
+        
+        String serverAddress = cmd.getOptionValue("address", "localhost"); // default is "localhost"
+        String serverPort = (cmd.getOptionValue("port", "20010")); // default is "20010"
+        String serverLogFile = cmd.getOptionValue("logFile", "logs/server.log"); // default is "ALL"
+        String serverLogLevel = cmd.getOptionValue("logLevel", "ALL"); // default is "ALL"
+        String dbPath = cmd.getOptionValue("dir", "db"); // default is "db"
+
+        if (!LogSetup.isValidLevel(serverLogLevel)) {
+            serverLogLevel = "ALL";
+        }
+
+        try {
+            new LogSetup(serverLogFile, getLogLevel(serverLogLevel));
+            KVServer server = new KVServer(Integer.parseInt(serverPort), 10, "FIFO", dbPath);
             server.clearStorage();
-            server.run();
         } catch (Exception e) {
             e.printStackTrace();
         }
