@@ -82,6 +82,7 @@ public class ClientConnection implements Runnable {
         StatusType recvStatus = recv.getStatus();
         String recvKey = recv.getKey();
         String recvVal = recv.getValue();
+        Boolean recvLocolProtocol = recv.getLocalProtocol();
 
         if (recvStatus == StatusType.PUT && recvKey != null && recvVal != null) { // PUT
 
@@ -123,7 +124,7 @@ public class ClientConnection implements Runnable {
         } else { // Message format unknown
             res = new BasicKVMessage(StatusType.FAILED, "Message format is unknown.", null);
         }
-
+        res.setLocalProtocl(recvLocolProtocol);
         comm.sendMessage(res);
     }
 }
