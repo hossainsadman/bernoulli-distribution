@@ -136,7 +136,6 @@ public class BasicKVMessage implements KVMessage {
     }
 
     if (components.length > 2) {
-      this.value = components[2];
       StringBuilder rawValue = new StringBuilder();
 
       for (int i = 2; i < components.length; i++) {
@@ -145,7 +144,7 @@ public class BasicKVMessage implements KVMessage {
           rawValue.append(" ");
         }
       }
-      value = rawValue.toString();
+      this.value = rawValue.toString();
     }
 
     System.out.println("Status: " + status);
