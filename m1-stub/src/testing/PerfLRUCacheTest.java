@@ -13,7 +13,7 @@ import app_kvServer.KVServer;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-public class PerfNoCacheTest extends TestCase {
+public class PerfLRUCacheTest extends TestCase {
 	
 	private int NUM_REQUESTS = 5000;
 	private int NUM_KEYS = NUM_REQUESTS / 10;
@@ -27,8 +27,8 @@ public class PerfNoCacheTest extends TestCase {
 	long endTime;
 	long elapsedTime;
 	
-    private int CACHE_SIZE = 0;
-	private String CACHE_STRATEGY = "None";
+    private int CACHE_SIZE = 200;
+	private String CACHE_STRATEGY = "LRU";
 	
 	private String ADDRESS = "localhost";
 	private int PORT = 9999;
