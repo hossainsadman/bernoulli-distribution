@@ -78,6 +78,7 @@ public class ClientConnection implements Runnable {
      * Processes received messages, and send it back to the client.
      */
     private void processMessage(BasicKVMessage recv) throws IOException {
+        this.logger.info("Handling command");
         BasicKVMessage res;
         StatusType recvStatus = recv.getStatus();
         String recvKey = recv.getKey();

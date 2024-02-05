@@ -3,8 +3,10 @@ package shared.messages;
 import java.io.ObjectInputFilter.Status;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import org.apache.log4j.*;
 
 public class BasicKVMessage implements KVMessage {
+  private static Logger logger = Logger.getRootLogger();
   private static final char LINE_FEED = 0x0A;
   private static final char RETURN = 0x0D;
   private static final String SECRET = "AzgLJSkqMm";
@@ -79,6 +81,7 @@ public class BasicKVMessage implements KVMessage {
   }
 
   private void parseLocalProtocol(byte[] bytes) {
+    this.logger.info("Internal Message");
     this.localProtocol = true;
     try {
       ByteBuffer buffer = ByteBuffer.wrap(bytes);
@@ -115,6 +118,7 @@ public class BasicKVMessage implements KVMessage {
   }
   
   private void parseExternalProtocol(byte bytes[]) {
+    this.logger.info("External Message");
     this.localProtocol = false;
     String receivedMsg = new String(bytes).trim(); 
     String[] components = receivedMsg.split("\\s+");
@@ -147,12 +151,13 @@ public class BasicKVMessage implements KVMessage {
       this.value = rawValue.toString();
     }
 
-    System.out.println("Status: " + status);
-    System.out.println("Key: " + key);
-    System.out.println("Value: " + value);
+    this.logger.info("Status: " + status);
+    this.logger.info("Key: " + key);
+    this.logger.info("Value: " + value);
   }
 
   private void parseBytes(byte[] bytes) {
+    this.logger.info("Messaged received, now parsing");
     int secretLength = SECRET.length();
     byte[] checkSecret = new byte[secretLength];
 

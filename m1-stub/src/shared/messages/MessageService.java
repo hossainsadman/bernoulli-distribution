@@ -21,6 +21,7 @@ public class MessageService {
    * @throws IOException
    */
   public void sendBasicKVMessage(Socket socket, BasicKVMessage msg) throws IOException {
+    this.logger.info("Sending Message on socket");
     OutputStream output = socket.getOutputStream();
     byte[] msgBytes = msg.getMsgBytes();
     output.write(msgBytes, 0, msgBytes.length);
@@ -36,6 +37,7 @@ public class MessageService {
    */
   public BasicKVMessage receiveBasicKVMessage(Socket socket) throws IOException {
     byte[] receivedMessageBytes = this.receiveMessage(socket);
+    this.logger.info("Received message on socket");
     BasicKVMessage msg = new BasicKVMessage(receivedMessageBytes);
     return msg;
   }
