@@ -129,7 +129,7 @@ public class BasicKVMessage implements KVMessage {
 
     if (components.length > 0) {
       try {
-        this.status = StatusType.valueOf(components[0]);
+        this.status = StatusType.valueOf(components[0].toUpperCase());
       } catch (IllegalArgumentException e) {
         return;
       }
