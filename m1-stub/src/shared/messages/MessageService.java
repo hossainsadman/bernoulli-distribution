@@ -53,8 +53,8 @@ public class MessageService {
 		byte read = (byte) input.read();	
 		boolean reading = true;
 
-		while(!(read == 13 && prevRead == 10) && reading) {/* CR, LF, error */
-			/* if buffer filled, copy to msg array */
+		while(!(read == 10 && prevRead == 13) && reading) {/* CR, LF, error */
+          /* if buffer filled, copy to msg array */
       if (index == BUFFER_SIZE) {
 				if(msgBytes == null){
 					tmp = new byte[BUFFER_SIZE];
@@ -82,7 +82,7 @@ public class MessageService {
 
 			/* read next char from stream */
       prevRead = read;
-			read = (byte) input.read();
+      read = (byte) input.read();
 		}
 
     if (msgBytes == null) {

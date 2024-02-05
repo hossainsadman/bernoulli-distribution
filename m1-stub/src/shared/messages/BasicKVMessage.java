@@ -176,7 +176,7 @@ public class BasicKVMessage implements KVMessage {
 
   
   private byte[] addCtrChars(byte[] bytes) {
-    byte[] ctrBytes = new byte[] { LINE_FEED, RETURN };
+    byte[] ctrBytes = new byte[] { RETURN, LINE_FEED };
     byte[] tmp = new byte[bytes.length + ctrBytes.length];
 
     System.arraycopy(bytes, 0, tmp, 0, bytes.length);
