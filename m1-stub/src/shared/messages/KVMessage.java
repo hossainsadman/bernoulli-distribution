@@ -20,7 +20,7 @@ public interface KVMessage {
 
 	/**
 	 * @return the key that is associated with this message, 
-	 * 		null if not key is associated.
+	 * 		null if not key is associated.c
 	 */
 	public String getKey();
 	
@@ -37,5 +37,3 @@ public interface KVMessage {
 	public StatusType getStatus();
 	
 }
-
-

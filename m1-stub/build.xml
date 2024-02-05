@@ -115,4 +115,14 @@
       <test name="testing.AllTests" />
     </junit>
   </target>
+
+  <!-- run PERFORMANCE test cases -->
+  <target name="testperf" depends="build">
+    <junit>
+      <classpath refid="project.classpath" />
+      <formatter type="plain" usefile="false" />
+      <!-- <formatter type="brief" usefile="false" /> -->
+      <test name="testing.PerfAllTests" />
+    </junit>
+  </target>
 </project>
