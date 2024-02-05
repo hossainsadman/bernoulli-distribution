@@ -15,8 +15,8 @@ import org.apache.log4j.Logger;
 
 public class PerfLRUCacheTest extends TestCase {
 	
-	private int NUM_REQUESTS = 5000;
-	private int NUM_KEYS = NUM_REQUESTS / 10;
+	private int NUM_REQUESTS = 10000;
+	private int NUM_KEYS = NUM_REQUESTS / 100;
 	private double PERCENTAGE_PUTS = 0.5;
 	private double PERCENTAGE_GETS = 0.5;
 	
@@ -50,7 +50,7 @@ public class PerfLRUCacheTest extends TestCase {
 	}
 
 	public void tearDown() {
-		kvStore.disconnect();
+		// kvStore.disconnect();
         server.kill();
 	}
 

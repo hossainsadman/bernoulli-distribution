@@ -176,12 +176,11 @@ public class KVClient implements IKVClient {
 
                     try {
                         if (checkValidKey(tokens[1], value.toString())) {
-							// System.out.println("PUT: " + tokens[1] + " " + value.toString());
 							KVMessage msg = kvStore.put(tokens[1], value.toString());
-							if (msg == null) {
-								printError("PUT ERROR");
+							if (msg != null) {
+                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
 							} else {
-								System.out.println(PROMPT + "PUT SUCCESS");
+								System.out.println(PROMPT + "PUT ERROR: null msg!");
 							}
                         } else {
                             printError("Invalid key-value pair!");
@@ -202,13 +201,12 @@ public class KVClient implements IKVClient {
                 if (kvStore != null) {
                     try {
                         if (checkValidKey(tokens[1])) {
-							// System.out.println("GET: " + tokens[1]);
 							BasicKVMessage msg = kvStore.get(tokens[1]);
-							if (msg == null) {
-                                printError("GET ERROR");
-                            } else {
-								System.out.println(PROMPT + "GET SUCCESS: " + msg.getValue());
-							} 
+							if (msg != null) {
+                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+							} else {
+								System.out.println(PROMPT + "PUT ERROR: null msg!");
+							}
                         } else {
                             printError("Invalid key!");
                             logger.error("Invalid key!");

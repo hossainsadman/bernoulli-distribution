@@ -13,7 +13,7 @@ import app_kvServer.KVServer;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-public class PerfNoCacheTest extends TestCase {
+public class PerfLFUCacheTest extends TestCase {
 	
 	private int NUM_REQUESTS = 10000;
 	private int NUM_KEYS = NUM_REQUESTS / 100;
@@ -27,8 +27,8 @@ public class PerfNoCacheTest extends TestCase {
 	long endTime;
 	long elapsedTime;
 	
-    private int CACHE_SIZE = 0;
-	private String CACHE_STRATEGY = "None";
+    private int CACHE_SIZE = 200;
+	private String CACHE_STRATEGY = "LFU";
 	
 	private String ADDRESS = "localhost";
 	private int PORT = 9999;
@@ -50,8 +50,8 @@ public class PerfNoCacheTest extends TestCase {
 	}
 
 	public void tearDown() {
-		// kvStore.disconnect();
-        server.kill();
+		// // kvStore.disconnect();
+        // server.kill();
 	}
 
 	public void logStats() {
@@ -192,5 +192,7 @@ public class PerfNoCacheTest extends TestCase {
 
 		server.clearCache();
 		server.clearStorage();
+		kvStore.disconnect();
+		server.close();
 	}
 }

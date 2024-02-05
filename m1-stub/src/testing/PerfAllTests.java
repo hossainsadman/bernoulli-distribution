@@ -23,7 +23,10 @@ public class PerfAllTests {
     
     public static Test suite() {
         TestSuite clientSuite = new TestSuite("Storage Server Performance Test Suite");
-        clientSuite.addTestSuite(PerfNoCacheTest.class); 
+        // clientSuite.addTestSuite(PerfNoCacheTest.class); 
+        // clientSuite.addTestSuite(PerfLRUCacheTest.class); 
+        // clientSuite.addTestSuite(PerfLFUCacheTest.class); 
+        clientSuite.addTestSuite(PerfFIFOCacheTest.class); 
         return clientSuite;
     }
     
