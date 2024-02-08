@@ -389,7 +389,7 @@ public class KVServer implements IKVServer {
         for (ClientConnection conn: connections) 
             conn.close();
         clearCache();
-        clearStorage();
+        // clearStorage(); // are not supposed to clear storage on server start/quit
         kill();
     }
 
@@ -471,7 +471,7 @@ public class KVServer implements IKVServer {
         try {
             new LogSetup(serverLogFile, getLogLevel(serverLogLevel));
             KVServer server = new KVServer(Integer.parseInt(serverPort), 10, "FIFO", dbPath);
-            server.clearStorage();
+            // server.clearStorage(); // are not supposed to clear storage on server start/quit
         } catch (Exception e) {
             e.printStackTrace();
         }
