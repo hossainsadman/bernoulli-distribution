@@ -1,13 +1,13 @@
 {
     "version": "2.0.0",
     "tasks": [
-        // m0 build //
+        // m2 build //
         {
-            "label": "m0 Build Client",
+            "label": "m2 Build",
             "type": "shell",
-            "command": "ant",
+            "command": "ant build",
             "options": {
-                "cwd": "${workspaceFolder}/m0/echoClient"
+                "cwd": "${workspaceFolder}"
             },
             // "runOptions": {
             //     "runOn": "folderOpen"
@@ -17,12 +17,14 @@
                 "isDefault": false
             }
         },
+        // m2 build //
+        // m2 clearn //
         {
-            "label": "m0 Build Server",
+            "label": "m2 Clean",
             "type": "shell",
-            "command": "ant",
+            "command": "ant clean",
             "options": {
-                "cwd": "${workspaceFolder}/m0/echoServer"
+                "cwd": "${workspaceFolder}"
             },
             // "runOptions": {
             //     "runOn": "folderOpen"
@@ -32,68 +34,17 @@
                 "isDefault": false
             }
         },
-        // m0 build //        
-        // m0 run //
+        // m2 clearn //
+        // m2 run //
         {
-            "label": "m0 Run Client",
+            "label": "m2 Run Client",
             "type": "shell",
-            "command": "java -jar echoClient.jar",
+            "command": "java -jar m2-client.jar",
             "options": {
-                "cwd": "${workspaceFolder}/m0/echoClient"
+                "cwd": "${workspaceFolder}"
             },
             "dependsOn": [
-                "m0 Build Client",
-            ],
-            "group": {
-                "kind": "test",
-                "isDefault": false
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "m0 Run Server",
-            "type": "shell",
-            "command": "java -jar echoServer.jar 17000",
-            "options": {
-                "cwd": "${workspaceFolder}/m0/echoServer"
-            },
-            "dependsOn": [
-                "m0 Build Server",
-            ],
-            "group": {
-                "kind": "test",
-                "isDefault": false
-            },
-            "problemMatcher": []
-        },
-        // m0 run //
-        // m1 build //
-        {
-            "label": "m1 Build",
-            "type": "shell",
-            "command": "ant",
-            "options": {
-                "cwd": "${workspaceFolder}/m1-stub"
-            },
-            // "runOptions": {
-            //     "runOn": "folderOpen"
-            // },
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            }
-        },
-        // m1 build //
-        // m1 run //
-        {
-            "label": "m1 Run Client",
-            "type": "shell",
-            "command": "java -jar m1-client.jar",
-            "options": {
-                "cwd": "${workspaceFolder}/m1-stub"
-            },
-            "dependsOn": [
-                "m1 Build"
+                "m2 Build"
             ],
             "group": {
                 "kind": "test",
@@ -103,19 +54,19 @@
             "presentation": {
                 "echo": true, 
                 "focus": true,
-                "group": "m1",
+                "group": "m2",
                 "panel": "dedicated"
             },
         },
         {
-            "label": "m1 Run Server",
+            "label": "m2 Run Server",
             "type": "shell",
-            "command": "java -jar m1-server.jar",
+            "command": "java -jar m2-server.jar",
             "options": {
-                "cwd": "${workspaceFolder}/m1-stub"
+                "cwd": "${workspaceFolder}"
             },
             "dependsOn": [
-                "m1 Build"
+                "m2 Build"
             ],
             "group": {
                 "kind": "test",
@@ -125,32 +76,32 @@
             "presentation": {
                 "echo": true, 
                 "focus": true,
-                "group": "m1",
+                "group": "m2",
                 "panel": "dedicated"
             },
         },
-        // m1 run //
-        // m1 utilities //
+        // m2 run //
+        // m2 utilities //
         {
-            "label": "m1 Clear Logs",
+            "label": "Clear Logs",
             "type": "shell",
-            "command": "rm -rf ${workspaceFolder}/m1-stub/logs/*",
+            "command": "rm -rf ${workspaceFolder}/logs/*",
             "group": {
                 "kind": "build",
                 "isDefault": false
             }
         },
-        // m1 utilities //
-        // m1 test //
+        // m2 utilities //
+        // m2 test //
         {
-            "label": "m1 Test",
+            "label": "m2 Test",
             "type": "shell",
             "command": "ant test",
             "options": {
-                "cwd": "${workspaceFolder}/m1-stub"
+                "cwd": "${workspaceFolder}"
             },
             "dependsOn": [
-                "m1 Build"
+                "m2 Build"
             ],
             "group": {
                 "kind": "test",
@@ -158,17 +109,37 @@
             },
             "problemMatcher": [],
         },
+        // m2 test //
+        // m2 testperf //
+        {
+            "label": "m2 Test",
+            "type": "shell",
+            "command": "ant testperf",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": [
+                "m2 Build"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+        },
+        // m2 testperf //
+
         /* DOES NOT WORK */
         /* NEED TO RUN SERVER IN ALLTESTS.JAVA */
         // {
-        //     "label": "m1 Run Select Test",
+        //     "label": "m2 Run Select Test",
         //     "type": "shell",
         //     "command": "ant testselect -Dtestcase=testing.${input:selectTest}",
         //     "options": {
-        //         "cwd": "${workspaceFolder}/m1-stub"
+        //         "cwd": "${workspaceFolder}"
         //     },
         //     "dependsOn": [
-        //         "m1 Build"
+        //         "m2 Build"
         //     ],
         //     "group": {
         //         "kind": "test",
@@ -176,7 +147,7 @@
         //     },
         //     "problemMatcher": [],
         // },
-        // m1 test //
+        // m2 test //
     ],
     "inputs": [
         {
