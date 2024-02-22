@@ -393,26 +393,6 @@ public class KVServer implements IKVServer {
         kill();
     }
 
-    private static Level getLogLevel(String levelString) {
-        if (levelString.equals(Level.ALL.toString())) {
-            return Level.ALL;
-        } else if (levelString.equals(Level.DEBUG.toString())) {
-            return Level.DEBUG;
-        } else if (levelString.equals(Level.INFO.toString())) {
-            return Level.INFO;
-        } else if (levelString.equals(Level.WARN.toString())) {
-            return Level.WARN;
-        } else if (levelString.equals(Level.ERROR.toString())) {
-            return Level.ERROR;
-        } else if (levelString.equals(Level.FATAL.toString())) {
-            return Level.FATAL;
-        } else if (levelString.equals(Level.OFF.toString())) {
-            return Level.OFF;
-        } else {
-            return Level.ALL;
-        }
-    }
-
     public static void main(String[] args) throws IOException {
         Options options = new Options();
         
@@ -469,7 +449,7 @@ public class KVServer implements IKVServer {
         }
 
         try {
-            new LogSetup(serverLogFile, getLogLevel(serverLogLevel));
+            new LogSetup(serverLogFile, LogSetup.getLogLevel(serverLogLevel));
             KVServer server = new KVServer(Integer.parseInt(serverPort), 10, "FIFO", dbPath);
             // server.clearStorage(); // are not supposed to clear storage on server start/quit
         } catch (Exception e) {
