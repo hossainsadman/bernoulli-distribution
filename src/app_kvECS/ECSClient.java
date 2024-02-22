@@ -1,18 +1,21 @@
 package app_kvECS;
 
 import java.io.*;
+import java.net.BindException;
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.Collection;
-
-import ecs.IECSNode;
-
-import java.net.ServerSocket;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import logger.LogSetup;
-
 import org.apache.commons.cli.*;
+
+import java.net.ServerSocket;
+import java.net.Socket;
+
+import ecs.IECSNode;
+
 
 public class ECSClient implements IECSClient {
 
@@ -21,6 +24,7 @@ public class ECSClient implements IECSClient {
     private String address;
     private int port;
 
+    public boolean running;
     private ServerSocket ecsSocket;
 
     private static Logger logger = Logger.getRootLogger();
@@ -31,12 +35,64 @@ public class ECSClient implements IECSClient {
         
         this.address = address;
         this.port = port;
+
+        Thread ecsThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ECSClient.this.run();
+            }
+        });
+
+        ecsThread.start();
     }
 
     @Override
     public boolean start() {
-        // TODO
-        return false;
+        try {
+            ecsSocket = new ServerSocket(port, 10, InetAddress.getByName(address));
+            logger.info("ECS is listening at " + address + ":" + port);
+            return true;
+        } catch (IOException e) {
+            logger.error("ECS Socket cannot be opened: ");
+            if (e instanceof BindException)
+                logger.error("Port " + port + " at address " + address + " is already bound.");
+            return false;
+        }
+    }
+
+    public void run() {
+        running = start();
+
+        if (ecsSocket != null) {
+            while (running) {
+                try {
+                    Socket kvServerSocket = ecsSocket.accept();
+                    // ClientConnection connection = new ClientConnection(this, clientSocket);
+                    // connections.add(connection);
+                    // new Thread(connection).start();
+                    logger.info("<<< INSERT NEW ECS-SERVER CONNECTION HERE >>>");
+                    logger.info("Connected to " + kvServerSocket.getInetAddress().getHostName() + " on port "
+                            + kvServerSocket.getPort());
+                } catch (IOException e){
+                    logger.error("Unable to establish connection.\n", e);
+                }
+            }
+        }
+    }
+
+    public void kill() {
+        running = false;
+        try {
+            ecsSocket.close();
+        } catch (IOException e) {
+            logger.error("Unable to close socket at " + address + ":" + port, e);
+        }
+    }    
+
+    public void close() {
+        // for (ClientConnection conn: connections) 
+        //     conn.close();
+        kill();
     }
 
     @Override
@@ -147,7 +203,6 @@ public class ECSClient implements IECSClient {
         try {
             new LogSetup(ecsLogFile, LogSetup.getLogLevel(ecsLogLevel));
             ECSClient ecsclient = new ECSClient(ecsAddress, Integer. parseInt(ecsPort));
-            logger.info("ECSClient started at " + address + ":" + port);
         } catch (Exception e) {
             e.printStackTrace();
         }        
