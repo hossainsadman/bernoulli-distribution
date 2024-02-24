@@ -10,6 +10,7 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -87,13 +88,22 @@ public class ECS {
     }
 
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-
+        // TODO
         return null;
     }
 
     public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO
-        return null;
+        Collection<IECSNode> nodes = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            IECSNode node = createNodeWithCacheSettings(cacheStrategy, cacheSize);
+
+            if (node != null) {
+                nodes.add(node);
+            }
+        }
+
+        return nodes;
     }
 
     public boolean awaitNodes(int count, int timeout) throws Exception {

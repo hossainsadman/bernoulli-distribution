@@ -80,7 +80,10 @@ public class ECSClient implements IECSClient {
 
     @Override
     public IECSNode addNode(String cacheStrategy, int cacheSize) {
-        // TODO
+        Collection<IECSNode> server = self.addNodes(1, cacheStrategy, cacheSize);
+
+        if (!server.isEmpty()) 
+            return server.iterator().next();
 
         return null;
     }
@@ -128,7 +131,6 @@ public class ECSClient implements IECSClient {
         commands.put("quit", "Quits the ECS");
         commands.put("addnode <cacheStrategy> <cacheSize>", "Adds a KVServer to the ECS");
         commands.put("addnodes <count> <cacheStrategy> <cacheSize>", "Adds multiple KVServers to the ECS.");
-        commands.put("setupnodes <count> <cacheStrategy> <cacheSize>", "Sets up `count` servers with the ECS");
         commands.put("removenodes <nodename> <nodename> ...",
                 "Removes specified nodes matching one or more nodenames.");
         commands.put("help", "Displays help information about the available commands.");
@@ -198,23 +200,6 @@ public class ECSClient implements IECSClient {
                             int count = Integer.parseInt(args[1]);
                             int cacheSize = Integer.parseInt(args[3]);
                             this.addNodes(count, args[2], cacheSize);
-                        } catch (NumberFormatException e) {
-                            System.out.println("[Error] Invalid count or cache size. Please enter valid integers.");
-                        }
-                    } else
-                        System.out.println("[Error] Insufficient arguments for addnodes.");
-                    break;
-                case "setupnodes":
-                    if (!this.clientRunning) {
-                        System.out.println("[Error] ECSClient is not running in the first place.");
-                        break;
-                    }
-
-                    if (args.length >= 4) {
-                        try {
-                            int count = Integer.parseInt(args[1]);
-                            int cacheSize = Integer.parseInt(args[3]);
-                            this.setupNodes(count, args[2], cacheSize);
                         } catch (NumberFormatException e) {
                             System.out.println("[Error] Invalid count or cache size. Please enter valid integers.");
                         }

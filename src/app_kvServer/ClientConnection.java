@@ -119,8 +119,8 @@ public class ClientConnection implements Runnable {
                 res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, null);
             }
 
-        } else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { // message size
-                                                                                                     // exceeded
+        } else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { 
+            // message size exceeded
             res = new BasicKVMessage(StatusType.FAILED, recvKey, null);
         } else { // Message format unknown
             res = new BasicKVMessage(StatusType.FAILED, "Message format is unknown.", null);
