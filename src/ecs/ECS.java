@@ -10,16 +10,13 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import app_kvECS.ECSClient;
 
 /* 
-    ECSClient should call ECS 
-    Integrate zookeeper here, if wanted 
+    ECSClient should initialize ECS. 
+    If needed, integrate zookeeper here.
 */
 
 public class ECS {
@@ -31,8 +28,10 @@ public class ECS {
     private int port = -1;
 
     private ServerSocket ecsSocket;
-    private HashMap<BigInteger, ECSNode> servers; /* maps node identifier -> node */
-    private int count;
+    private Map<String, ECSNode> nodes = new HashMap<>(); /* maps node identifier -> node */
+    private ArrayList<ECSNode> availableNodes; // Indexable set
+    private ArrayList<ECSNode> unavailableNodes;
+    private int count = 0;
 
     public ECS(String address, int port, Logger logger) {
         if (port < 1024 || port > 65535)
@@ -73,7 +72,7 @@ public class ECS {
             }
         }
     }
-    
+
     public void kill() {
         try {
             ecsSocket.close();
@@ -87,9 +86,43 @@ public class ECS {
         kill();
     }
 
+    public boolean initServer(ECSNode newServer, String cacheStrategy, int cacheSize) {
+        try {
+            newServer.setCacheStrategy(cacheStrategy);
+            newServer.setCacheSize(cacheSize);
+            availableNodes.add(newServer);
+            return true;
+        } catch (Exception e) {
+            logger.error("Can't initialize server: ", e);
+        }
+        return false;
+    }
+
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO
-        return null;
+        if (count > availableNodes.size()) {
+            throw new IllegalArgumentException("Not enough available servers to fulfill the request.");
+        }
+
+        List<IECSNode> addedNodes = new ArrayList<>();
+
+        for (int i = 0; i < count; ++i) {
+            /* Select and remove a server from the pool */
+            ECSNode newServer = availableNodes.remove(0);
+            
+            initServer(newServer, cacheStrategy, cacheSize);
+
+            if (newServer != null) {
+                unavailableNodes.add(newServer);
+                addedNodes.add(newServer);
+
+                // update Zookeeper or another coordination service here
+            }
+        }
+
+        // Rebalance the key space among all nodes
+        // rebalanceKeyspace();
+
+        return addedNodes;
     }
 
     public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
@@ -101,7 +134,7 @@ public class ECS {
         // TODO
         return false;
     }
-    
+
     public boolean removeNodes(Collection<String> nodeNames) {
         // TODO
         return false;

@@ -25,10 +25,9 @@ public final class MetaData implements Serializable {
     }
 
     public String[] getNodeHashRange() {
-        String[] hashRange = new String[2];
-        hashRange[0] = hashStartRange.toString();
-        hashRange[1] = hashEndRange.toString();
-
-        return hashRange;
+        return new String[] {
+                this.hashStartRange.toString(),
+                this.hashEndRange.toString()
+        };
     }
 }

@@ -11,6 +11,8 @@ public class ECSNode implements IECSNode {
     private BigInteger identifier;
     private BigInteger hashStartRange;
     private BigInteger hashEndRange;
+    private String cacheStrategy = "None";
+    private int cacheSize = 0;
 
     public static final BigInteger RING_START = BigInteger.ZERO;
     public static final BigInteger RING_END = new BigInteger(String.valueOf('F').repeat(32), 16);
@@ -47,6 +49,14 @@ public class ECSNode implements IECSNode {
             this.hashStartRange.toString(),
             this.hashEndRange.toString()
         };
+    }
+
+    public void setCacheStrategy(String cacheStrategy) {
+        this.cacheStrategy = cacheStrategy;
+    }
+
+    public void setCacheSize(int cacheSize) {
+        this.cacheSize = cacheSize;
     }
 
     public void setNodeHashRange(BigInteger start, BigInteger end) {
