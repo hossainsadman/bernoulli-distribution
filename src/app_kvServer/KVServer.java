@@ -23,9 +23,10 @@ import org.apache.commons.cli.*;
 
 import app_kvServer.Caches.LRUCache;
 import app_kvServer.ClientConnection;
-import static app_kvServer.Caches.*;
 import app_kvServer.IKVServer.CacheStrategy;
 import shared.messages.KVMessage.StatusType;
+import shared.*;
+import static app_kvServer.Caches.*;
 
 public class KVServer implements IKVServer {
     /**
@@ -52,6 +53,9 @@ public class KVServer implements IKVServer {
     private Caches.Cache<String, String> cache;
     private static Logger logger = Logger.getRootLogger();
     private final String dirPath;
+
+    /* Meta Data */
+    private MetaData metaData;
 
     public KVServer(int port, int cacheSize, String strategy) {
         if (port < 1024 || port > 65535)
@@ -161,6 +165,14 @@ public class KVServer implements IKVServer {
         serverThread.start(); // Start the thread
     }
 
+    public void setMetaData(MetaData metaData) {
+        this.metaData = metaData;
+    }
+
+    public MetaData getMetaData() {
+        return metaData;
+    }
+    
     @Override
     public int getPort() {
         return port; // Return port

@@ -80,7 +80,7 @@ public class ECSClient implements IECSClient {
 
     @Override
     public IECSNode addNode(String cacheStrategy, int cacheSize) {
-        Collection<IECSNode> server = self.addNodes(1, cacheStrategy, cacheSize);
+        Collection<IECSNode> server = this.addNodes(1, cacheStrategy, cacheSize);
 
         if (!server.isEmpty()) 
             return server.iterator().next();

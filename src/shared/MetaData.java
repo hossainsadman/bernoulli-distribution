@@ -1,7 +1,9 @@
+package shared;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 
-public class MetaData implements Serializable {
+public final class MetaData implements Serializable {
     private String host;
     private int port;
     private BigInteger hashStartRange;
