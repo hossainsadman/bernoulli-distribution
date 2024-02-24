@@ -3,8 +3,7 @@ package app_kvECS;
 import java.io.*;
 import java.net.BindException;
 import java.net.InetAddress;
-import java.util.Map;
-import java.util.Collection;
+import java.util.*;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -13,103 +12,76 @@ import org.apache.commons.cli.*;
 
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.ParseException;
 
+import ecs.ECS;
 import ecs.IECSNode;
 
-
+/* ECSClient should focus on CLI interaction */
 public class ECSClient implements IECSClient {
 
-	private static final int DEFAULT_ECS_PORT = 9999;
-
-    private String address;
-    private int port;
-
-    public boolean running;
-    private ServerSocket ecsSocket;
-
     private static Logger logger = Logger.getRootLogger();
+    public boolean clientRunning = false; /* Represents the status of ECSClient not the ECS */
+    public boolean ecsRunning = false; /* Represents the status of  ECS */
+    private ECS ecs;
 
     public ECSClient(String address, int port) {
-        if (port < 1024 || port > 65535)
-            throw new IllegalArgumentException("port is out of range.");
-        
-        this.address = address;
-        this.port = port;
+        ecs = new ECS(address, port, logger);
+        clientRunning = true;
 
-        Thread ecsThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ECSClient.this.run();
-            }
-        });
+        // Thread ecsThread = new Thread(new Runnable() {
+        // @Override
+        // public void run() {
+        // ecs.run();
+        // }
+        // });
 
-        ecsThread.start();
+        // ecsThread.start();
     }
 
     @Override
     public boolean start() {
-        try {
-            ecsSocket = new ServerSocket(port, 10, InetAddress.getByName(address));
-            logger.info("ECS is listening at " + address + ":" + port);
-            return true;
-        } catch (IOException e) {
-            logger.error("ECS Socket cannot be opened: ");
-            if (e instanceof BindException)
-                logger.error("Port " + port + " at address " + address + " is already bound.");
+        if (ecs == null)
             return false;
-        }
+        ecsRunning = ecs.start();
+
+        return ecsRunning;
     }
 
     public void run() {
-        running = start();
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
-        if (ecsSocket != null) {
-            while (running) {
-                try {
-                    Socket kvServerSocket = ecsSocket.accept();
-                    // ClientConnection connection = new ClientConnection(this, clientSocket);
-                    // connections.add(connection);
-                    // new Thread(connection).start();
-                    logger.info("<<< INSERT NEW ECS-SERVER CONNECTION HERE >>>");
-                    logger.info("Connected to " + kvServerSocket.getInetAddress().getHostName() + " on port "
-                            + kvServerSocket.getPort());
-                } catch (IOException e){
-                    logger.error("Unable to establish connection.\n", e);
-                }
+        while (clientRunning) {
+            try {
+                this.handleUserCommands(br.readLine());
+            } catch (IOException e) {
+                this.shutdown();
+                logger.error("Error: ", e);
             }
         }
-    }
-
-    public void kill() {
-        running = false;
-        try {
-            ecsSocket.close();
-        } catch (IOException e) {
-            logger.error("Unable to close socket at " + address + ":" + port, e);
-        }
-    }    
-
-    public void close() {
-        // for (ClientConnection conn: connections) 
-        //     conn.close();
-        kill();
     }
 
     @Override
     public boolean stop() {
         // TODO
-        return false;
+        ecsRunning = false;
+        return true;
     }
 
     @Override
     public boolean shutdown() {
         // TODO
-        return false;
+        // for (ClientConnection conn: connections)
+        // conn.close();
+        ecs.close();
+        ecsRunning = false;
+        return true;
     }
 
     @Override
     public IECSNode addNode(String cacheStrategy, int cacheSize) {
         // TODO
+
         return null;
     }
 
@@ -149,9 +121,131 @@ public class ECSClient implements IECSClient {
         return null;
     }
 
-    public static void main(String[] args) throws IOException {
+    private void displayHelperMessage() {
+        Map<String, String> commands = new LinkedHashMap<>();
+        commands.put("start", "Starts the ECS");
+        commands.put("stop", "Stops the ECS");
+        commands.put("quit", "Quits the ECS");
+        commands.put("addnode <cacheStrategy> <cacheSize>", "Adds a KVServer to the ECS");
+        commands.put("addnodes <count> <cacheStrategy> <cacheSize>", "Adds multiple KVServers to the ECS.");
+        commands.put("setupnodes <count> <cacheStrategy> <cacheSize>", "Sets up `count` servers with the ECS");
+        commands.put("removenodes <nodename> <nodename> ...",
+                "Removes specified nodes matching one or more nodenames.");
+        commands.put("help", "Displays help information about the available commands.");
+
+        // Print the usage information
+        System.out.println("Usage:");
+        for (Map.Entry<String, String> command : commands.entrySet()) {
+            System.out.println("\t" + command.getKey());
+            System.out.println("\t\t" + command.getValue());
+        }
+    }
+
+    /* Helper Function to Evaluate User Command */
+    /*
+     * Recommandation: move logger messages like "success" to the function itself
+     * not here for debugging.
+     */
+    private void handleUserCommands(String cmd) {
+        String[] args = cmd.split("\\s+"); // split cmd into args
         Options options = new Options();
 
+        if (args.length > 0) {
+            switch (args[0]) {
+                case "start":
+                    this.start();
+                    break;
+                case "stop":
+                    if (!this.ecsRunning) {
+                        logger.info("[Error] ECSClient is not running in the first place.");
+                        break;
+                    }
+
+                    this.stop();
+                    break;
+                case "quit":
+                    if (!this.ecsRunning) {
+                        System.out.println("[Error] ECSClient is not running in the first place.");
+                        break;
+                    }
+
+                    clientRunning = !this.shutdown();
+                    break;
+                case "addnode":
+                    if (!this.ecsRunning) {
+                        System.out.println("[Error] ECSClient is not running in the first place.");
+                        break;
+                    }
+
+                    if (args.length >= 3) {
+                        try {
+                            int cacheSize = Integer.parseInt(args[2]);
+                            this.addNode(args[1], cacheSize);
+                        } catch (NumberFormatException e) {
+                            System.out.println("[Error] Invalid cache size. Please enter a valid integer.");
+                        }
+                    } else
+                        System.out.println("[Error] Insufficient arguments for addnode.");
+                    break;
+                case "addnodes":
+                    if (!this.ecsRunning) {
+                        System.out.println("[Error] ECSClient is not running in the first place.");
+                        break;
+                    }
+
+                    if (args.length >= 4) {
+                        try {
+                            int count = Integer.parseInt(args[1]);
+                            int cacheSize = Integer.parseInt(args[3]);
+                            this.addNodes(count, args[2], cacheSize);
+                        } catch (NumberFormatException e) {
+                            System.out.println("[Error] Invalid count or cache size. Please enter valid integers.");
+                        }
+                    } else
+                        System.out.println("[Error] Insufficient arguments for addnodes.");
+                    break;
+                case "setupnodes":
+                    if (!this.clientRunning) {
+                        System.out.println("[Error] ECSClient is not running in the first place.");
+                        break;
+                    }
+
+                    if (args.length >= 4) {
+                        try {
+                            int count = Integer.parseInt(args[1]);
+                            int cacheSize = Integer.parseInt(args[3]);
+                            this.setupNodes(count, args[2], cacheSize);
+                        } catch (NumberFormatException e) {
+                            System.out.println("[Error] Invalid count or cache size. Please enter valid integers.");
+                        }
+                    } else
+                        System.out.println("[Error] Insufficient arguments for addnodes.");
+                    break;
+                case "removenodes":
+                    if (!this.clientRunning) {
+                        System.out.println("[Error] ECSClient is not running in the first place.");
+                        break;
+                    }
+
+                    if (args.length > 1)
+                        this.removeNodes(Arrays.asList(Arrays.copyOfRange(args, 1, args.length)));
+                    else
+                        System.out.println("[Error] Insufficient arguments for removenode.");
+                    break;
+                case "help":
+                    this.displayHelperMessage();
+                    break;
+                default:
+                    this.displayHelperMessage();
+                    break;
+            }
+        } else {
+            System.out.println("[Error] No command provided.");
+        }
+    }
+
+    /* Add all options */
+    public static void addCommandOptions(Options options) {
         Option help = new Option("h", "help", false, "display help");
         help.setRequired(false);
         options.addOption(help);
@@ -163,7 +257,7 @@ public class ECSClient implements IECSClient {
         Option port = new Option("p", "port", true, "server port");
         port.setRequired(false);
         options.addOption(port);
-        
+
         Option logFile = new Option("l", "logFile", true, "log file path");
         logFile.setRequired(false);
         options.addOption(logFile);
@@ -171,14 +265,19 @@ public class ECSClient implements IECSClient {
         Option logLevel = new Option("ll", "logLevel", true, "log level");
         logLevel.setRequired(false);
         options.addOption(logLevel);
+    }
+
+    public static void main(String[] args) throws IOException {
+        Options options = new Options();
+        ECSClient.addCommandOptions(options);
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
-        CommandLine cmd;    
+        CommandLine cmd = null;
 
         try {
             cmd = parser.parse(options, args);
-        } catch (ParseException e) {
+        } catch (Exception e) {
             System.out.println(e.getMessage());
             formatter.printHelp("m2-ecs.jar", options);
             System.exit(1);
@@ -189,22 +288,25 @@ public class ECSClient implements IECSClient {
             formatter.printHelp("m2-ecs.jar", options);
             System.exit(0);
         }
-        
+
         // set defaults for options
-        String ecsAddress = cmd.getOptionValue("address", "localhost");
-        String ecsPort = cmd.getOptionValue("port", String.valueOf(DEFAULT_ECS_PORT));
+        String ecsAddress = cmd.getOptionValue("address", "127.0.0.1");
+        String ecsPort = cmd.getOptionValue("port", String.valueOf(ECS.getDefaultECSPort()));
         String ecsLogFile = cmd.getOptionValue("logFile", "logs/ecs.log");
         String ecsLogLevel = cmd.getOptionValue("logLevel", "ALL");
 
         if (!LogSetup.isValidLevel(ecsLogLevel)) {
             ecsLogLevel = "ALL";
         }
-        
+
         try {
             new LogSetup(ecsLogFile, LogSetup.getLogLevel(ecsLogLevel));
-            ECSClient ecsclient = new ECSClient(ecsAddress, Integer. parseInt(ecsPort));
+            logger.info("logger setup is complete.");
+            ECSClient ecsClient = new ECSClient(ecsAddress, Integer.parseInt(ecsPort));
+            ecsClient.run();
         } catch (Exception e) {
+            System.out.println("[Error] Unable to setup logger: ");
             e.printStackTrace();
-        }        
+        }
     }
 }

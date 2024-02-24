@@ -3,3 +3,4 @@
 /logs/
 /*.MF
 /*.jar
+.nfs*

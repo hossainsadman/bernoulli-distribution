@@ -8,6 +8,7 @@ public class ECSNode implements IECSNode {
     private String name;
     private String host;
     private Integer port;
+    private BigInteger identifier;
     private BigInteger hashStartRange;
     private BigInteger hashEndRange;
 
@@ -15,7 +16,7 @@ public class ECSNode implements IECSNode {
         this.name = name;
         this.host = host;
         this.port = port;
-        this.hash = MD5.getHash(host + ":" + port);
+        this.identifier = MD5.getHash(host + ":" + port);
     }
 
     @Override
@@ -33,19 +34,22 @@ public class ECSNode implements IECSNode {
         return this.port;
     }
 
+    public BigInteger getNodeIdentifier() {
+        return this.identifier;
+    }
+
     // public BigInteger getNodeHash() {
-    //     if (this.hashStartRange == null) {
-    //         this.hashStartRange = MD5.getHash(this.host + ":" + this.hashStartRange);
-    //     }
-    //     return this.hashStartRange;
+    // if (this.hashStartRange == null) {
+    // this.hashStartRange = MD5.getHash(this.host + ":" + this.hashStartRange);
+    // }
+    // return this.hashStartRange;
     // }
 
     @Override
     public String[] getNodeHashRange() {
-        String[] hashRange = new String[2];
-        hashRange[0] = hashStartRange.toString();
-        hashRange[1] = hashEndRange.toString();
-
-        return hashRange;
+        return new String[] {
+            hashStartRange.toString(),
+            hashEndRange.toString()
+        };
     }
 }
