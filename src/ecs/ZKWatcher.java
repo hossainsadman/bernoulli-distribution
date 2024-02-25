@@ -6,6 +6,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import logger.LogSetup;
 
+// Might need for later
 public class ZKWatcher implements Watcher {
     private Logger logger;
 

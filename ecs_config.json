@@ -1,0 +1,28 @@
+{
+    "ecs": {
+        "address": "127.0.0.1",
+        "port": 9999
+    },
+    "servers": [
+        {
+            "port": 5000,
+            "cacheSize": 100,
+            "strategy": "LRU"
+        },
+        {
+            "port": 5001,
+            "cacheSize": 23,
+            "strategy": "FIFO"
+        },
+        {
+            "port": 5002,
+            "cacheSize": 67,
+            "strategy": "LFU"
+        },
+        {
+            "port": 5003,
+            "cacheSize": 43,
+            "strategy": "None"
+        }
+    ]
+}

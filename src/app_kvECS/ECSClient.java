@@ -114,7 +114,7 @@ public class ECSClient implements IECSClient {
 
     @Override
     public IECSNode getNodeByKey(String Key) {
-        return ecs.getNodeByKey(key);
+        return ecs.getNodeByServerName(Key);
     }
 
     private void displayHelperMessage() {
