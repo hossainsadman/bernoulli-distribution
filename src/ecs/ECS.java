@@ -75,7 +75,7 @@ public class ECS {
         }
     }
 
-    public void acceptServerConnections() { 
+    public void acceptServerConnections() {
         if (ecsSocket != null) {
             while (true) {
                 try {
@@ -83,12 +83,10 @@ public class ECS {
                     Socket kvServerSocket = ecsSocket.accept();
                     String serverAddress = kvServerSocket.getInetAddress().getHostAddress();
                     int serverPort = kvServerSocket.getPort();
-                    String serverName = serverAddress + ":" + Integer.toString(serverPort); 
+                    String serverName = serverAddress + ":" + Integer.toString(serverPort);
                     ECSNode newNode = new ECSNode(serverName, serverAddress, serverPort, kvServerSocket);
-                    
-                    // ClientConnection connection = new ClientConnection(this, clientSocket);
-                    // connections.add(connection);
-                    // new Thread(connection).start();
+                    nodes.put(serverName, newNode); // append to the table
+                    setNodeAvailability(newNode, true); // set the node available
 
                     logger.info("Connected to " + kvServerSocket.getInetAddress().getHostName() + " on port "
                             + kvServerSocket.getPort());
@@ -108,7 +106,16 @@ public class ECS {
     }
 
     public void close() {
-        // TODO
+        try {
+            for (Map.Entry<String, IECSNode> entry : nodes.entrySet()) {
+                ECSNode node = (ECSNode) entry.getValue();
+                nodes.remove(entry);
+                node.closeConnection();
+            }
+        } catch (Exception e) {
+            logger.error("Error closing connection", e);
+        }
+    
         kill();
     }
 

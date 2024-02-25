@@ -1,9 +1,11 @@
 package ecs;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.*;
 import java.util.*;
 
+import app_kvServer.ClientConnection;
 import shared.CommunicationService;
 import shared.MD5;
 
@@ -71,6 +73,13 @@ public class ECSNode implements IECSNode {
 
     public void setCacheSize(int cacheSize) {
         this.cacheSize = cacheSize;
+    }
+
+    public void closeConnection() throws java.io.IOException {
+        if (serverSocket != null)
+            serverSocket.close();
+        if (comm != null)
+            comm.disconnect();
     }
 
     public void setNodeHashRange(BigInteger start, BigInteger end) {
