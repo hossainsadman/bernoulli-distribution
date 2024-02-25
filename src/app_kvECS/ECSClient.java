@@ -63,17 +63,14 @@ public class ECSClient implements IECSClient {
 
     @Override
     public boolean stop() {
-        // TODO
+        ecs.stop();
         ecsRunning = false;
         return true;
     }
 
     @Override
     public boolean shutdown() {
-        // TODO
-        // for (ClientConnection conn: connections)
-        // conn.close();
-        ecs.close();
+        ecs.shutdown();
         ecsRunning = false;
         return true;
     }
@@ -107,20 +104,17 @@ public class ECSClient implements IECSClient {
 
     @Override
     public boolean removeNodes(Collection<String> nodeNames) {
-        // TODO
-        return false;
+        return removeNodes(nodeNames);
     }
 
     @Override
     public Map<String, IECSNode> getNodes() {
-        // TODO
-        return null;
+        return ecs.getNodes();
     }
 
     @Override
     public IECSNode getNodeByKey(String Key) {
-        // TODO
-        return null;
+        return ecs.getNodeByKey(key);
     }
 
     private void displayHelperMessage() {

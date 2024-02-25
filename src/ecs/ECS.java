@@ -97,7 +97,7 @@ public class ECS {
         }
     }
 
-    public void kill() {
+    public void shutdown() {
         try {
             ecsSocket.close();
         } catch (IOException e) {
@@ -105,7 +105,7 @@ public class ECS {
         }
     }
 
-    public void close() {
+    public void stop() {
         try {
             for (Map.Entry<String, IECSNode> entry : nodes.entrySet()) {
                 ECSNode node = (ECSNode) entry.getValue();
@@ -116,7 +116,7 @@ public class ECS {
             logger.error("Error closing connection", e);
         }
     
-        kill();
+        this.shutdown();
     }
 
     public boolean initServer(ECSNode newServer, String cacheStrategy, int cacheSize) {
@@ -200,12 +200,39 @@ public class ECS {
     }
 
     public boolean removeNodes(Collection<String> nodeNames) {
-        // TODO
-        return false;
+        boolean removedAll = true;
+
+        for (String nodeName: nodeNames) {
+            ECSNode removedNode = (ECSNode)nodes.remove(nodeName);
+
+            // Node not found in the server name to ECSNode map
+            if (removedNode == null) {
+                removedAll = false;
+                continue;
+            }
+
+            try {
+                removedNode.closeConnection();
+            } catch (Exception e) {
+                logger.error("Error closing connection with server " + nodeName, e);
+            }
+
+            // If the node was neither in availableNodes and unavailableNodes, 
+            // the node does not exist
+            if (!availableNodes.remove(removedNode) && !unavailableNodes.remove(removedNode)) {
+                removedAll = false;
+            }
+        }
+
+        return removedAll;
     }
 
     public Map<String, IECSNode> getNodes() {
         return this.nodes;
+    }
+
+    public IECSNode getNodeByKey(String Key) {
+        return nodes.get(key);
     }
 
     public static int getDefaultECSPort() {
