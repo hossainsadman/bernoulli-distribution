@@ -22,7 +22,7 @@ public class ECSClient implements IECSClient {
 
     private static Logger logger = Logger.getRootLogger();
     public boolean clientRunning = false; /* Represents the status of ECSClient not the ECS */
-    public boolean ecsRunning = false; /* Represents the status of  ECS */
+    public boolean ecsRunning = false; /* Represents the status of ECS */
     private ECS ecs;
 
     public ECSClient(String address, int port) {
@@ -90,8 +90,7 @@ public class ECSClient implements IECSClient {
 
     @Override
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO
-        return null;
+        return ecs.addNodes(count, cacheStrategy, cacheSize);
     }
 
     @Override

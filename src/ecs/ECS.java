@@ -3,6 +3,7 @@ package ecs;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import logger.LogSetup;
+import shared.messages.BasicKVMessage;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -11,9 +12,12 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import app_kvECS.ECSClient;
+import app_kvServer.ClientConnection;
 
+import org.apache.zookeeper.*;
 /* 
     ECSClient should initialize ECS. 
     If needed, integrate zookeeper here.
@@ -28,10 +32,14 @@ public class ECS {
     private int port = -1;
 
     private ServerSocket ecsSocket;
-    private Map<String, ECSNode> nodes = new HashMap<>(); /* maps node identifier -> node */
-    private ArrayList<ECSNode> availableNodes; // Indexable set
-    private ArrayList<ECSNode> unavailableNodes;
-    private int count = 0;
+
+    /*
+     * Integrity Constraint:
+     * IECSNode in availableNodes and unavailableNodes = values of nodes
+     */
+    private Map<String, IECSNode> nodes = new HashMap<>(); /* maps server name -> node */
+    private ArrayList<IECSNode> availableNodes;
+    private ArrayList<IECSNode> unavailableNodes;
 
     public ECS(String address, int port, Logger logger) {
         if (port < 1024 || port > 65535)
@@ -40,12 +48,24 @@ public class ECS {
         this.address = address;
         this.port = (port == -1) ? DEFAULT_ECS_PORT : port;
         this.logger = logger;
+
+        /* zookeeper if needed */
     }
 
     public boolean start() {
         try {
             ecsSocket = new ServerSocket(port, 10, InetAddress.getByName(address));
             logger.info("ECS is listening at " + address + ":" + port);
+
+            Thread serverConnThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    ECS.this.acceptServerConnections();
+                }
+            });
+
+            serverConnThread.start();
+
             return true;
         } catch (IOException e) {
             logger.error("ECS Socket cannot be opened: ");
@@ -55,15 +75,21 @@ public class ECS {
         }
     }
 
-    public void run() { // TODO: fix
+    public void acceptServerConnections() { 
         if (ecsSocket != null) {
             while (true) {
                 try {
+                    logger.info("<<< INSERT NEW ECS-SERVER CONNECTION HERE >>>");
                     Socket kvServerSocket = ecsSocket.accept();
+                    String serverAddress = kvServerSocket.getInetAddress().getHostAddress();
+                    int serverPort = kvServerSocket.getPort();
+                    String serverName = serverAddress + ":" + Integer.toString(serverPort); 
+                    ECSNode newNode = new ECSNode(serverName, serverAddress, serverPort, kvServerSocket);
+                    
                     // ClientConnection connection = new ClientConnection(this, clientSocket);
                     // connections.add(connection);
                     // new Thread(connection).start();
-                    logger.info("<<< INSERT NEW ECS-SERVER CONNECTION HERE >>>");
+
                     logger.info("Connected to " + kvServerSocket.getInetAddress().getHostName() + " on port "
                             + kvServerSocket.getPort());
                 } catch (IOException e) {
@@ -90,7 +116,7 @@ public class ECS {
         try {
             newServer.setCacheStrategy(cacheStrategy);
             newServer.setCacheSize(cacheSize);
-            availableNodes.add(newServer);
+            this.setNodeAvailability(newServer, false);
             return true;
         } catch (Exception e) {
             logger.error("Can't initialize server: ", e);
@@ -98,25 +124,56 @@ public class ECS {
         return false;
     }
 
+    /*
+     * Set the node's availability to true (in availableNodes) or false (in
+     * unavailableNodes)
+     */
+    private void setNodeAvailability(String nodeIdentifier, boolean isAvailable) {
+        if (nodes.containsKey(nodeIdentifier)) {
+            ECSNode node = (ECSNode) nodes.get(nodeIdentifier);
+            if (isAvailable) {
+                if (!availableNodes.contains(node)) {
+                    availableNodes.add(node);
+                    unavailableNodes.remove(node);
+                }
+            } else {
+                if (!unavailableNodes.contains(node)) {
+                    unavailableNodes.add(node);
+                    availableNodes.remove(node);
+                }
+            }
+        }
+    }
+
+    private void setNodeAvailability(ECSNode node, boolean isAvailable) {
+        if (isAvailable) {
+            if (!availableNodes.contains(node)) {
+                availableNodes.add(node);
+                unavailableNodes.remove(node);
+            }
+        } else {
+            if (!unavailableNodes.contains(node)) {
+                unavailableNodes.add(node);
+                availableNodes.remove(node);
+            }
+        }
+    }
+
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
         if (count > availableNodes.size()) {
             throw new IllegalArgumentException("Not enough available servers to fulfill the request.");
         }
 
-        List<IECSNode> addedNodes = new ArrayList<>();
+        Collection<IECSNode> addedNodes = new ArrayList<>();
 
         for (int i = 0; i < count; ++i) {
             /* Select and remove a server from the pool */
-            ECSNode newServer = availableNodes.remove(0);
-            
-            initServer(newServer, cacheStrategy, cacheSize);
+            IECSNode newServer = availableNodes.get(0);
 
-            if (newServer != null) {
-                unavailableNodes.add(newServer);
+            if (initServer((ECSNode) newServer, cacheStrategy, cacheSize))
                 addedNodes.add(newServer);
 
-                // update Zookeeper or another coordination service here
-            }
+            // update Zookeeper or another coordination service here if needed
         }
 
         // Rebalance the key space among all nodes
@@ -141,8 +198,7 @@ public class ECS {
     }
 
     public Map<String, IECSNode> getNodes() {
-        // TODO
-        return null;
+        return this.nodes;
     }
 
     public static int getDefaultECSPort() {

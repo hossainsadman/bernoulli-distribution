@@ -1,7 +1,10 @@
 package ecs;
 
 import java.math.BigInteger;
+import java.net.*;
+import java.util.*;
 
+import shared.CommunicationService;
 import shared.MD5;
 
 public class ECSNode implements IECSNode {
@@ -13,6 +16,8 @@ public class ECSNode implements IECSNode {
     private BigInteger hashEndRange;
     private String cacheStrategy = "None";
     private int cacheSize = 0;
+    private Socket serverSocket = null;
+    private CommunicationService comm;
 
     public static final BigInteger RING_START = BigInteger.ZERO;
     public static final BigInteger RING_END = new BigInteger(String.valueOf('F').repeat(32), 16);
@@ -22,6 +27,15 @@ public class ECSNode implements IECSNode {
         this.host = host;
         this.port = port;
         this.identifier = MD5.getHash(host + ":" + port);
+    }
+
+    public ECSNode(String name, String host, Integer port, Socket serverSocket) {
+        this.name = name;
+        this.host = host;
+        this.port = port;
+        this.identifier = MD5.getHash(host + ":" + port);
+        this.serverSocket = serverSocket;
+        this.comm = new CommunicationService(serverSocket);
     }
 
     @Override
