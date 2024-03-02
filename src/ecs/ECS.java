@@ -137,6 +137,10 @@ public class ECS {
                 command.add(String.valueOf(cacheSize));
                 command.add("-s");
                 command.add(strategy);
+                command.add("-eh");
+                command.add(this.address);
+                command.add("-ep");
+                command.add(String.valueOf(this.port));
 
                 logger.info("Executing command: " + String.join(" ", command));
 
@@ -211,13 +215,19 @@ public class ECS {
             ECSNode node = (ECSNode) nodes.get(nodeIdentifier);
             if (isAvailable && !availableNodes.contains(node)) {
                 availableNodes.add(node);
-                aavailableNodes.remove(node);
+                availableNodes.remove(node);
             }
             else 
                 availableNodes.remove(node);
         }
     }
-
+    private void setNodeAvailability(ECSNode node, boolean isAvailable) {
+       if (isAvailable && !availableNodes.contains(node)) {
+           availableNodes.add(node);
+           availableNodes.remove(node);
+       } else
+           availableNodes.remove(node);
+    }
 
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
         if (count > availableNodes.size()) {
