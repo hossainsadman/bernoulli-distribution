@@ -42,11 +42,10 @@ public class ECS {
 
     /*
      * Integrity Constraint:
-     * IECSNode in availableNodes and unavailableNodes = values of nodes
+     * IECSNode in availableNodes = values of nodes
      */
     private Map<String, IECSNode> nodes = new HashMap<>(); /* maps server name -> node */
     private ArrayList<IECSNode> availableNodes;
-    private ArrayList<IECSNode> unavailableNodes;
 
     public ECS(String address, int port, Logger logger) {
         if (port < 1024 || port > 65535)
@@ -205,39 +204,20 @@ public class ECS {
     }
 
     /*
-     * Set the node's availability to true (in availableNodes) or false (in
-     * unavailableNodes)
+     * Set the node's availability to true (in availableNodes) or false (rm from availableNodes)
      */
     private void setNodeAvailability(String nodeIdentifier, boolean isAvailable) {
         if (nodes.containsKey(nodeIdentifier)) {
             ECSNode node = (ECSNode) nodes.get(nodeIdentifier);
-            if (isAvailable) {
-                if (!availableNodes.contains(node)) {
-                    availableNodes.add(node);
-                    unavailableNodes.remove(node);
-                }
-            } else {
-                if (!unavailableNodes.contains(node)) {
-                    unavailableNodes.add(node);
-                    availableNodes.remove(node);
-                }
+            if (isAvailable && !availableNodes.contains(node)) {
+                availableNodes.add(node);
+                aavailableNodes.remove(node);
             }
+            else 
+                availableNodes.remove(node);
         }
     }
 
-    private void setNodeAvailability(ECSNode node, boolean isAvailable) {
-        if (isAvailable) {
-            if (!availableNodes.contains(node)) {
-                availableNodes.add(node);
-                unavailableNodes.remove(node);
-            }
-        } else {
-            if (!unavailableNodes.contains(node)) {
-                unavailableNodes.add(node);
-                availableNodes.remove(node);
-            }
-        }
-    }
 
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
         if (count > availableNodes.size()) {
@@ -288,12 +268,6 @@ public class ECS {
                 removedNode.closeConnection();
             } catch (Exception e) {
                 logger.error("Error closing connection with server " + nodeName, e);
-            }
-
-            // If the node was neither in availableNodes and unavailableNodes,
-            // the node does not exist
-            if (!availableNodes.remove(removedNode) && !unavailableNodes.remove(removedNode)) {
-                removedAll = false;
             }
         }
 
