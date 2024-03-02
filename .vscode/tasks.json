@@ -1,3 +1,8 @@
+/*
+java -jar m2-client.jar
+java -jar m2-ecs.jar
+java -jar m2-server.jar
+*/
 {
     "version": "2.0.0",
     "tasks": [
@@ -5,7 +10,7 @@
         {
             "label": "m2 Build",
             "type": "shell",
-            "command": "ant build",
+            "command": "ant",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -62,6 +67,28 @@
             "label": "m2 Run Server",
             "type": "shell",
             "command": "java -jar m2-server.jar",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": [
+                "m2 Build"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true, 
+                "focus": true,
+                "group": "m2",
+                "panel": "dedicated"
+            },
+        },
+        {
+            "label": "m2 Run ECS",
+            "type": "shell",
+            "command": "java -jar m2-ecs.jar",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
