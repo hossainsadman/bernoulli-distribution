@@ -172,7 +172,7 @@ public class KVServer implements IKVServer {
     public MetaData getMetaData() {
         return metaData;
     }
-    
+
     @Override
     public int getPort() {
         return port; // Return port
@@ -212,56 +212,54 @@ public class KVServer implements IKVServer {
 
     @Override
     public boolean inCache(String key) {
-      return cache != null && cache.containsKey(key);
+        return cache != null && cache.containsKey(key);
     }
 
-
     private static String escape(String s) {
-      return s.replace("\\", "\\\\")
-        .replace("\t", "\\t")
-        .replace("\b", "\\b")
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-        .replace("\f", "\\f")
-        .replace("\'", "\\'")
-        .replace("\"", "\\\"")
-        .replace(" ", "\\ "); 
+        return s.replace("\\", "\\\\")
+                .replace("\t", "\\t")
+                .replace("\b", "\\b")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\f", "\\f")
+                .replace("\'", "\\'")
+                .replace("\"", "\\\"")
+                .replace(" ", "\\ ");
     }
 
     public static String unescape(String s) {
-      return s.replace("\\\\", "\\")
-        .replace("\\t", "\t")
-        .replace("\\b", "\b")
-        .replace("\\n", "\n")
-        .replace("\\r", "\r")
-        .replace("\\f", "\f")
-        .replace("\\'", "'")   
-        .replace("\\\"", "\"")
-        .replace("\\ ", " ");
+        return s.replace("\\\\", "\\")
+                .replace("\\t", "\t")
+                .replace("\\b", "\b")
+                .replace("\\n", "\n")
+                .replace("\\r", "\r")
+                .replace("\\f", "\f")
+                .replace("\\'", "'")
+                .replace("\\\"", "\"")
+                .replace("\\ ", " ");
     }
-
 
     @Override
     public String getKV(String key) throws Exception {
-      if (!inStorage(escape(key)))
-        throw new Exception("tuple not found");
-      
-      if (!inCache(escape(key))) {
-          File path = getStorageAddressOfKey(escape(key));
+        if (!inStorage(escape(key)))
+            throw new Exception("tuple not found");
+
+        if (!inCache(escape(key))) {
+            File path = getStorageAddressOfKey(escape(key));
             StringBuilder contentBuilder = new StringBuilder();
             try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
                 String line;
                 while ((line = reader.readLine()) != null)
                     contentBuilder.append(line).append("\n");
             }
-            
+
             return contentBuilder.toString().trim();
         }
 
         String value = cache.get(escape(key));
         if (value == null)
             throw new Exception("tuple not found");
-            
+
         return value;
     }
 
@@ -269,7 +267,7 @@ public class KVServer implements IKVServer {
     public synchronized StatusType putKV(String key, String value) throws Exception {
         if (value.equals(""))
             throw new Exception("unable to delete tuple");
-            
+
         File file = new File(dirPath + File.separator + escape(key));
 
         if (value.equals("null")) {
@@ -287,14 +285,14 @@ public class KVServer implements IKVServer {
                 writer.write(value);
                 if (this.cache != null)
                     cache.put(escape(key), value);
-            } 
+            }
 
             return StatusType.PUT_UPDATE;
         }
-        
+
         // Key is not in storage (i.e. PUT)
-        try (FileWriter writer = new FileWriter(file)){ 
-          writer.write(value);
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(value);
             if (this.cache != null)
                 cache.put(escape(key), value);
         }
@@ -303,30 +301,30 @@ public class KVServer implements IKVServer {
 
     /*
      * Helper Function to Monitor the State of Current KVs in Storage and Cache
-     */ 
+     */
     public void printStorageAndCache() {
         File dir = new File(dirPath);
         File[] db = dir.listFiles();
 
         System.out.println("Storage: ");
-        if (db == null || db.length == 0) 
+        if (db == null || db.length == 0)
             System.out.println("\tStorage is Empty.");
         else {
-            for (File kv: db){
-                System.out.print("\t" + "Key: " + kv.getName() +  ", "); // key
+            for (File kv : db) {
+                System.out.print("\t" + "Key: " + kv.getName() + ", "); // key
                 try {
                     String content = new String(Files.readAllBytes(kv.toPath()));
                     System.out.println("Value: " + content); // value
-                } catch (IOException e){
+                } catch (IOException e) {
                     System.out.println("<Error>"); // could not access value for whatever reason
                 }
             }
-        } 
+        }
 
         System.out.println("Cache: ");
-        if (cache == null || cache.size() == 0) 
+        if (cache == null || cache.size() == 0)
             System.out.println("\tCache is Empty.");
-        for (Map.Entry<String, String> kv: cache.entrySet())
+        for (Map.Entry<String, String> kv : cache.entrySet())
             System.out.println("\t" + "Key: " + kv.getKey() + ", Value: " + kv.getValue());
 
         for (int i = 0; i < 40; ++i) // Divider for readability
@@ -353,13 +351,13 @@ public class KVServer implements IKVServer {
             file.delete();
         }
     }
-    
+
     @Override
     public void run() {
         running = true;
         try {
             serverSocket = new ServerSocket(port);
-            logger.info("Server is listening on port: " + serverSocket.getLocalPort());
+            logger.info("Started server listening on port: " + serverSocket.getLocalPort() + "; cache size: " + cacheSize + "; cache strategy: " + strategy);            
         } catch (IOException e) {
             logger.error("Server Socket cannot be opened: ");
             if (e instanceof BindException)
@@ -367,8 +365,8 @@ public class KVServer implements IKVServer {
             return;
         }
 
-        if (serverSocket != null){
-            while (running){
+        if (serverSocket != null) {
+            while (running) {
                 try {
                     clientSocket = serverSocket.accept();
                     ClientConnection connection = new ClientConnection(this, clientSocket);
@@ -376,7 +374,7 @@ public class KVServer implements IKVServer {
                     new Thread(connection).start();
                     logger.info("Connected to " + clientSocket.getInetAddress().getHostName() + " on port "
                             + clientSocket.getPort());
-                } catch (IOException e){
+                } catch (IOException e) {
                     logger.error("Unable to establish connection.\n", e);
                 }
             }
@@ -393,12 +391,12 @@ public class KVServer implements IKVServer {
         } catch (IOException e) {
             logger.error("Unable to close socket on port: " + port, e);
         }
-    
+
     }
 
     @Override
     public void close() {
-        for (ClientConnection conn: connections) 
+        for (ClientConnection conn : connections)
             conn.close();
         clearCache();
         // clearStorage(); // are not supposed to clear storage on server start/quit
@@ -407,11 +405,11 @@ public class KVServer implements IKVServer {
 
     public static void main(String[] args) throws IOException {
         Options options = new Options();
-        
+
         Option help = new Option("h", "help", false, "display help");
         help.setRequired(false);
         options.addOption(help);
-        
+
         Option address = new Option("a", "address", true, "address to listen to");
         address.setRequired(false);
         options.addOption(address);
@@ -419,6 +417,14 @@ public class KVServer implements IKVServer {
         Option port = new Option("p", "port", true, "server port");
         port.setRequired(false);
         options.addOption(port);
+
+        Option cacheSize = new Option("cs", "cacheSize", true, "cache size");
+        cacheSize.setRequired(false);
+        options.addOption(cacheSize);
+
+        Option cacheStrategy = new Option("s", "cacheStrategy", true, "cache strategy");
+        cacheStrategy.setRequired(false);
+        options.addOption(cacheStrategy);
 
         Option logFile = new Option("l", "logFile", true, "log file path");
         logFile.setRequired(false);
@@ -446,15 +452,18 @@ public class KVServer implements IKVServer {
         }
 
         if (cmd.hasOption("help")) {
-            formatter.printHelp("m1-server.jar", options);
+            formatter.printHelp("m2-server.jar", options);
             System.exit(0);
         }
-        
-        String serverAddress = cmd.getOptionValue("address", "localhost"); // default is "localhost"
-        String serverPort = (cmd.getOptionValue("port", "20010")); // default is "20010"
-        String serverLogFile = cmd.getOptionValue("logFile", "logs/server.log"); // default is "ALL"
-        String serverLogLevel = cmd.getOptionValue("logLevel", "ALL"); // default is "ALL"
-        String dbPath = cmd.getOptionValue("dir", "db"); // default is "db"
+
+        // set defaults for options
+        String serverAddress = cmd.getOptionValue("address", "localhost");
+        String serverPort = (cmd.getOptionValue("port", "20010"));
+        String serverCacheSize = (cmd.getOptionValue("cacheSize", "10"));
+        String serverCacheStrategy = (cmd.getOptionValue("cacheStrategy", "FIFO"));
+        String serverLogFile = cmd.getOptionValue("logFile", "logs/server.log");
+        String serverLogLevel = cmd.getOptionValue("logLevel", "ALL");
+        String dbPath = cmd.getOptionValue("dir", "db");
 
         if (!LogSetup.isValidLevel(serverLogLevel)) {
             serverLogLevel = "ALL";
@@ -462,11 +471,12 @@ public class KVServer implements IKVServer {
 
         try {
             new LogSetup(serverLogFile, LogSetup.getLogLevel(serverLogLevel));
-            KVServer server = new KVServer(Integer.parseInt(serverPort), 10, "FIFO", dbPath);
-            // server.clearStorage(); // are not supposed to clear storage on server start/quit
+            KVServer server = new KVServer(Integer.parseInt(serverPort), Integer.parseInt(serverCacheSize), serverCacheStrategy, dbPath);
+            // server.clearStorage(); // are not supposed to clear storage
+            // on server start/quit
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    
+
 }

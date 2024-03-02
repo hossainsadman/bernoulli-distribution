@@ -134,18 +134,16 @@ public class ECS {
                 command.add("m2-server.jar");
                 command.add("-p");
                 command.add(String.valueOf(port));
-                // command.add("-cs");
-                // command.add(String.valueOf(cacheSize));
-                // command.add("-s");
-                // command.add(strategy);
+                command.add("-cs");
+                command.add(String.valueOf(cacheSize));
+                command.add("-s");
+                command.add(strategy);
 
                 logger.info("Executing command: " + String.join(" ", command));
 
                 ProcessBuilder builder = new ProcessBuilder(command);
                 builder.inheritIO(); // forwards the output of the process to the current Java process
                 Process process = builder.start();
-                logger.info("Started server on port " + port + " with cache size " + cacheSize + " and strategy "
-                        + strategy);
             } catch (IOException e) {
                 logger.error("Failed to start server on port " + port, e);
             }
