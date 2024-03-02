@@ -5,6 +5,7 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -55,6 +56,7 @@ public class KVServer implements IKVServer {
     private final String dirPath;
     private String ecsHost = null;
     private int ecsPort = -1;
+    private Socket ecsSocket;
 
     /* Meta Data */
     private MetaData metaData;
@@ -410,6 +412,27 @@ public class KVServer implements IKVServer {
         }
     }
 
+    public void connectECS() {
+        if (ecsHost != null && ecsPort > -1) {     
+            try {
+                ecsSocket = new Socket(ecsHost, ecsPort);
+                System.out.println("Connected to ECS at " + ecsHost + " on port " + ecsPort);
+    
+                OutputStream outputStream = ecsSocket.getOutputStream();
+                PrintWriter printWriter = new PrintWriter(outputStream, true);
+    
+                printWriter.println("Hello from Server");
+                System.out.println("Message sent to the ECS");
+    
+                // ...
+    
+            } catch (Exception e) {
+                System.err.println("Error connecting to ECS: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+    
     @Override
     public void run() {
         running = true;
@@ -424,6 +447,8 @@ public class KVServer implements IKVServer {
                 logger.error("Port " + port + " is already bound.");
             return;
         }
+
+        connectECS();
 
         if (serverSocket != null) {
             while (running) {
@@ -512,7 +537,7 @@ public class KVServer implements IKVServer {
 
         try {
             cmd = parser.parse(options, args);
-        } catch (ParseException e) {
+        } catch (Exception e) {
             System.out.println(e.getMessage());
             formatter.printHelp("utility-name", options);
             System.exit(1);
