@@ -199,11 +199,15 @@ public class ECS {
                             break;
                         }
                     }
-                    String serverAddress = kvServerSocket.getInetAddress().getHostAddress();
-                    int serverPort = kvServerSocket.getPort();
-                    String serverName = serverAddress + ":" + Integer.toString(serverPort);
-                    logger.info("Connected to " + serverAddress + ":"
-                    + serverPort);
+                    logger.info("ECS connected to KVServer via " +  kvServerSocket.getInetAddress().getHostAddress() + ":" + kvServerSocket.getPort());
+
+                    String serverName = (String) readObjectFromSocket(kvServerSocket);
+                    // split serverName by : to get the server address and port
+                    String[] serverInfo = serverName.split(":");
+                    String serverAddress = serverInfo[0];
+                    int serverPort = Integer.parseInt(serverInfo[1]);
+
+                    logger.info("ECS connected to KVServer at " + serverAddress + ":" + serverPort);
 
                     ECSNode newNode = new ECSNode(serverName, serverAddress, serverPort, kvServerSocket);
                     nodes.put(serverName, newNode); // append to the table

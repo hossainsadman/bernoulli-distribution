@@ -1,8 +1,6 @@
 package app_kvServer;
 
 import java.io.*;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.net.BindException;
 import java.net.InetAddress;
@@ -263,7 +261,16 @@ public class KVServer implements IKVServer {
         return port; // Return port
     }
 
-    @Override
+    public String getHostaddress() {
+        try {
+            InetAddress inetAddress = InetAddress.getLocalHost();
+            return inetAddress.getHostAddress(); // Return hostname
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+            return "Unknown Host";
+        }
+    }
+
     public String getHostname() {
         try {
             InetAddress inetAddress = InetAddress.getLocalHost();
@@ -489,7 +496,10 @@ public class KVServer implements IKVServer {
                 ecsSocket = new Socket(ecsHost, ecsPort);
                 logger.info("Connected to ECS at " + ecsHost + ":" + ecsPort + " via "
                         + ecsSocket.getInetAddress().getHostAddress()
-                        + ":" + ecsSocket.getLocalPort() + " on port " + ecsSocket.getPort() + ".");
+                        + ":" + ecsSocket.getLocalPort());
+                
+                String serverName =  this.getHostaddress() + ":" + String.valueOf(this.getPort());
+                writeObjectToSocket(ecsSocket, serverName);
 
                 hashRing = (ECSHashRing) readObjectFromSocket(ecsSocket);
 
@@ -515,8 +525,9 @@ public class KVServer implements IKVServer {
         try {
             serverSocket = new ServerSocket(port);
             if (ecsHost != null && ecsPort >= 0)
-                logger.info("Started server listening on port: " + serverSocket.getLocalPort() + "; cache size: "
+                logger.info("Started server listening at: " + "(" + serverSocket.getInetAddress().getHostName() + ") " + serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getLocalPort() + "; cache size: "
                         + cacheSize + "; cache strategy: " + strategy + "; ECS set to: " + ecsHost + ":" + ecsPort);
+
         } catch (IOException e) {
             logger.error("Server Socket cannot be opened: ");
             if (e instanceof BindException)
@@ -533,8 +544,7 @@ public class KVServer implements IKVServer {
                     ClientConnection connection = new ClientConnection(this, clientSocket);
                     connections.add(connection);
                     new Thread(connection).start();
-                    logger.info("Connected to " + clientSocket.getInetAddress().getHostName() + " on port "
-                            + clientSocket.getPort());
+                    logger.info("Connected to " + "(" + clientSocket.getInetAddress().getHostName() + ") " + clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort());
                 } catch (IOException e) {
                     logger.error("Unable to establish connection.\n", e);
                 }
