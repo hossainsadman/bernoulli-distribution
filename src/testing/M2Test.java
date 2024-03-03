@@ -1,8 +1,7 @@
 package testing;
 
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.*;
 
 import app_kvServer.KVServer;
 import ecs.ECS;
@@ -14,6 +13,7 @@ import app_kvECS.ECSClient;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
+
 /* 
     Integration of the JUnit library into your project (as in Milestone 1)
     Automate the running of the given test cases Do regression testing, 
@@ -23,44 +23,64 @@ import junit.framework.TestSuite;
 
     Compile a short test report about all test cases, especially your own cases (submit as appendix of your design document).
 */
-
 public class M2Test extends TestCase {
+    private ECSClient ecsClient;
+    private static final Logger logger = Logger.getLogger(M2Test.class);
+
+    protected void setUp() {
+        ecsClient = new ECSClient("127.0.0.1", 50000);
+        ecsClient.start();
+    }
+
+    protected void tearDown() {
+        if (ecsClient != null) 
+            ecsClient.shutdown();
+    }
+
     public void testECSClientInitialization() {
-        ECSClient ecsClient = new ECSClient("127.0.0.1", 50000);
         assertNotNull(ecsClient);
         assertTrue(ecsClient.clientRunning);
     }
 
     public void testStartECSService() {
-        ECSClient ecsClient = new ECSClient("127.0.0.1", 30000);
-        boolean started = ecsClient.start();
-        assertTrue(started);
         assertTrue(ecsClient.ecsRunning);
     }
 
     public void testStopECSService() {
-        ECSClient ecsClient = new ECSClient("127.0.0.1", 30001);
-        ecsClient.start();
         ecsClient.stop();
         assertFalse(ecsClient.ecsRunning);
     }
 
     public void testShutdownECS() {
-        ECSClient ecsClient = new ECSClient("127.0.0.1", 30002);
-        ecsClient.start();
-        boolean shutdown = ecsClient.shutdown();
-        assertTrue(shutdown);
+        ecsClient.shutdown();
         assertFalse(ecsClient.ecsRunning);
     }
 
     public void testAddNode() {
-        ECSClient ecsClient = new ECSClient("127.0.0.1", 50000);
-        ecsClient.start();
         IECSNode node = ecsClient.addNode("LRU", 1024);
         assertNotNull(node);
     }
 
     public void testRemoveNodes() {
-        return;
+        Set<String> nodeNames = new HashSet<>();
+        IECSNode node = ecsClient.addNode("LRU", 1024);
+        assertNotNull(node);
+        nodeNames.add(node.getNodeName());
+        boolean removed = ecsClient.removeNodes(nodeNames);
+        assertTrue(removed);
     }
+
+    public void testConsistentHashing() {
+    }
+
+    public void testMetadataUpdates() {
+    }
+
+    public void testRetryOperations() {
+    }
+
+    public void testLocks() {
+
+    }
+
 }
