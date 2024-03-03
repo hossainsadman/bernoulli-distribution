@@ -466,11 +466,14 @@ public class KVServer implements IKVServer {
                     logger.info("Received TRANSFER command from ECS");
                     // write lock
                     // get metadata
-                    logger.info("<<PREV>> OLD NODE METEDATA: " + metadata.toString());
+                    logger.info("Old hashrange: " + metadata.toString());
                     metadata.setNodeHashRange((BigInteger[]) readObjectFromSocket(ecsSocket));
+                    logger.info("New hashrange: " + metadata.toString());
                     // get keys to transfer
-                    writeObjectToSocket(ecsSocket, metadata.toString());
-                    logger.info("UPDATED OLD NODE METEDATA: " + metadata.toString());
+                    List<String> keys = getKeysNotResponsibleFor();
+                    HashMap<String, String> kvPairs = getKVPairsNotResponsibleFor(keys);
+
+                    writeObjectToSocket(ecsSocket, kvPairs);
                     // transfer keys
                 }
                 
@@ -562,19 +565,33 @@ public class KVServer implements IKVServer {
         kill();
     }
 
-    public List<String> getKeysToTransfer(BigInteger start, BigInteger end) {
+    public List<String> getKeysNotResponsibleFor() {
         List<String> keys = new ArrayList<>();
         File dir = new File(dirPath);
         for (File file : dir.listFiles()) {
             if (file.isDirectory()) {
                 for (File kv : file.listFiles()) {
-                    if (metadata.isKeyInRange(kv.getName())) {
+                    if (!metadata.isKeyInRange(kv.getName())) {
                         keys.add(kv.getName());
                     }
                 }
             }
         }
+        logger.info("Keys not responsible for: " + keys.toString());
         return keys;
+    }
+
+    public HashMap<String, String> getKVPairsNotResponsibleFor(List<String> keys) {
+        HashMap<String, String> kvPairs = new HashMap<>();
+        for (String key : keys) {
+            try {
+                kvPairs.put(key, getKV(key));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        logger.info("KVPairs not responsible for: " + kvPairs.toString());
+        return kvPairs;
     }
 
     public static void main(String[] args) throws IOException {

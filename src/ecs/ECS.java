@@ -222,8 +222,9 @@ public class ECS {
                         // transfer appropriate key-value pairs from oldNode to newNode
                         writeObjectToSocket(oldNode.getServerSocket(), "TRANSFER");
                         writeObjectToSocket(oldNode.getServerSocket(), oldNode.getNodeHashRangeBigInt());
-                        String metatest = (String) readObjectFromSocket(oldNode.getServerSocket());
-                        logger.info("READING FROM OLD NODE: " + metatest);
+                        HashMap<String, String> kvPairs = (HashMap<String, String>) readObjectFromSocket(oldNode.getServerSocket());
+                        logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + oldNode.getNodeName() + " to " + newNode.getNodeName());
+                        logger.info("kvPairs: " + kvPairs.toString());
                     }
 
                 } catch (IOException e) {
@@ -232,7 +233,7 @@ public class ECS {
             }
         }
     }
-    
+
     public Object readObjectFromSocket(Socket socket) {
         Object obj = null;
         try {
