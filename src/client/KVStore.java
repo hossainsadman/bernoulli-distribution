@@ -118,7 +118,7 @@ public class KVStore implements KVCommInterface {
         return this.sendMessageToServer(message);
     }
 
-    public BasicKVMessage keyrange() {
+    public BasicKVMessage keyrange() throws Exception {
         BasicKVMessage message = new BasicKVMessage(StatusType.KEYRANGE, null, null);
         ECSNode server = this.metaData.getFirstNode();
         reconnect(server.getNodeHost(), server.getNodePort());
