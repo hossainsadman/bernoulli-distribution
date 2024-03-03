@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -30,6 +31,7 @@ import shared.messages.KVMessage;
 import shared.messages.KVMessage.StatusType;
 import shared.*;
 import static app_kvServer.Caches.*;
+import ecs.ECSHashRing;
 
 public class KVServer implements IKVServer {
     /**
@@ -503,9 +505,9 @@ public class KVServer implements IKVServer {
         for (File file : dir.listFiles()) {
             if (file.isDirectory()) {
                 for (File kv : file.listFiles()) {
-                    if (ECSNode.isKeyInRange(kv.getName(), start, end)) {
+                    // if (metaData.isKeyInRange(kv.getName(), start, end)) {
                         keys.add(kv.getName());
-                    }
+                    // }
                 }
             }
         }
