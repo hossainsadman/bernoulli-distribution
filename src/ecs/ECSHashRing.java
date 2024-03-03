@@ -111,7 +111,7 @@ public class ECSHashRing implements Serializable {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         for (ECSNode node : this.hashring.values()) {
-            sb.append(node.toString() + " ");
+            sb.append(node.toString() + "; ");
         }
         return sb.toString();
     }
