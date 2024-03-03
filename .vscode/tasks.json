@@ -48,9 +48,9 @@ java -jar m2-server.jar
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "dependsOn": [
-                "m2 Build"
-            ],
+            // "dependsOn": [
+            //     "m2 Build"
+            // ],
             "group": {
                 "kind": "test",
                 "isDefault": false
@@ -70,9 +70,9 @@ java -jar m2-server.jar
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "dependsOn": [
-                "m2 Build"
-            ],
+            // "dependsOn": [
+            //     "m2 Build"
+            // ],
             "group": {
                 "kind": "test",
                 "isDefault": false
@@ -88,13 +88,13 @@ java -jar m2-server.jar
         {
             "label": "m2 Run ECS",
             "type": "shell",
-            "command": "java -jar m2-ecs.jar",
+            "command": "java -jar m2-ecs.jar -c",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "dependsOn": [
-                "m2 Build"
-            ],
+            // "dependsOn": [
+            //     "m2 Build"
+            // ],
             "group": {
                 "kind": "test",
                 "isDefault": false
@@ -116,9 +116,9 @@ java -jar m2-server.jar
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "dependsOn": [
-                "m2 Build"
-            ],
+            // "dependsOn": [
+            //     "m2 Build"
+            // ],
             "group": {
                 "kind": "test",
                 "isDefault": false
@@ -138,9 +138,9 @@ java -jar m2-server.jar
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "dependsOn": [
-                "m2 Build"
-            ],
+            // "dependsOn": [
+            //     "m2 Build"
+            // ],
             "group": {
                 "kind": "test",
                 "isDefault": false
@@ -173,9 +173,9 @@ java -jar m2-server.jar
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "dependsOn": [
-                "m2 Build"
-            ],
+            // "dependsOn": [
+            //     "m2 Build"
+            // ],
             "group": {
                 "kind": "test",
                 "isDefault": false
@@ -191,9 +191,9 @@ java -jar m2-server.jar
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "dependsOn": [
-                "m2 Build"
-            ],
+            // "dependsOn": [
+            //     "m2 Build"
+            // ],
             "group": {
                 "kind": "test",
                 "isDefault": false
@@ -211,9 +211,9 @@ java -jar m2-server.jar
         //     "options": {
         //         "cwd": "${workspaceFolder}"
         //     },
-        //     "dependsOn": [
-        //         "m2 Build"
-        //     ],
+        //    // "dependsOn": [
+        //    //     "m2 Build"
+        //    // ],
         //     "group": {
         //         "kind": "test",
         //         "isDefault": false

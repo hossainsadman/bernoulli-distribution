@@ -86,6 +86,10 @@ public class ECSNode implements IECSNode, Serializable {
         return this.port;
     }
 
+    public Socket getServerSocket() {
+        return this.serverSocket;
+    }
+
     public BigInteger getNodeIdentifier() {
         return this.identifier;
     }
@@ -95,6 +99,13 @@ public class ECSNode implements IECSNode, Serializable {
         return new String[] {
             this.hashStartRange.toString(),
             this.hashEndRange.toString()
+        };
+    }
+
+    public BigInteger[] getNodeHashRangeBigInt() {
+        return new BigInteger[] {
+            this.hashStartRange,
+            this.hashEndRange
         };
     }
 
@@ -114,6 +125,11 @@ public class ECSNode implements IECSNode, Serializable {
     public void setNodeHashRange(BigInteger start, BigInteger end) {
         this.hashStartRange = start;
         this.hashEndRange = end;
+    }
+
+    public void setNodeHashRange(BigInteger[] hashRange) {
+        this.hashStartRange = hashRange[0];
+        this.hashEndRange = hashRange[1];
     }
 
     public void setNodeHashRange(String start, String end) {

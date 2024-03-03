@@ -437,18 +437,67 @@ public class KVServer implements IKVServer {
         }
     }
 
+    public Object readObjectFromSocket(Socket socket) {
+        Object obj = null;
+        try {
+            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+            obj = in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return obj;
+    }
+    
+    public void writeObjectToSocket(Socket socket, Object obj) {
+        try {
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            out.writeObject(obj);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void listenForTransfer() {
+        while (ecsSocket != null && !ecsSocket.isClosed()) {
+            try {
+                String str = (String) readObjectFromSocket(ecsSocket);
+                if (str.equals("TRANSFER")) {
+                    logger.info("Received TRANSFER command from ECS");
+                    // write lock
+                    // get metadata
+                    logger.info("<<PREV>> OLD NODE METEDATA: " + metadata.toString());
+                    metadata.setNodeHashRange((BigInteger[]) readObjectFromSocket(ecsSocket));
+                    // get keys to transfer
+                    writeObjectToSocket(ecsSocket, metadata.toString());
+                    logger.info("UPDATED OLD NODE METEDATA: " + metadata.toString());
+                    // transfer keys
+                }
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void connectECS() {
         if (ecsHost != null && ecsPort > -1) {
             try {
                 ecsSocket = new Socket(ecsHost, ecsPort);
-                logger.info("Connected to ECS at " + ecsHost + ":" + ecsPort + " via " + ecsSocket.getInetAddress().getHostAddress()
+                logger.info("Connected to ECS at " + ecsHost + ":" + ecsPort + " via "
+                        + ecsSocket.getInetAddress().getHostAddress()
                         + ":" + ecsSocket.getLocalPort() + " on port " + ecsSocket.getPort() + ".");
 
-                ObjectInputStream in = new ObjectInputStream(ecsSocket.getInputStream());
-                hashRing = (ECSHashRing) in.readObject();
-                in.close();
+                hashRing = (ECSHashRing) readObjectFromSocket(ecsSocket);
 
                 metadata = hashRing.getNodeForKey(getHostname() + ":" + getPort());
+                logger.info("KVServer " + metadata.getNodeName() + " keyrange: " + metadata.toString());
+
+                new Thread(new Runnable() {
+                    public void run() {
+                        listenForTransfer();
+                    }
+                }).start();
 
             } catch (Exception e) {
                 System.err.println("Error connecting to ECS");
@@ -497,6 +546,7 @@ public class KVServer implements IKVServer {
         running = false;
         try {
             serverSocket.close();
+            ecsSocket.close();
         } catch (IOException e) {
             logger.error("Unable to close socket on port: " + port, e);
         }

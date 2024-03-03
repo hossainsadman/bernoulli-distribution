@@ -244,7 +244,7 @@ public class ECSClient implements IECSClient {
         logLevel.setRequired(false);
         options.addOption(logLevel);
 
-        Option cli = new Option("c", "cli", true, "run cli");
+        Option cli = new Option("c", "cli", false, "run cli");
         logLevel.setRequired(false);
         options.addOption(cli);
     }

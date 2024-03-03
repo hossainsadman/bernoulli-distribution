@@ -202,30 +202,55 @@ public class ECS {
                     String serverAddress = kvServerSocket.getInetAddress().getHostAddress();
                     int serverPort = kvServerSocket.getPort();
                     String serverName = serverAddress + ":" + Integer.toString(serverPort);
+                    logger.info("Connected to " + serverAddress + ":"
+                    + serverPort);
 
                     ECSNode newNode = new ECSNode(serverName, serverAddress, serverPort, kvServerSocket);
                     nodes.put(serverName, newNode); // append to the table
                     setNodeAvailability(newNode, true); // set the node available
 
+                    // WRITE_LOCK on kvserver
+
                     ECSNode oldNode = hashRing.addNode(newNode);
                     logger.info("Added " + serverName + " to the hashring.");
                     logger.info("KEYRANGE: " + hashRing.toString());
 
+                    writeObjectToSocket(kvServerSocket, hashRing);
+
                     // oldNode is null if newNode is the only node in the hashring
                     if (oldNode != null) {
                         // transfer appropriate key-value pairs from oldNode to newNode
+                        writeObjectToSocket(oldNode.getServerSocket(), "TRANSFER");
+                        writeObjectToSocket(oldNode.getServerSocket(), oldNode.getNodeHashRangeBigInt());
+                        String metatest = (String) readObjectFromSocket(oldNode.getServerSocket());
+                        logger.info("READING FROM OLD NODE: " + metatest);
                     }
 
-                    ObjectOutputStream out = new ObjectOutputStream(kvServerSocket.getOutputStream());
-                    out.writeObject(hashRing);
-                    out.flush();
-
-                    logger.info("Connected to " + kvServerSocket.getInetAddress().getHostName() + " on port "
-                            + kvServerSocket.getPort());
                 } catch (IOException e) {
                     logger.error("Unable to establish connection.\n", e);
                 }
             }
+        }
+    }
+    
+    public Object readObjectFromSocket(Socket socket) {
+        Object obj = null;
+        try {
+            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+            obj = in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return obj;
+    }
+
+    public void writeObjectToSocket(Socket socket, Object obj) {
+        try {
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            out.writeObject(obj);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
