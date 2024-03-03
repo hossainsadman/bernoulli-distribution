@@ -118,6 +118,15 @@ public class KVStore implements KVCommInterface {
         return this.sendMessageToServer(message);
     }
 
+    public BasicKVMessage keyrange() {
+        BasicKVMessage message = new BasicKVMessage(StatusType.KEYRANGE, null, null);
+        ECSNode server = this.metaData.getFirstNode();
+        reconnect(server.getNodeHost(), server.getNodePort());
+    
+        this.communicationService.sendMessage(message);
+        return this.communicationService.receiveMessage();
+    }
+
     private BasicKVMessage validateKeyValuePair(String key, String value) {
         if (key.length() > MAX_KEY_BYTES || key.isEmpty())
             return new BasicKVMessage(StatusType.INVALID_KEY, "Key must be non-empty and less than or equal to 20 bytes",

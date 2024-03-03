@@ -158,6 +158,6 @@ public class ECSNode implements IECSNode, Serializable {
     }
 
     public String toString() {
-        return this.hashStartRange.toString() + "," + this.hashEndRange.toString() + ";" + this.host + ":" + this.port;
+        return this.hashStartRange.toString() + "," + this.hashEndRange.toString() + "," + this.host + ":" + this.port;
     }
 }
