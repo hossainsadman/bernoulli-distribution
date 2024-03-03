@@ -34,6 +34,7 @@ import shared.messages.KVMessage.StatusType;
 import shared.*;
 import static app_kvServer.Caches.*;
 import ecs.ECSHashRing;
+import ecs.ECSNode;
 
 public class KVServer implements IKVServer {
     /**
@@ -70,6 +71,7 @@ public class KVServer implements IKVServer {
 
     /* Meta Data */
     private ECSHashRing hashRing = null;
+    private ECSNode metadata = null;
 
     public KVServer(int port, int cacheSize, String strategy) {
         if (port < 1024 || port > 65535)
@@ -243,6 +245,14 @@ public class KVServer implements IKVServer {
     }
 
     public ECSHashRing getHashRing() {
+        return hashRing;
+    }
+
+    public void setMetadata(ECSNode metadata) {
+        this.metadata = metadata;
+    }
+
+    public ECSHashRing getMetadata() {
         return hashRing;
     }
 
@@ -432,8 +442,11 @@ public class KVServer implements IKVServer {
                 System.out.println("Connected to ECS at " + ecsHost + " on port " + ecsPort);
     
                 ObjectInputStream in = new ObjectInputStream(ecsSocket.getInputStream());
-                hashRing = (ECSHashRing) in.readObject();   
-    
+                hashRing = (ECSHashRing) in.readObject();
+                in.close();
+
+                metadata = hashRing.getNodeForKey(getHostname() + ":" + getPort());
+                
             } catch (Exception e) {
                 System.err.println("Error connecting to ECS: " + e.getMessage());
                 e.printStackTrace();
@@ -502,9 +515,9 @@ public class KVServer implements IKVServer {
         for (File file : dir.listFiles()) {
             if (file.isDirectory()) {
                 for (File kv : file.listFiles()) {
-                    // if (metaData.isKeyInRange(kv.getName(), start, end)) {
+                    if (metadata.isKeyInRange(kv.getName())) {
                         keys.add(kv.getName());
-                    // }
+                    }
                 }
             }
         }

@@ -32,6 +32,14 @@ public class ECSNode implements IECSNode, Serializable {
     public static final BigInteger RING_START = BigInteger.ZERO;
     public static final BigInteger RING_END = new BigInteger(String.valueOf('F').repeat(32), 16);
 
+    ECSNode(String host, Integer port, BigInteger start, BigInteger end) {
+        this.host = host;
+        this.port = port;
+        this.identifier = MD5.getHash(host + ":" + port);
+        this.hashStartRange = start;
+        this.hashEndRange = end;
+    }
+
     public ECSNode(String name, String host, Integer port) {
         this.name = name;
         this.host = host;

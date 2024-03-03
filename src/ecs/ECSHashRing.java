@@ -51,12 +51,14 @@ public class ECSHashRing implements Serializable {
             return null; // no next node (to transfer kv pairs to)
         }
 
-        ECSNode next = this.hashring.higherEntry(node.getNodeIdentifier()).getValue();
+        Map.Entry<BigInteger, ECSNode> nextEntry = this.hashring.higherEntry(node.getNodeIdentifier());
         // if the removed node is the last node in the hashring, then its next node is
         // the first node in the hashring
-        if (next == null) {
-            next = this.hashring.firstEntry().getValue();
-        }
+        ECSNode next = (nextEntry != null) ? nextEntry.getValue() : this.hashring.firstEntry().getValue();
+
+        assert(next != null);
+        assert(next != node);
+
         // set the start of the next node's range to the removed node's range start
         next.setNodeHashStartRange(node.getNodeHashStartRange());
 
@@ -67,12 +69,10 @@ public class ECSHashRing implements Serializable {
 
     public ECSNode getNodeForKey(String key) {
         BigInteger keyHash = MD5.getHash(key);
-        ECSNode node = this.hashring.ceilingEntry(keyHash).getValue();
+        Map.Entry<BigInteger, ECSNode> foundEntry = this.hashring.ceilingEntry(keyHash);
         // if key is greater than the largest node hash in the hashring, then the
         // first node in the hashring is returned
-        if (node == null) {
-            node = this.hashring.firstEntry().getValue();
-        }
+        ECSNode node = (foundEntry != null) ? foundEntry.getValue() : this.hashring.firstEntry().getValue();
         return node;
     }
 

@@ -205,17 +205,16 @@ public class ECS {
 
                     ECSNode oldNode = hashRing.addNode(newNode);
                     logger.info("Added " + serverName + " to the hashring.");
-                    logger.info(hashRing.toString());
+                    logger.info("KEYRANGE: " + hashRing.toString());
+
+                    // oldNode is null if newNode is the only node in the hashring
+                    if (oldNode != null) {
+                        // transfer appropriate key-value pairs from oldNode to newNode
+                    }                    
 
                     ObjectOutputStream out = new ObjectOutputStream(kvServerSocket.getOutputStream());
                     out.writeObject(hashRing);
                     out.flush();
-
-                    // // null if newNode is first or last node in ring
-                    // if (oldNode != null) {
-                    //     // transfer appropriate key-value pairs from oldNode to newNode
-                        
-                    // }
 
                     logger.info("Connected to " + kvServerSocket.getInetAddress().getHostName() + " on port "
                             + kvServerSocket.getPort());
