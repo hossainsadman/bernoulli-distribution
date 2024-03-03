@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 import org.apache.log4j.*;
 
 public class BasicKVMessage implements KVMessage {
+  private static final int STATUS_SIZE = 25;
+
   private static Logger logger = Logger.getRootLogger();
   private static final char LINE_FEED = 0x0A;
   private static final char RETURN = 0x0D;
@@ -86,21 +88,19 @@ public class BasicKVMessage implements KVMessage {
     try {
       ByteBuffer buffer = ByteBuffer.wrap(bytes);
       buffer.position(buffer.position() + SECRET.length());
-      // Extract StatusType (20 bytes)
-      byte[] statusBytes = new byte[20];
+      // Extract StatusType (STATUS_SIZE bytes)
+      byte[] statusBytes = new byte[STATUS_SIZE];
       buffer.get(statusBytes);
       String statusStr = new String(statusBytes).trim();
       this.status = StatusType.valueOf(statusStr);
 
       // Extract key length and key
       int keyLength = buffer.getInt();
-      if (keyLength < 0 || keyLength > buffer.remaining()) {
-        throw new IllegalArgumentException("Invalid key length");
+      if (keyLength > 0) {
+        byte[] keyBytes = new byte[keyLength];
+        buffer.get(keyBytes);
+        this.key = new String(keyBytes);
       }
-      byte[] keyBytes = new byte[keyLength];
-      buffer.get(keyBytes);
-      this.key = new String(keyBytes);
-
       int valueLength = buffer.getInt();
       value = null;
       if (valueLength > 0) {
@@ -199,7 +199,7 @@ public class BasicKVMessage implements KVMessage {
   private byte[] toByteArray(StatusType status, String key, String value) {
     byte[] secretBytes = SECRET.getBytes();
 
-    byte[] statusBytes = String.format("%-20s", status.name()).getBytes();
+    byte[] statusBytes = String.format("%-25s", status.name()).getBytes();
 
     byte[] keyBytes = (key != null) ? key.getBytes() : new byte[0];
     int keyLength = keyBytes.length;

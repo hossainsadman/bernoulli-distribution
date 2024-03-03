@@ -14,6 +14,7 @@ import shared.messages.BasicKVMessage;
 import shared.messages.KVMessage;
 import shared.messages.KVMessage.StatusType;
 import shared.CommunicationService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Represents a connection end point for a particular client that is
@@ -25,6 +26,7 @@ import shared.CommunicationService;
 public class ClientConnection implements Runnable {
 
     private static Logger logger = Logger.getRootLogger();
+    private ObjectMapper om = new ObjectMapper();
     private KVServer server;
     private CommunicationService comm;
     private Socket clientSocket;
@@ -74,6 +76,10 @@ public class ClientConnection implements Runnable {
         }
     }
 
+    private boolean checkKeyInRange(String key) {
+        return this.server.getMetadata().isKeyInRange(key);
+    }
+
     /**
      * Processes received messages, and send it back to the client.
      */
@@ -88,37 +94,50 @@ public class ClientConnection implements Runnable {
         if (recvStatus == StatusType.KEYRANGE){
             res = new BasicKVMessage(StatusType.KEYRANGE_SUCCESS, this.server.getHashRing().toString(), null);
         } else if (recvStatus == StatusType.PUT && recvKey != null && recvVal != null) { // PUT
+            if(checkKeyInRange(recvKey)){
+                /*
+                * tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS
+                * <key> <value>
+                * tuple successfully updated, send acknowledgement to client: PUT_UPDATE <key>
+                * <value>
+                * unable to insert tuple, send error message to client: PUT_ERROR <key> <value>
+                */
 
-            /*
-             * tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS
-             * <key> <value>
-             * tuple successfully updated, send acknowledgement to client: PUT_UPDATE <key>
-             * <value>
-             * unable to insert tuple, send error message to client: PUT_ERROR <key> <value>
-             */
-
-            try {
-                StatusType putStatus;
-                putStatus = server.putKV(recvKey, recvVal);
-                res = new BasicKVMessage(putStatus, recvKey, recvVal);
-            } catch (Exception e) {
-                if (recvVal.equals("null"))
-                    res = new BasicKVMessage(StatusType.DELETE_ERROR, recvKey, recvVal);
-                else
-                    res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
+                try {
+                    StatusType putStatus;
+                    putStatus = server.putKV(recvKey, recvVal);
+                    res = new BasicKVMessage(putStatus, recvKey, recvVal);
+                } catch (Exception e) {
+                    if (recvVal.equals("null"))
+                        res = new BasicKVMessage(StatusType.DELETE_ERROR, recvKey, recvVal);
+                    else
+                        res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
+                }
+            } else {
+                res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
             }
-        } else if (recvStatus == StatusType.PUT && recvVal == null) {
-            res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
-        } else if (recvStatus == StatusType.GET && recvKey != null) { // GET
-            try {
-                String value = server.getKV(recvKey);
 
-                if (value == null) // tuple not found, send error message to client: GET_ERROR <key>
+        } else if (recvStatus == StatusType.PUT && recvVal == null) {
+            if(checkKeyInRange(recvKey)){
+                res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
+            } else {
+                res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
+            }
+
+        } else if (recvStatus == StatusType.GET && recvKey != null) { // GET
+            if(checkKeyInRange(recvKey)){
+                try {
+                    String value = server.getKV(recvKey);
+    
+                    if (value == null) // tuple not found, send error message to client: GET_ERROR <key>
+                        res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, null);
+                    else // tuple found: GET_SUCCESS <key> <value> to client.
+                        res = new BasicKVMessage(StatusType.GET_SUCCESS, recvKey, value);
+                } catch (Exception e) { // Something is wrong.
                     res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, null);
-                else // tuple found: GET_SUCCESS <key> <value> to client.
-                    res = new BasicKVMessage(StatusType.GET_SUCCESS, recvKey, value);
-            } catch (Exception e) { // Something is wrong.
-                res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, null);
+                }
+            } else {
+                res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
             }
 
         } else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { 

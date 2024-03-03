@@ -254,8 +254,8 @@ public class KVServer implements IKVServer {
         this.metadata = metadata;
     }
 
-    public ECSHashRing getMetadata() {
-        return hashRing;
+    public ECSNode getMetadata() {
+        return metadata;
     }
 
     @Override

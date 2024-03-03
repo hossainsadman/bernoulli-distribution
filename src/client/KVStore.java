@@ -6,6 +6,7 @@ import java.net.UnknownHostException;
 import org.apache.log4j.Logger; // import Logger
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 
 import shared.messages.BasicKVMessage;
 import shared.messages.KVMessage;
@@ -35,6 +36,7 @@ public class KVStore implements KVCommInterface {
         this.serverAddress = address;
         this.serverPort = port;
         this.metaData = null;
+        this.om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
     
     @Override
@@ -58,8 +60,7 @@ public class KVStore implements KVCommInterface {
     private void updateMetadata(BasicKVMessage message) {
         // TODO: Unserialize response and update metadata
         try {
-            this.metaData = this.om.readValue(message.getValue(), ECSHashRing.class);
-            System.out.println("new metadata");
+            this.metaData = this.om.readValue(message.getKey(), ECSHashRing.class);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

@@ -41,6 +41,7 @@ public class CommunicationService {
       logger.error(generateLogMessage("Unknown host: " + address));
       throw new UnknownHostException(generateLogMessage("Unknown host: " + address));
     } catch (IOException e) {
+      System.out.println("Unable to connect to " + address + ":" + port);
       logger.error(generateLogMessage("Unable to connect to the server"));
       throw new IOException(generateLogMessage("Unable to connect to the server"), e);
     }
@@ -53,6 +54,7 @@ public class CommunicationService {
         logger.info(generateLogMessage("Disconnected from server."));
       }
     } catch (IOException e) {
+      System.out.println("Unable to disconnect from " + address + ":" + port);
       logger.error(generateLogMessage("Error when disconnecting from server"), e);
     }
   }

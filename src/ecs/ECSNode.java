@@ -32,6 +32,8 @@ public class ECSNode implements IECSNode, Serializable {
     public static final BigInteger RING_START = BigInteger.ZERO;
     public static final BigInteger RING_END = new BigInteger(String.valueOf('F').repeat(32), 16);
 
+    ECSNode() { }
+
     ECSNode(String host, Integer port, BigInteger start, BigInteger end) {
         this.host = host;
         this.port = port;
@@ -104,6 +106,11 @@ public class ECSNode implements IECSNode, Serializable {
         this.cacheSize = cacheSize;
     }
 
+    public void setNodeHashRange(String[] hashRange){
+        this.hashStartRange = new BigInteger(hashRange[0]);
+        this.hashEndRange = new BigInteger(hashRange[1]);
+    }
+
     public void setNodeHashRange(BigInteger start, BigInteger end) {
         this.hashStartRange = start;
         this.hashEndRange = end;
@@ -128,6 +135,22 @@ public class ECSNode implements IECSNode, Serializable {
 
     public void setNodeHashEndRange(BigInteger end) {
         this.hashEndRange = end;
+    }
+
+    public void setNodeName(String name) {
+        this.name = name;
+    }
+
+    public void setNodeHost(String host) {
+        this.host = host;
+    }
+
+    public void setNodePort(Integer port) {
+        this.port = port;
+    }
+
+    public void setNodeIdentifier(BigInteger identifier) {
+        this.identifier = identifier;
     }
 
     public static boolean isKeyInRange(BigInteger keyHash, BigInteger start, BigInteger end) {
