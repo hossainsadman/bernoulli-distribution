@@ -201,7 +201,7 @@ public class BasicKVMessage implements KVMessage {
 
     byte[] statusBytes = String.format("%-20s", status.name()).getBytes();
 
-    byte[] keyBytes = key.getBytes();
+    byte[] keyBytes = (key != null) ? key.getBytes() : new byte[0];
     int keyLength = keyBytes.length;
 
     // Convert value to bytes
@@ -216,8 +216,13 @@ public class BasicKVMessage implements KVMessage {
     buffer.put(statusBytes);
 
     // Append key length and key bytes
-    buffer.putInt(keyLength);
-    buffer.put(keyBytes);
+    if (key != null) {
+      buffer.putInt(keyLength);
+      buffer.put(keyBytes);
+    } else {
+      // If value is null, append 0 for length
+      buffer.putInt(0);
+    }
 
     // Append value length and value bytes
     if (value != null) {

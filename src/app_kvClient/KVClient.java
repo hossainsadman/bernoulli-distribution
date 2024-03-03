@@ -149,11 +149,15 @@ public class KVClient implements IKVClient {
 
         } else if (tokens[0].equals("keyrange")) {
             if (kvStore != null) {
-                KVMessage msg = kvStore.keyrange();
-                if (msg != null) {
-                    System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey());
-                } else {
-                    System.out.println(PROMPT + "KEYRANGE ERROR: null msg!");
+                try {
+                    KVMessage msg = kvStore.keyrange();
+                    if (msg != null) {
+                        System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey());
+                    } else {
+                        System.out.println(PROMPT + "KEYRANGE ERROR: null msg!");
+                    }
+                } catch (Exception e) {
+                    logger.error("Put to server failed!", e);
                 }
             } else {
                 printError("Not connected to server!");
