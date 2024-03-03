@@ -70,6 +70,28 @@ public class ECS {
         /* zookeeper if needed */
     }
 
+    public ECS(String address, int port) { // no logger
+        if (port < 1024 || port > 65535)
+            throw new IllegalArgumentException("port is out of range.");
+
+        this.address = address;
+        this.port = port;
+
+        try {
+            JSONTokener tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
+            this.config = new JSONObject(tokener);
+        } catch (FileNotFoundException e) {
+            System.err.println("Failed to find the ecs_config.json file.");
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("An error occurred.");
+            e.printStackTrace();
+        }
+
+        logger.info("ECS initialized at " + this.address + ":" + this.port);
+        /* zookeeper if needed */
+    }
+
     public ECS(Logger logger) {
         try {
             JSONTokener tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
