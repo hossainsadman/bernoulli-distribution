@@ -1,28 +1,44 @@
 package ecs;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.*;
 import java.util.*;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger; // import Logger
+
 import app_kvServer.ClientConnection;
 import shared.CommunicationService;
+import shared.messages.BasicKVMessage;
+import shared.messages.KVMessage.StatusType;
 import shared.MD5;
 
-public class ECSNode implements IECSNode {
+public class ECSNode implements IECSNode, Serializable {
     private String name;
     private String host;
     private Integer port;
     private BigInteger identifier;
     private BigInteger hashStartRange;
     private BigInteger hashEndRange;
-    private String cacheStrategy = "None";
-    private int cacheSize = 0;
-    private Socket serverSocket = null;
-    private CommunicationService comm;
+    private transient String cacheStrategy = "None";
+    private transient int cacheSize = 0;
+    private transient Socket serverSocket = null;
+    private transient CommunicationService comm;
+
+    private static Logger logger = Logger.getRootLogger();
 
     public static final BigInteger RING_START = BigInteger.ZERO;
     public static final BigInteger RING_END = new BigInteger(String.valueOf('F').repeat(32), 16);
+
+    ECSNode(String host, Integer port, BigInteger start, BigInteger end) {
+        this.host = host;
+        this.port = port;
+        this.identifier = MD5.getHash(host + ":" + port);
+        this.hashStartRange = start;
+        this.hashEndRange = end;
+    }
 
     public ECSNode(String name, String host, Integer port) {
         this.name = name;
@@ -39,6 +55,19 @@ public class ECSNode implements IECSNode {
         this.serverSocket = serverSocket;
         this.comm = new CommunicationService(serverSocket);
     }
+
+    public void closeConnection() throws IOException {
+        try {
+            if (serverSocket != null)
+                serverSocket.close();
+            if (comm != null)
+                comm.disconnect();
+
+            logger.info("Connection closed for " + serverSocket.getInetAddress().getHostName());
+        } catch (IOException e) {
+            logger.error("Error! closing connection", e);
+        }
+    }    
 
     @Override
     public String getNodeName() {
@@ -73,13 +102,6 @@ public class ECSNode implements IECSNode {
 
     public void setCacheSize(int cacheSize) {
         this.cacheSize = cacheSize;
-    }
-
-    public void closeConnection() throws java.io.IOException {
-        if (serverSocket != null)
-            serverSocket.close();
-        if (comm != null)
-            comm.disconnect();
     }
 
     public void setNodeHashRange(BigInteger start, BigInteger end) {

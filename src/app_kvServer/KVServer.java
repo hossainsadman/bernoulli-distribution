@@ -1,10 +1,15 @@
 package app_kvServer;
 
 import java.io.*;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
+import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -24,9 +29,14 @@ import org.apache.commons.cli.*;
 import app_kvServer.Caches.LRUCache;
 import app_kvServer.ClientConnection;
 import app_kvServer.IKVServer.CacheStrategy;
+import shared.messages.KVMessage;
 import shared.messages.KVMessage.StatusType;
 import shared.*;
 import static app_kvServer.Caches.*;
+
+import ecs.ECS;
+import ecs.ECSHashRing;
+import ecs.ECSNode;
 
 public class KVServer implements IKVServer {
     /**
@@ -51,11 +61,19 @@ public class KVServer implements IKVServer {
     private CacheStrategy strategy; // Strategy (given by definition in ./IKVServer.java)
     private boolean running; // Check whether the server is currently running or not
     private Caches.Cache<String, String> cache;
+
+    private KVMessage.StatusType status;
+
     private static Logger logger = Logger.getRootLogger();
+
     private final String dirPath;
+    private String ecsHost = null;
+    private int ecsPort = -1;
+    private Socket ecsSocket;
 
     /* Meta Data */
-    private MetaData metaData;
+    private ECSHashRing hashRing = null;
+    private ECSNode metadata = null;
 
     public KVServer(int port, int cacheSize, String strategy) {
         if (port < 1024 || port > 65535)
@@ -65,6 +83,7 @@ public class KVServer implements IKVServer {
 
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
+        this.status = KVMessage.StatusType.SERVER_ACTIVE;
 
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
@@ -119,6 +138,7 @@ public class KVServer implements IKVServer {
 
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
+        this.status = KVMessage.StatusType.SERVER_ACTIVE;
 
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
@@ -165,12 +185,77 @@ public class KVServer implements IKVServer {
         serverThread.start(); // Start the thread
     }
 
-    public void setMetaData(MetaData metaData) {
-        this.metaData = metaData;
+    public KVServer(int port, int cacheSize, String strategy, String dbPath, String ecsHost, int ecsPort) {
+        if (port < 1024 || port > 65535)
+            throw new IllegalArgumentException("port is out of range.");
+        if (cacheSize < 0)
+            throw new IllegalArgumentException("cacheSize is out of range.");
+
+        this.port = port; // Set port
+        this.cacheSize = cacheSize; // Set cache size
+        this.status = KVMessage.StatusType.SERVER_ACTIVE;
+        this.ecsHost = ecsHost;
+        this.ecsPort = ecsPort;
+
+        if (strategy == null) {
+            this.strategy = CacheStrategy.None;
+            this.cache = null;
+        } else {
+            switch (strategy) { // Set cache strategy
+                case "LRU":
+                    this.strategy = CacheStrategy.LRU;
+                    this.cache = new Caches.LRUCache(this.cacheSize);
+                    break;
+                case "LFU":
+                    this.strategy = CacheStrategy.LFU;
+                    this.cache = new Caches.LFUCache(this.cacheSize);
+                    break;
+                case "FIFO":
+                    this.strategy = CacheStrategy.FIFO;
+                    this.cache = new Caches.FIFOCache(this.cacheSize);
+                    break;
+                default:
+                    this.strategy = CacheStrategy.None;
+                    this.cache = null;
+            }
+        }
+
+        dirPath = System.getProperty("user.dir") + File.separator + dbPath;
+        File dir = new File(dirPath);
+        if (!dir.exists()) {
+            try {
+                if (!dir.mkdir()) {
+                    throw new Exception("Unable to create a directory.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        Thread serverThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                KVServer.this.run();
+            }
+        });
+
+        serverThread.start(); // Start the thread
     }
 
-    public MetaData getMetaData() {
-        return metaData;
+    public void setHashRing(ECSHashRing hashRing) {
+        this.hashRing = hashRing;
+    }
+
+    public ECSHashRing getHashRing() {
+        return hashRing;
+    }
+
+    public void setMetadata(ECSNode metadata) {
+        this.metadata = metadata;
+    }
+
+    public ECSHashRing getMetadata() {
+        return hashRing;
     }
 
     @Override
@@ -352,18 +437,42 @@ public class KVServer implements IKVServer {
         }
     }
 
+    public void connectECS() {
+        if (ecsHost != null && ecsPort > -1) {
+            try {
+                ecsSocket = new Socket(ecsHost, ecsPort);
+                logger.info("Connected to ECS at " + ecsHost + ":" + ecsPort + " via " + ecsSocket.getInetAddress().getHostAddress()
+                        + ":" + ecsSocket.getLocalPort() + " on port " + ecsSocket.getPort() + ".");
+
+                ObjectInputStream in = new ObjectInputStream(ecsSocket.getInputStream());
+                hashRing = (ECSHashRing) in.readObject();
+                in.close();
+
+                metadata = hashRing.getNodeForKey(getHostname() + ":" + getPort());
+
+            } catch (Exception e) {
+                System.err.println("Error connecting to ECS");
+                e.printStackTrace();
+            }
+        }
+    }
+
     @Override
     public void run() {
         running = true;
         try {
             serverSocket = new ServerSocket(port);
-            logger.info("Started server listening on port: " + serverSocket.getLocalPort() + "; cache size: " + cacheSize + "; cache strategy: " + strategy);            
+            if (ecsHost != null && ecsPort >= 0)
+                logger.info("Started server listening on port: " + serverSocket.getLocalPort() + "; cache size: "
+                        + cacheSize + "; cache strategy: " + strategy + "; ECS set to: " + ecsHost + ":" + ecsPort);
         } catch (IOException e) {
             logger.error("Server Socket cannot be opened: ");
             if (e instanceof BindException)
                 logger.error("Port " + port + " is already bound.");
             return;
         }
+
+        connectECS();
 
         if (serverSocket != null) {
             while (running) {
@@ -403,6 +512,21 @@ public class KVServer implements IKVServer {
         kill();
     }
 
+    public List<String> getKeysToTransfer(BigInteger start, BigInteger end) {
+        List<String> keys = new ArrayList<>();
+        File dir = new File(dirPath);
+        for (File file : dir.listFiles()) {
+            if (file.isDirectory()) {
+                for (File kv : file.listFiles()) {
+                    if (metadata.isKeyInRange(kv.getName())) {
+                        keys.add(kv.getName());
+                    }
+                }
+            }
+        }
+        return keys;
+    }
+
     public static void main(String[] args) throws IOException {
         Options options = new Options();
 
@@ -418,7 +542,7 @@ public class KVServer implements IKVServer {
         port.setRequired(false);
         options.addOption(port);
 
-        Option cacheSize = new Option("cs", "cacheSize", true, "cache size");
+        Option cacheSize = new Option("c", "cacheSize", true, "cache size");
         cacheSize.setRequired(false);
         options.addOption(cacheSize);
 
@@ -438,13 +562,17 @@ public class KVServer implements IKVServer {
         dataPath.setRequired(false);
         options.addOption(dataPath);
 
+        Option ecsHostAndPort = new Option("b", "ecsHostAndPort", true, "ecs host and port");
+        ecsHostAndPort.setRequired(false);
+        options.addOption(ecsHostAndPort);
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
 
         try {
             cmd = parser.parse(options, args);
-        } catch (ParseException e) {
+        } catch (Exception e) {
             System.out.println(e.getMessage());
             formatter.printHelp("utility-name", options);
             System.exit(1);
@@ -464,14 +592,29 @@ public class KVServer implements IKVServer {
         String serverLogFile = cmd.getOptionValue("logFile", "logs/server.log");
         String serverLogLevel = cmd.getOptionValue("logLevel", "ALL");
         String dbPath = cmd.getOptionValue("dir", "db");
+        String ecsHostAndPortString = cmd.getOptionValue("ecsHostAndPort", null);
 
         if (!LogSetup.isValidLevel(serverLogLevel)) {
             serverLogLevel = "ALL";
         }
 
+        String ecsHostCli = null;
+        int ecsPortCli = -1;
+        if (ecsHostAndPortString != null) {
+            String[] parts = ecsHostAndPortString.split(":");
+            ecsHostCli = parts[0];
+            ecsPortCli = Integer.parseInt(parts[1]);
+        } else {
+            ecsHostCli = ECS.getDefaultECSAddr();
+            ecsPortCli = ECS.getDefaultECSPort();
+        }
+
         try {
             new LogSetup(serverLogFile, LogSetup.getLogLevel(serverLogLevel));
-            KVServer server = new KVServer(Integer.parseInt(serverPort), Integer.parseInt(serverCacheSize), serverCacheStrategy, dbPath);
+            KVServer server;
+
+            server = new KVServer(Integer.parseInt(serverPort), Integer.parseInt(serverCacheSize), serverCacheStrategy,
+                    dbPath, ecsHostCli, ecsPortCli);
             // server.clearStorage(); // are not supposed to clear storage
             // on server start/quit
         } catch (Exception e) {

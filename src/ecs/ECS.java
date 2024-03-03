@@ -11,16 +11,21 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import app_kvECS.ECSClient;
 import app_kvServer.ClientConnection;
+
+import ecs.ECSHashRing;
 
 import org.apache.zookeeper.*;
 /* 
@@ -31,6 +36,7 @@ import org.apache.zookeeper.*;
 public class ECS {
     private static Logger logger;
 
+    private static final String DEFAULT_ECS_ADDR = "127.0.0.1";
     private static final int DEFAULT_ECS_PORT = 9999;
 
     private String address;
@@ -38,15 +44,17 @@ public class ECS {
 
     private ServerSocket ecsSocket;
 
-    JSONObject config;
+    JSONObject config = null;;
+    JSONTokener tokener = null;
+
+    private ECSHashRing hashRing;
 
     /*
      * Integrity Constraint:
-     * IECSNode in availableNodes and unavailableNodes = values of nodes
+     * IECSNode in availableNodes = values of nodes
      */
     private Map<String, IECSNode> nodes = new HashMap<>(); /* maps server name -> node */
-    private ArrayList<IECSNode> availableNodes;
-    private ArrayList<IECSNode> unavailableNodes;
+    private ArrayList<IECSNode> availableNodes = new ArrayList<>();
 
     public ECS(String address, int port, Logger logger) {
         if (port < 1024 || port > 65535)
@@ -55,13 +63,34 @@ public class ECS {
         this.address = address;
         this.port = port;
         this.logger = logger;
+        this.hashRing = new ECSHashRing();
 
         try {
-            JSONTokener tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
+            tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
             this.config = new JSONObject(tokener);
         } catch (FileNotFoundException e) {
-            System.err.println("Failed to find the ecs_config.json file.");
+            logger.warn("No ecs_config.json file found.");
+        } catch (Exception e) {
+            System.err.println("An error occurred.");
             e.printStackTrace();
+        }
+
+        /* zookeeper if needed */
+    }
+
+    public ECS(String address, int port) { // no logger
+        if (port < 1024 || port > 65535)
+            throw new IllegalArgumentException("port is out of range.");
+
+        this.address = address;
+        this.port = port;
+        this.hashRing = new ECSHashRing();
+
+        try {
+            tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
+            this.config = new JSONObject(tokener);
+        } catch (FileNotFoundException e) {
+            logger.warn("No ecs_config.json file found.");
         } catch (Exception e) {
             System.err.println("An error occurred.");
             e.printStackTrace();
@@ -73,19 +102,23 @@ public class ECS {
 
     public ECS(Logger logger) {
         try {
-            JSONTokener tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
+            tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
             this.config = new JSONObject(tokener);
+
+            this.address = this.config.getJSONObject("ecs").getString("address");
+            this.port = this.config.getJSONObject("ecs").getInt("port");
         } catch (FileNotFoundException e) {
-            System.err.println("Failed to find the ecs_config.json file.");
+            logger.error("No ecs_config.json file found.");
             e.printStackTrace();
         } catch (Exception e) {
             System.err.println("An error occurred.");
             e.printStackTrace();
         }
 
-        this.address = this.config.getJSONObject("ecs").getString("address");
-        this.port = this.config.getJSONObject("ecs").getInt("port");
+        this.address = DEFAULT_ECS_ADDR;
+        this.port = DEFAULT_ECS_PORT;
         this.logger = logger;
+        this.hashRing = new ECSHashRing();
 
         logger.info("ECS initialized at " + this.address + ":" + this.port);
 
@@ -117,49 +150,75 @@ public class ECS {
     }
 
     public void acceptServerConnections() {
-        // logger.info("<<< INSERT NEW ECS-SERVER CONNECTION HERE >>>");
-        JSONArray servers = config.getJSONArray("servers");
 
-        for (int i = 0; i < servers.length(); i++) {
-            List<String> command = new ArrayList<>();
+        if (config != null) {
+            // Get the servers from the config file (ecs_config.json
+            JSONArray servers = config.getJSONArray("servers");
 
-            JSONObject server = servers.getJSONObject(i);
-            int port = server.getInt("port");
-            int cacheSize = server.getInt("cacheSize");
-            String strategy = server.getString("strategy");
-            
-            try {
-                command.add("java");
-                command.add("-jar");
-                command.add("m2-server.jar");
-                command.add("-p");
-                command.add(String.valueOf(port));
-                command.add("-cs");
-                command.add(String.valueOf(cacheSize));
-                command.add("-s");
-                command.add(strategy);
+            for (int i = 0; i < servers.length(); i++) {
+                List<String> command = new ArrayList<>();
 
-                logger.info("Executing command: " + String.join(" ", command));
+                JSONObject server = servers.getJSONObject(i);
+                int port = server.getInt("port");
+                int cacheSize = server.getInt("cacheSize");
+                String strategy = server.getString("strategy");
 
-                ProcessBuilder builder = new ProcessBuilder(command);
-                builder.inheritIO(); // forwards the output of the process to the current Java process
-                Process process = builder.start();
-            } catch (IOException e) {
-                logger.error("Failed to start server on port " + port, e);
+                try {
+                    command.add("java");
+                    command.add("-jar");
+                    command.add("m2-server.jar");
+                    command.add("-p");
+                    command.add(String.valueOf(port));
+                    command.add("-c");
+                    command.add(String.valueOf(cacheSize));
+                    command.add("-s");
+                    command.add(strategy);
+                    command.add("-b");
+                    command.add(this.address + ":" + this.port);
+
+                    logger.info("Executing command: " + String.join(" ", command));
+
+                    ProcessBuilder builder = new ProcessBuilder(command);
+                    builder.inheritIO(); // forwards the output of the process to the current Java process
+                    Process process = builder.start();
+                } catch (IOException e) {
+                    logger.error("Failed to start server on port " + port, e);
+                }
             }
         }
 
         if (ecsSocket != null) {
-            while (true) {
+            while (!ecsSocket.isClosed()) {
                 try {
-                    logger.info("<<< INSERT NEW ECS-SERVER CONNECTION HERE >>>");
-                    Socket kvServerSocket = ecsSocket.accept();
+                    Socket kvServerSocket = null;
+                    try {
+                        kvServerSocket = ecsSocket.accept();
+                    } catch (SocketException se) {
+                        if (ecsSocket.isClosed()) {
+                            logger.info("ServerSocket is closed.");
+                            break;
+                        }
+                    }
                     String serverAddress = kvServerSocket.getInetAddress().getHostAddress();
                     int serverPort = kvServerSocket.getPort();
                     String serverName = serverAddress + ":" + Integer.toString(serverPort);
+
                     ECSNode newNode = new ECSNode(serverName, serverAddress, serverPort, kvServerSocket);
                     nodes.put(serverName, newNode); // append to the table
                     setNodeAvailability(newNode, true); // set the node available
+
+                    ECSNode oldNode = hashRing.addNode(newNode);
+                    logger.info("Added " + serverName + " to the hashring.");
+                    logger.info("KEYRANGE: " + hashRing.toString());
+
+                    // oldNode is null if newNode is the only node in the hashring
+                    if (oldNode != null) {
+                        // transfer appropriate key-value pairs from oldNode to newNode
+                    }
+
+                    ObjectOutputStream out = new ObjectOutputStream(kvServerSocket.getOutputStream());
+                    out.writeObject(hashRing);
+                    out.flush();
 
                     logger.info("Connected to " + kvServerSocket.getInetAddress().getHostName() + " on port "
                             + kvServerSocket.getPort());
@@ -205,38 +264,26 @@ public class ECS {
     }
 
     /*
-     * Set the node's availability to true (in availableNodes) or false (in
-     * unavailableNodes)
+     * Set the node's availability to true (in availableNodes) or false (rm from
+     * availableNodes)
      */
     private void setNodeAvailability(String nodeIdentifier, boolean isAvailable) {
         if (nodes.containsKey(nodeIdentifier)) {
             ECSNode node = (ECSNode) nodes.get(nodeIdentifier);
-            if (isAvailable) {
-                if (!availableNodes.contains(node)) {
-                    availableNodes.add(node);
-                    unavailableNodes.remove(node);
-                }
-            } else {
-                if (!unavailableNodes.contains(node)) {
-                    unavailableNodes.add(node);
-                    availableNodes.remove(node);
-                }
-            }
+            if (isAvailable && !availableNodes.contains(node)) {
+                availableNodes.add(node);
+                availableNodes.remove(node);
+            } else
+                availableNodes.remove(node);
         }
     }
 
     private void setNodeAvailability(ECSNode node, boolean isAvailable) {
-        if (isAvailable) {
-            if (!availableNodes.contains(node)) {
-                availableNodes.add(node);
-                unavailableNodes.remove(node);
-            }
-        } else {
-            if (!unavailableNodes.contains(node)) {
-                unavailableNodes.add(node);
-                availableNodes.remove(node);
-            }
-        }
+        if (isAvailable && !availableNodes.contains(node)) {
+            availableNodes.add(node);
+            availableNodes.remove(node);
+        } else
+            availableNodes.remove(node);
     }
 
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
@@ -289,12 +336,6 @@ public class ECS {
             } catch (Exception e) {
                 logger.error("Error closing connection with server " + nodeName, e);
             }
-
-            // If the node was neither in availableNodes and unavailableNodes,
-            // the node does not exist
-            if (!availableNodes.remove(removedNode) && !unavailableNodes.remove(removedNode)) {
-                removedAll = false;
-            }
         }
 
         return removedAll;
@@ -310,5 +351,9 @@ public class ECS {
 
     public static int getDefaultECSPort() {
         return DEFAULT_ECS_PORT;
+    }
+
+    public static String getDefaultECSAddr() {
+        return DEFAULT_ECS_ADDR;
     }
 }

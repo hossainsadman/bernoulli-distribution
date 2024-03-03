@@ -23,7 +23,7 @@ java -jar m2-server.jar
             }
         },
         // m2 build //
-        // m2 clearn //
+        // m2 clear //
         {
             "label": "m2 Clean",
             "type": "shell",
@@ -39,7 +39,7 @@ java -jar m2-server.jar
                 "isDefault": false
             }
         },
-        // m2 clearn //
+        // m2 clear //
         // m2 run //
         {
             "label": "m2 Run Client",
@@ -108,6 +108,52 @@ java -jar m2-server.jar
             },
         },
         // m2 run //
+        // m2 autotester run //
+        {
+            "label": "m2 Run Server (Autotester)",
+            "type": "shell",
+            "command": "java -jar m2-server.jar -b \"127.0.0.1:9999\"",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": [
+                "m2 Build"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true, 
+                "focus": true,
+                "group": "m2",
+                "panel": "dedicated"
+            },
+        },
+        {
+            "label": "m2 Run ECS (Autotester)",
+            "type": "shell",
+            "command": "java -jar m2-ecs.jar",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": [
+                "m2 Build"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true, 
+                "focus": true,
+                "group": "m2",
+                "panel": "dedicated"
+            },
+        },
+        // m2 autotester run //
         // m2 utilities //
         {
             "label": "Clear Logs",

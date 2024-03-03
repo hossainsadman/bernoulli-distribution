@@ -79,7 +79,7 @@ public class ECSClient implements IECSClient {
     public IECSNode addNode(String cacheStrategy, int cacheSize) {
         Collection<IECSNode> server = this.addNodes(1, cacheStrategy, cacheSize);
 
-        if (!server.isEmpty()) 
+        if (!server.isEmpty())
             return server.iterator().next();
 
         return null;
@@ -243,6 +243,10 @@ public class ECSClient implements IECSClient {
         Option logLevel = new Option("ll", "logLevel", true, "log level");
         logLevel.setRequired(false);
         options.addOption(logLevel);
+
+        Option cli = new Option("c", "cli", true, "run cli");
+        logLevel.setRequired(false);
+        options.addOption(cli);
     }
 
     public static void main(String[] args) throws IOException {
@@ -281,7 +285,11 @@ public class ECSClient implements IECSClient {
             new LogSetup(ecsLogFile, LogSetup.getLogLevel(ecsLogLevel));
             logger.info("logger setup is complete.");
             ECSClient ecsClient = new ECSClient(ecsAddress, Integer.parseInt(ecsPort));
-            ecsClient.run();
+            if (cmd.hasOption("cli")) {
+                ecsClient.run();
+            } else {
+                ecsClient.start();
+            }
         } catch (Exception e) {
             System.out.println("[Error] Unable to setup logger: ");
             e.printStackTrace();
