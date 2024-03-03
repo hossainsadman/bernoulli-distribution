@@ -33,6 +33,8 @@ import shared.messages.KVMessage;
 import shared.messages.KVMessage.StatusType;
 import shared.*;
 import static app_kvServer.Caches.*;
+
+import ecs.ECS;
 import ecs.ECSHashRing;
 import ecs.ECSNode;
 
@@ -439,7 +441,7 @@ public class KVServer implements IKVServer {
         if (ecsHost != null && ecsPort > -1) {     
             try {
                 ecsSocket = new Socket(ecsHost, ecsPort);
-                System.out.println("Connected to ECS at " + ecsHost + " on port " + ecsPort);
+                logger.info("Connected to ECS at " + ecsHost + " on port " + ecsPort);
     
                 ObjectInputStream in = new ObjectInputStream(ecsSocket.getInputStream());
                 hashRing = (ECSHashRing) in.readObject();
@@ -448,7 +450,7 @@ public class KVServer implements IKVServer {
                 metadata = hashRing.getNodeForKey(getHostname() + ":" + getPort());
                 
             } catch (Exception e) {
-                System.err.println("Error connecting to ECS: " + e.getMessage());
+                System.err.println("Error connecting to ECS");
                 e.printStackTrace();
             }
         }
@@ -593,8 +595,8 @@ public class KVServer implements IKVServer {
         String serverLogFile = cmd.getOptionValue("logFile", "logs/server.log");
         String serverLogLevel = cmd.getOptionValue("logLevel", "ALL");
         String dbPath = cmd.getOptionValue("dir", "db");
-        String ecsHost = cmd.getOptionValue("ecsHostAddress", null);
-        String ecsPort = cmd.getOptionValue("ecsPortAddress", null);
+        String ecsHost = cmd.getOptionValue("ecsHostAddress", ECS.getDefaultECSAddr());
+        String ecsPort = cmd.getOptionValue("ecsPortAddress", String.valueOf(ECS.getDefaultECSPort()));
 
         if (!LogSetup.isValidLevel(serverLogLevel)) {
             serverLogLevel = "ALL";
