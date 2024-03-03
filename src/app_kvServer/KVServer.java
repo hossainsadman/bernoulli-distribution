@@ -65,7 +65,7 @@ public class KVServer implements IKVServer {
     private KVMessage.StatusType status;
 
     private static Logger logger = Logger.getRootLogger();
-    
+
     private final String dirPath;
     private String ecsHost = null;
     private int ecsPort = -1;
@@ -139,7 +139,7 @@ public class KVServer implements IKVServer {
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
         this.status = KVMessage.StatusType.SERVER_ACTIVE;
-    
+
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
             this.cache = null;
@@ -438,24 +438,25 @@ public class KVServer implements IKVServer {
     }
 
     public void connectECS() {
-        if (ecsHost != null && ecsPort > -1) {     
+        if (ecsHost != null && ecsPort > -1) {
             try {
                 ecsSocket = new Socket(ecsHost, ecsPort);
-                logger.info("Connected to ECS at " + ecsHost + " on port " + ecsPort);
-    
+                logger.info("Connected to ECS at " + ecsHost + ":" + ecsPort + " via " + ecsSocket.getInetAddress().getHostAddress()
+                        + ":" + ecsSocket.getLocalPort() + " on port " + ecsSocket.getPort() + ".");
+
                 ObjectInputStream in = new ObjectInputStream(ecsSocket.getInputStream());
                 hashRing = (ECSHashRing) in.readObject();
                 in.close();
 
                 metadata = hashRing.getNodeForKey(getHostname() + ":" + getPort());
-                
+
             } catch (Exception e) {
                 System.err.println("Error connecting to ECS");
                 e.printStackTrace();
             }
         }
     }
-    
+
     @Override
     public void run() {
         running = true;
@@ -463,7 +464,7 @@ public class KVServer implements IKVServer {
             serverSocket = new ServerSocket(port);
             if (ecsHost != null && ecsPort >= 0)
                 logger.info("Started server listening on port: " + serverSocket.getLocalPort() + "; cache size: "
-                        + cacheSize + "; cache strategy: " + strategy + "; ECS set to: " + ecsHost + ":" + ecsPort);            
+                        + cacheSize + "; cache strategy: " + strategy + "; ECS set to: " + ecsHost + ":" + ecsPort);
         } catch (IOException e) {
             logger.error("Server Socket cannot be opened: ");
             if (e instanceof BindException)
@@ -541,7 +542,7 @@ public class KVServer implements IKVServer {
         port.setRequired(false);
         options.addOption(port);
 
-        Option cacheSize = new Option("cs", "cacheSize", true, "cache size");
+        Option cacheSize = new Option("c", "cacheSize", true, "cache size");
         cacheSize.setRequired(false);
         options.addOption(cacheSize);
 
@@ -561,13 +562,9 @@ public class KVServer implements IKVServer {
         dataPath.setRequired(false);
         options.addOption(dataPath);
 
-        Option ecsHostAddress = new Option("eh", "ecsHostAddress", true, "ecs host");
-        ecsHostAddress.setRequired(false);
-        options.addOption(ecsHostAddress);
-
-        Option ecsPortAddress = new Option("ep", "ecsPortAddress", true, "ecs port");
-        ecsPortAddress.setRequired(false);
-        options.addOption(ecsPortAddress);
+        Option ecsHostAndPort = new Option("b", "ecsHostAndPort", true, "ecs host and port");
+        ecsHostAndPort.setRequired(false);
+        options.addOption(ecsHostAndPort);
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -595,21 +592,29 @@ public class KVServer implements IKVServer {
         String serverLogFile = cmd.getOptionValue("logFile", "logs/server.log");
         String serverLogLevel = cmd.getOptionValue("logLevel", "ALL");
         String dbPath = cmd.getOptionValue("dir", "db");
-        String ecsHost = cmd.getOptionValue("ecsHostAddress", ECS.getDefaultECSAddr());
-        String ecsPort = cmd.getOptionValue("ecsPortAddress", String.valueOf(ECS.getDefaultECSPort()));
+        String ecsHostAndPortString = cmd.getOptionValue("ecsHostAndPort", null);
 
         if (!LogSetup.isValidLevel(serverLogLevel)) {
             serverLogLevel = "ALL";
         }
 
+        String ecsHostCli = null;
+        int ecsPortCli = -1;
+        if (ecsHostAndPortString != null) {
+            String[] parts = ecsHostAndPortString.split(":");
+            ecsHostCli = parts[0];
+            ecsPortCli = Integer.parseInt(parts[1]);
+        } else {
+            ecsHostCli = ECS.getDefaultECSAddr();
+            ecsPortCli = ECS.getDefaultECSPort();
+        }
+
         try {
             new LogSetup(serverLogFile, LogSetup.getLogLevel(serverLogLevel));
             KVServer server;
-            
-            if (ecsHost != null && ecsPort != null) // Utilizing ECS
-                server = new KVServer(Integer.parseInt(serverPort), Integer.parseInt(serverCacheSize), serverCacheStrategy, dbPath, ecsHost, Integer.parseInt(ecsPort));
-            else
-                server = new KVServer(Integer.parseInt(serverPort), Integer.parseInt(serverCacheSize), serverCacheStrategy, dbPath);
+
+            server = new KVServer(Integer.parseInt(serverPort), Integer.parseInt(serverCacheSize), serverCacheStrategy,
+                    dbPath, ecsHostCli, ecsPortCli);
             // server.clearStorage(); // are not supposed to clear storage
             // on server start/quit
         } catch (Exception e) {

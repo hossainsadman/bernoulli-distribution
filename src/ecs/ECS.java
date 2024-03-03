@@ -169,14 +169,12 @@ public class ECS {
                     command.add("m2-server.jar");
                     command.add("-p");
                     command.add(String.valueOf(port));
-                    command.add("-cs");
+                    command.add("-c");
                     command.add(String.valueOf(cacheSize));
                     command.add("-s");
                     command.add(strategy);
-                    command.add("-eh");
-                    command.add(this.address);
-                    command.add("-ep");
-                    command.add(String.valueOf(this.port));
+                    command.add("-b");
+                    command.add(this.address + ":" + this.port);
 
                     logger.info("Executing command: " + String.join(" ", command));
 
