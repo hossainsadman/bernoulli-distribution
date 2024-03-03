@@ -34,6 +34,14 @@ public class ECSNode implements IECSNode, Serializable {
 
     ECSNode() { }
 
+    ECSNode(BigInteger start, BigInteger end) {
+        this.host = host;
+        this.port = port;
+        this.identifier = MD5.getHash(host + ":" + port);
+        this.hashStartRange = start;
+        this.hashEndRange = end;
+    }
+
     ECSNode(String host, Integer port, BigInteger start, BigInteger end) {
         this.host = host;
         this.port = port;
