@@ -4,11 +4,15 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import org.apache.log4j.Logger; // import Logger
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import shared.messages.BasicKVMessage;
 import shared.messages.KVMessage;
 import shared.messages.KVMessage.StatusType;
 import shared.CommunicationService;
+import ecs.ECSHashRing;
+import ecs.ECSNode;
 
 public class KVStore implements KVCommInterface {
     /**
@@ -17,17 +21,25 @@ public class KVStore implements KVCommInterface {
      * @param address the address of the KVServer
      * @param port    the port of the KVServer
      */
+    private static Logger logger = Logger.getRootLogger();
+    private ObjectMapper om = new ObjectMapper();
+    private String serverAddress;
+    private int serverPort;
     private CommunicationService communicationService;
+    private ECSHashRing metaData;
 
     private static final int MAX_KEY_BYTES = 20;
     private static final int MAX_VALUE_BYTES = 120 * 1024; // 120 kB
 
     public KVStore(String address, int port) {
-        this.communicationService = new CommunicationService("KVStore", address, port);
+        this.serverAddress = address;
+        this.serverPort = port;
+        this.metaData = null;
     }
-
+    
     @Override
     public void connect() throws Exception {
+        this.communicationService = new CommunicationService("KVStore", this.serverAddress, this.serverPort);
         this.communicationService.connect();
     }
 
@@ -36,21 +48,63 @@ public class KVStore implements KVCommInterface {
         this.communicationService.disconnect();
     }
 
+    private void reconnect(String server, int port) throws Exception {
+        disconnect();
+        this.serverAddress = server;
+        this.serverPort = port;
+        connect();
+    }
+
+    private void updateMetadata(BasicKVMessage message) {
+        // TODO: Unserialize response and update metadata
+        try {
+            this.metaData = this.om.readValue(message.getValue(), ECSHashRing.class);
+            System.out.println("new metadata");
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private BasicKVMessage sendMessageToServer(BasicKVMessage message) throws Exception {
+        BasicKVMessage response = null;
+        int retryCount = 0;
+        int maxRetries = 10; // Configure the maximum number of retries
+
+        do {
+            if(this.metaData != null){
+                logger.info("[KVStore] :: Reconnecting to server");
+                ECSNode tryServer = this.metaData.getNodeForKey(message.getKey());
+                reconnect(tryServer.getNodeHost(), tryServer.getNodePort());
+            }
+            
+            this.communicationService.sendMessage(message);
+            response = this.communicationService.receiveMessage();
+
+            if (response.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE){
+                updateMetadata(response);
+                retryCount++;
+            } else {
+                // Request sent to correct server
+                break;
+            }
+        } while (retryCount <= maxRetries);
+
+        if (retryCount > maxRetries) {
+            return new BasicKVMessage(StatusType.SERVER_NOT_FOUND, "Error", "Maximum retry limit reached.");
+        }
+
+        return response;
+    }
+
     @Override
-    public KVMessage put(String key, String value) throws Exception {
+    public BasicKVMessage put(String key, String value) throws Exception {
         BasicKVMessage invalidParmetersError = this.validateKeyValuePair(key, value);
         if (invalidParmetersError != null)
             return invalidParmetersError;
 
         BasicKVMessage message = new BasicKVMessage(StatusType.PUT, key, value);
-        this.communicationService.sendMessage(message);
-
-        BasicKVMessage recv = this.communicationService.receiveMessage();
-
-        if (recv.getValue() == null)
-            recv.changeValue("");
-
-        return recv;
+        
+        return this.sendMessageToServer(message);
     }
 
     @Override
@@ -60,11 +114,8 @@ public class KVStore implements KVCommInterface {
             return invalidParmetersError;
 
         BasicKVMessage message = new BasicKVMessage(StatusType.GET, key, null);
-        this.communicationService.sendMessage(message);
 
-        BasicKVMessage recv = this.communicationService.receiveMessage();
-
-        return recv;
+        return this.sendMessageToServer(message);
     }
 
     private BasicKVMessage validateKeyValuePair(String key, String value) {
@@ -77,4 +128,8 @@ public class KVStore implements KVCommInterface {
 
         return null;
     }
+
+	public ECSHashRing getMetaData() {
+		return this.metaData;
+	}
 }
