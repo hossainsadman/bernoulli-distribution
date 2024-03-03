@@ -1,6 +1,8 @@
 package app_kvServer;
 
 import java.io.*;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.net.BindException;
 import java.net.InetAddress;
@@ -67,7 +69,7 @@ public class KVServer implements IKVServer {
     private Socket ecsSocket;
 
     /* Meta Data */
-    private MetaData metaData;
+    private ECSHashRing hashRing = null;
 
     public KVServer(int port, int cacheSize, String strategy) {
         if (port < 1024 || port > 65535)
@@ -236,12 +238,12 @@ public class KVServer implements IKVServer {
         serverThread.start(); // Start the thread
     }
 
-    public void setMetaData(MetaData metaData) {
-        this.metaData = metaData;
+    public void setHashRing(ECSHashRing hashRing) {
+        this.hashRing = hashRing;
     }
 
-    public MetaData getMetaData() {
-        return metaData;
+    public ECSHashRing getHashRing() {
+        return hashRing;
     }
 
     @Override
@@ -429,13 +431,8 @@ public class KVServer implements IKVServer {
                 ecsSocket = new Socket(ecsHost, ecsPort);
                 System.out.println("Connected to ECS at " + ecsHost + " on port " + ecsPort);
     
-                OutputStream outputStream = ecsSocket.getOutputStream();
-                PrintWriter printWriter = new PrintWriter(outputStream, true);
-    
-                printWriter.println("Hello from Server");
-                System.out.println("Message sent to the ECS");
-    
-                // ...
+                ObjectInputStream in = new ObjectInputStream(ecsSocket.getInputStream());
+                hashRing = (ECSHashRing) in.readObject();   
     
             } catch (Exception e) {
                 System.err.println("Error connecting to ECS: " + e.getMessage());

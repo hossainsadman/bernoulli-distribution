@@ -11,11 +11,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -49,7 +52,7 @@ public class ECS {
      * IECSNode in availableNodes = values of nodes
      */
     private Map<String, IECSNode> nodes = new HashMap<>(); /* maps server name -> node */
-    private ArrayList<IECSNode> availableNodes;
+    private ArrayList<IECSNode> availableNodes = new ArrayList<>();
 
     public ECS(String address, int port, Logger logger) {
         if (port < 1024 || port > 65535)
@@ -181,10 +184,17 @@ public class ECS {
         }
 
         if (ecsSocket != null) {
-            while (true) {
+            while (!ecsSocket.isClosed()) {
                 try {
-                    logger.info("<<< INSERT NEW ECS-SERVER CONNECTION HERE >>>");
-                    Socket kvServerSocket = ecsSocket.accept();
+                    Socket kvServerSocket = null;
+                    try {
+                        kvServerSocket = ecsSocket.accept();
+                    } catch (SocketException se) {
+                        if (ecsSocket.isClosed()) {
+                            logger.info("ServerSocket is closed.");
+                            break;
+                        }
+                    }
                     String serverAddress = kvServerSocket.getInetAddress().getHostAddress();
                     int serverPort = kvServerSocket.getPort();
                     String serverName = serverAddress + ":" + Integer.toString(serverPort);
@@ -194,10 +204,18 @@ public class ECS {
                     setNodeAvailability(newNode, true); // set the node available
 
                     ECSNode oldNode = hashRing.addNode(newNode);
-                    // null if newNode is first or last node in ring
-                    if (oldNode != null) {
-                        // transfer appropriate key-value pairs from oldNode to newNode
-                    }
+                    logger.info("Added " + serverName + " to the hashring.");
+                    logger.info(hashRing.toString());
+
+                    ObjectOutputStream out = new ObjectOutputStream(kvServerSocket.getOutputStream());
+                    out.writeObject(hashRing);
+                    out.flush();
+
+                    // // null if newNode is first or last node in ring
+                    // if (oldNode != null) {
+                    //     // transfer appropriate key-value pairs from oldNode to newNode
+                        
+                    // }
 
                     logger.info("Connected to " + kvServerSocket.getInetAddress().getHostName() + " on port "
                             + kvServerSocket.getPort());
