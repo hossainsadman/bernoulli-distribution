@@ -1,6 +1,7 @@
 package app_kvServer;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -25,6 +26,7 @@ import org.apache.commons.cli.*;
 import app_kvServer.Caches.LRUCache;
 import app_kvServer.ClientConnection;
 import app_kvServer.IKVServer.CacheStrategy;
+import shared.messages.KVMessage;
 import shared.messages.KVMessage.StatusType;
 import shared.*;
 import static app_kvServer.Caches.*;
@@ -52,7 +54,11 @@ public class KVServer implements IKVServer {
     private CacheStrategy strategy; // Strategy (given by definition in ./IKVServer.java)
     private boolean running; // Check whether the server is currently running or not
     private Caches.Cache<String, String> cache;
+
+    private KVMessage.StatusType status;
+
     private static Logger logger = Logger.getRootLogger();
+    
     private final String dirPath;
     private String ecsHost = null;
     private int ecsPort = -1;
@@ -69,6 +75,7 @@ public class KVServer implements IKVServer {
 
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
+        this.status = KVMessage.StatusType.SERVER_ACTIVE;
 
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
@@ -123,6 +130,7 @@ public class KVServer implements IKVServer {
 
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
+        this.status = KVMessage.StatusType.SERVER_ACTIVE;
     
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
@@ -177,6 +185,7 @@ public class KVServer implements IKVServer {
 
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
+        this.status = KVMessage.StatusType.SERVER_ACTIVE;
         this.ecsHost = ecsHost;
         this.ecsPort = ecsPort;
 
@@ -486,6 +495,21 @@ public class KVServer implements IKVServer {
         clearCache();
         // clearStorage(); // are not supposed to clear storage on server start/quit
         kill();
+    }
+
+    public List<String> getKeysToTransfer(BigInteger start, BigInteger end) {
+        List<String> keys = new ArrayList<>();
+        File dir = new File(dirPath);
+        for (File file : dir.listFiles()) {
+            if (file.isDirectory()) {
+                for (File kv : file.listFiles()) {
+                    if (ECSNode.isKeyInRange(kv.getName(), start, end)) {
+                        keys.add(kv.getName());
+                    }
+                }
+            }
+        }
+        return keys;
     }
 
     public static void main(String[] args) throws IOException {

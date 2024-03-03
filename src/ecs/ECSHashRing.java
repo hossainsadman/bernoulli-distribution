@@ -13,12 +13,12 @@ public class ECSHashRing {
     }
 
     //TODO transferring kv pairs to new node
-    public void addNode(ECSNode node) {
+    public ECSNode addNode(ECSNode node) {
         this.hashring.put(node.getNodeIdentifier(), node);
 
         if (this.hashring.size() == 1) {
             node.setNodeHashRange(node.getNodeIdentifier(), node.getNodeIdentifier());
-            return;
+            return null; // no next node (to get kv pairs from)
         }
 
         ECSNode next = this.hashring.higherEntry(node.getNodeIdentifier()).getValue();
@@ -34,13 +34,15 @@ public class ECSHashRing {
 
         node.setNodeHashStartRange(prev.getNodeIdentifier());
         node.setNodeHashEndRange(node.getNodeIdentifier());
+
+        return next;
     }
 
     //TODO transferring kv pairs to preexisting node
-    public void removeNode(ECSNode node) {
+    public ECSNode removeNode(ECSNode node) {
         if (this.hashring.size() == 1) {
             this.hashring.remove(node.getNodeIdentifier());
-            return;
+            return null; // no next node (to transfer kv pairs to)
         }
 
         ECSNode next = this.hashring.higherEntry(node.getNodeIdentifier()).getValue();
@@ -53,6 +55,8 @@ public class ECSHashRing {
         next.setNodeHashStartRange(node.getNodeHashStartRange());
 
         this.hashring.remove(node.getNodeIdentifier());
+
+        return next;
     }
 
     public ECSNode getNodeForKey(String key) {

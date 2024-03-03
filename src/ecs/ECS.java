@@ -22,6 +22,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import app_kvECS.ECSClient;
 import app_kvServer.ClientConnection;
 
+import ecs.ECSHashRing;
+
 import org.apache.zookeeper.*;
 /* 
     ECSClient should initialize ECS. 
@@ -40,6 +42,8 @@ public class ECS {
 
     JSONObject config;
 
+    private ECSHashRing hashRing;
+
     /*
      * Integrity Constraint:
      * IECSNode in availableNodes = values of nodes
@@ -54,6 +58,7 @@ public class ECS {
         this.address = address;
         this.port = port;
         this.logger = logger;
+        this.hashRing = new ECSHashRing();
 
         try {
             JSONTokener tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
@@ -107,6 +112,7 @@ public class ECS {
         this.address = this.config.getJSONObject("ecs").getString("address");
         this.port = this.config.getJSONObject("ecs").getInt("port");
         this.logger = logger;
+        this.hashRing = new ECSHashRing();
 
         logger.info("ECS initialized at " + this.address + ":" + this.port);
 
@@ -182,9 +188,16 @@ public class ECS {
                     String serverAddress = kvServerSocket.getInetAddress().getHostAddress();
                     int serverPort = kvServerSocket.getPort();
                     String serverName = serverAddress + ":" + Integer.toString(serverPort);
+
                     ECSNode newNode = new ECSNode(serverName, serverAddress, serverPort, kvServerSocket);
                     nodes.put(serverName, newNode); // append to the table
                     setNodeAvailability(newNode, true); // set the node available
+
+                    ECSNode oldNode = hashRing.addNode(newNode);
+                    // null if newNode is first or last node in ring
+                    if (oldNode != null) {
+                        // transfer appropriate key-value pairs from oldNode to newNode
+                    }
 
                     logger.info("Connected to " + kvServerSocket.getInetAddress().getHostName() + " on port "
                             + kvServerSocket.getPort());
