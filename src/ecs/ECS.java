@@ -232,6 +232,10 @@ public class ECS {
 
                         writeObjectToSocket(newNode.getServerSocket(), "RECEIVE");
                         writeObjectToSocket(newNode.getServerSocket(), kvPairs);
+
+                        String transfer_complete = (String) readObjectFromSocket(newNode.getServerSocket());
+                        writeObjectToSocket(oldNode.getServerSocket(), transfer_complete);
+
                     }
 
                 } catch (IOException e) {

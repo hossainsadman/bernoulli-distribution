@@ -58,6 +58,7 @@ public class KVServer implements IKVServer {
     private int cacheSize; // Cache size
     private CacheStrategy strategy; // Strategy (given by definition in ./IKVServer.java)
     private boolean running; // Check whether the server is currently running or not
+    private boolean write_lock = false;
     private Caches.Cache<String, String> cache;
 
     private KVMessage.StatusType status;
@@ -261,7 +262,7 @@ public class KVServer implements IKVServer {
         return port; // Return port
     }
 
-    public String getHostaddress() {
+    public static String getHostaddress() {
         try {
             InetAddress inetAddress = InetAddress.getLocalHost();
             return inetAddress.getHostAddress(); // Return hostname
@@ -271,6 +272,7 @@ public class KVServer implements IKVServer {
         }
     }
 
+    @Override
     public String getHostname() {
         try {
             InetAddress inetAddress = InetAddress.getLocalHost();
@@ -357,6 +359,49 @@ public class KVServer implements IKVServer {
 
     @Override
     public synchronized StatusType putKV(String key, String value) throws Exception {
+        if (write_lock) {
+            return StatusType.SERVER_WRITE_LOCK;
+        }
+
+        if (value.equals(""))
+            throw new Exception("unable to delete tuple");
+
+        File file = new File(dirPath + File.separator + escape(key));
+
+        if (value.equals("null")) {
+            File fileToDel = new File(dirPath, escape(key));
+            if (!fileToDel.exists() || fileToDel.isDirectory() || !fileToDel.delete())
+                throw new Exception("unable to delete tuple");
+
+            cache.remove(escape(key));
+
+            return StatusType.DELETE_SUCCESS;
+        }
+
+        if (inStorage(escape(key))) { // Key is already in storage (i.e. UPDATE)
+            try (FileWriter writer = new FileWriter(file, false)) { // overwrite
+                writer.write(value);
+                if (this.cache != null)
+                    cache.put(escape(key), value);
+            }
+
+            return StatusType.PUT_UPDATE;
+        }
+
+        // Key is not in storage (i.e. PUT)
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(value);
+            if (this.cache != null)
+                cache.put(escape(key), value);
+        }
+        return StatusType.PUT_SUCCESS;
+    }
+
+    public synchronized StatusType putKV(String key, String value, boolean override) throws Exception {
+        if (write_lock & !override) {
+            return StatusType.SERVER_WRITE_LOCK;
+        }
+
         if (value.equals(""))
             throw new Exception("unable to delete tuple");
 
@@ -466,13 +511,13 @@ public class KVServer implements IKVServer {
     }
 
     public void listenForTransfer() {
+        HashMap<String, String> kvPairs = null;
         while (ecsSocket != null && !ecsSocket.isClosed()) {
             try {
                 String str = (String) readObjectFromSocket(ecsSocket);
 
                 if (str.equals("TRANSFER")) {
                     logger.info("Received TRANSFER command from ECS");
-                    // write lock
                     // get metadata
                     logger.info("Old hashrange: " + metadata.toString());
                     BigInteger[] hashRange = (BigInteger[]) readObjectFromSocket(ecsSocket);
@@ -480,17 +525,31 @@ public class KVServer implements IKVServer {
                     metadata.setNodeHashEndRange(hashRange[1]);
                     logger.info("New hashrange: " + metadata.toString());
                     // get keys to transfer
-                    HashMap<String, String> kvPairs = getKVPairsNotResponsibleFor();
-
-                    writeObjectToSocket(ecsSocket, kvPairs);
+                    kvPairs = getKVPairsNotResponsibleFor();
                     // transfer keys
+                    writeObjectToSocket(ecsSocket, kvPairs);
 
                 } else if (str.equals("RECEIVE")) {
                     logger.info("Received RECEIVE command from ECS");
-                    HashMap<String, String> kvPairs = (HashMap<String, String>) readObjectFromSocket(ecsSocket);
+
+                    this.write_lock = true;
+
+                    kvPairs = (HashMap<String, String>) readObjectFromSocket(ecsSocket);
                     for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
                         try {
-                            putKV(entry.getKey(), entry.getValue());
+                            putKV(entry.getKey(), entry.getValue(), true);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    this.write_lock = false;
+
+                    writeObjectToSocket(ecsSocket, "TRANSFER_COMPLETE");
+                } else if (str.equals("TRANSFER_COMPLETE")) {
+                    for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
+                        try {
+                            putKV(entry.getKey(), "null");
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -516,7 +575,7 @@ public class KVServer implements IKVServer {
 
                 hashRing = (ECSHashRing) readObjectFromSocket(ecsSocket);
 
-                metadata = hashRing.getNodeForIdentifier(getHostname() + ":" + getPort());
+                metadata = hashRing.getNodeForIdentifier(this.getHostname() + ":" + String.valueOf(this.getPort()));
                 logger.info("KVServer " + metadata.getNodeName() + " keyrange: " + metadata.toString());
 
                 new Thread(new Runnable() {
@@ -600,7 +659,6 @@ public class KVServer implements IKVServer {
                 String key = kv.getName();
                 if (!metadata.isKeyInRange(key)) {
                     kvPairs.put(key, getKV(key));
-                    kv.delete();
                 }
             }
         }
@@ -673,16 +731,7 @@ public class KVServer implements IKVServer {
         String serverLogFile = cmd.getOptionValue("logFile", "logs/server.log");
         String serverLogLevel = cmd.getOptionValue("logLevel", "ALL");
 
-        String baseDir = "db";
-        File dir = new File(cmd.getOptionValue("dir", baseDir));
-        int counter = 0;
-
-        while (dir.exists()) {
-            counter++;
-            dir = new File(cmd.getOptionValue("dir", baseDir + counter));
-        }
-
-        String dbPath = cmd.getOptionValue("dir", dir.getName());
+        String dbPath = cmd.getOptionValue("dir", "db" + MD5.getHash(getHostaddress() + ":" + serverPort));
         String ecsHostAndPortString = cmd.getOptionValue("ecsHostAndPort", null);
 
         if (!LogSetup.isValidLevel(serverLogLevel)) {
