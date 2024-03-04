@@ -39,6 +39,12 @@ public class ECSClient implements IECSClient {
         // ecsThread.start();
     }
 
+    public ECSClient(String address, int port, Logger logger) {
+        this.logger = logger;
+        ecs = new ECS(address, port, logger);
+        clientRunning = true;
+    }
+
     @Override
     public boolean start() {
         if (ecs == null)
