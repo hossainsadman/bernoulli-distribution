@@ -229,6 +229,9 @@ public class ECS {
                         HashMap<String, String> kvPairs = (HashMap<String, String>) readObjectFromSocket(oldNode.getServerSocket());
                         logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + oldNode.getNodeName() + " to " + newNode.getNodeName());
                         logger.info("kvPairs: " + kvPairs.toString());
+
+                        writeObjectToSocket(newNode.getServerSocket(), "RECEIVE");
+                        writeObjectToSocket(newNode.getServerSocket(), kvPairs);
                     }
 
                 } catch (IOException e) {

@@ -454,7 +454,7 @@ public class KVServer implements IKVServer {
         }
         return obj;
     }
-    
+
     public void writeObjectToSocket(Socket socket, Object obj) {
         try {
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
@@ -469,6 +469,7 @@ public class KVServer implements IKVServer {
         while (ecsSocket != null && !ecsSocket.isClosed()) {
             try {
                 String str = (String) readObjectFromSocket(ecsSocket);
+
                 if (str.equals("TRANSFER")) {
                     logger.info("Received TRANSFER command from ECS");
                     // write lock
@@ -483,8 +484,19 @@ public class KVServer implements IKVServer {
 
                     writeObjectToSocket(ecsSocket, kvPairs);
                     // transfer keys
+
+                } else if (str.equals("RECEIVE")) {
+                    logger.info("Received RECEIVE command from ECS");
+                    HashMap<String, String> kvPairs = (HashMap<String, String>) readObjectFromSocket(ecsSocket);
+                    for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
+                        try {
+                            putKV(entry.getKey(), entry.getValue());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
                 }
-                
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -498,8 +510,8 @@ public class KVServer implements IKVServer {
                 logger.info("Connected to ECS at " + ecsHost + ":" + ecsPort + " via "
                         + ecsSocket.getInetAddress().getHostAddress()
                         + ":" + ecsSocket.getLocalPort());
-                
-                String serverName =  this.getHostaddress() + ":" + String.valueOf(this.getPort());
+
+                String serverName = this.getHostaddress() + ":" + String.valueOf(this.getPort());
                 writeObjectToSocket(ecsSocket, serverName);
 
                 hashRing = (ECSHashRing) readObjectFromSocket(ecsSocket);
@@ -526,7 +538,9 @@ public class KVServer implements IKVServer {
         try {
             serverSocket = new ServerSocket(port);
             if (ecsHost != null && ecsPort >= 0)
-                logger.info("Started server listening at: " + "(" + serverSocket.getInetAddress().getHostName() + ") " + serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getLocalPort() + "; cache size: "
+                logger.info("Started server listening at: " + "(" + serverSocket.getInetAddress().getHostName() + ") "
+                        + serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getLocalPort()
+                        + "; cache size: "
                         + cacheSize + "; cache strategy: " + strategy + "; ECS set to: " + ecsHost + ":" + ecsPort);
 
         } catch (IOException e) {
@@ -545,7 +559,8 @@ public class KVServer implements IKVServer {
                     ClientConnection connection = new ClientConnection(this, clientSocket);
                     connections.add(connection);
                     new Thread(connection).start();
-                    logger.info("Connected to " + "(" + clientSocket.getInetAddress().getHostName() + ") " + clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort());
+                    logger.info("Connected to " + "(" + clientSocket.getInetAddress().getHostName() + ") "
+                            + clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort());
                 } catch (IOException e) {
                     logger.error("Unable to establish connection.\n", e);
                 }
@@ -576,16 +591,17 @@ public class KVServer implements IKVServer {
         kill();
     }
 
-    public HashMap<String, String> getKVPairsNotResponsibleFor() throws Exception  {
+    public HashMap<String, String> getKVPairsNotResponsibleFor() throws Exception {
         HashMap<String, String> kvPairs = new HashMap<>();
         List<String> keys = new ArrayList<>();
         File dir = new File(dirPath);
         if (dir.isDirectory()) {
             for (File kv : dir.listFiles()) {
-                if (!metadata.isKeyInRange(kv.getName())) {
-                    kvPairs.put(kv.getName(), getKV(kv.getName()));
+                String key = kv.getName();
+                if (!metadata.isKeyInRange(key)) {
+                    kvPairs.put(key, getKV(key));
                     kv.delete();
-                } 
+                }
             }
         }
         logger.info("KVPairs not responsible for: " + kvPairs.toString());
@@ -656,7 +672,17 @@ public class KVServer implements IKVServer {
         String serverCacheStrategy = (cmd.getOptionValue("cacheStrategy", "FIFO"));
         String serverLogFile = cmd.getOptionValue("logFile", "logs/server.log");
         String serverLogLevel = cmd.getOptionValue("logLevel", "ALL");
-        String dbPath = cmd.getOptionValue("dir", "db");
+
+        String baseDir = "db";
+        File dir = new File(cmd.getOptionValue("dir", baseDir));
+        int counter = 0;
+
+        while (dir.exists()) {
+            counter++;
+            dir = new File(cmd.getOptionValue("dir", baseDir + counter));
+        }
+
+        String dbPath = cmd.getOptionValue("dir", dir.getName());
         String ecsHostAndPortString = cmd.getOptionValue("ecsHostAndPort", null);
 
         if (!LogSetup.isValidLevel(serverLogLevel)) {
