@@ -20,7 +20,8 @@ public class ECSHashRing implements Serializable {
         System.out.println(this.hashring.size() + " nodes in hashring");
 
         if (this.hashring.size() == 1) {
-            node.setNodeHashRange(node.getNodeIdentifier(), node.getNodeIdentifier());
+            node.setNodeHashStartRange(node.getNodeIdentifier());
+            node.setNodeHashEndRange(node.getNodeIdentifier());
             return null; // no next node (to get kv pairs from)
         }
 

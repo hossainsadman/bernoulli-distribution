@@ -474,11 +474,12 @@ public class KVServer implements IKVServer {
                     // write lock
                     // get metadata
                     logger.info("Old hashrange: " + metadata.toString());
-                    metadata.setNodeHashRange((BigInteger[]) readObjectFromSocket(ecsSocket));
+                    BigInteger[] hashRange = (BigInteger[]) readObjectFromSocket(ecsSocket);
+                    metadata.setNodeHashStartRange(hashRange[0]);
+                    metadata.setNodeHashEndRange(hashRange[1]);
                     logger.info("New hashrange: " + metadata.toString());
                     // get keys to transfer
-                    List<String> keys = getKeysNotResponsibleFor();
-                    HashMap<String, String> kvPairs = getKVPairsNotResponsibleFor(keys);
+                    HashMap<String, String> kvPairs = getKVPairsNotResponsibleFor();
 
                     writeObjectToSocket(ecsSocket, kvPairs);
                     // transfer keys
@@ -575,32 +576,16 @@ public class KVServer implements IKVServer {
         kill();
     }
 
-    public List<String> getKeysNotResponsibleFor() {
+    public HashMap<String, String> getKVPairsNotResponsibleFor() throws Exception  {
+        HashMap<String, String> kvPairs = new HashMap<>();
         List<String> keys = new ArrayList<>();
         File dir = new File(dirPath);
         if (dir.isDirectory()) {
             for (File kv : dir.listFiles()) {
-                logger.info("Checking key: " + kv.getName());
-                logger.info("key hash: " + MD5.getHash(kv.getName()));
                 if (!metadata.isKeyInRange(kv.getName())) {
-                    keys.add(kv.getName());
-                    logger.info("Key not responsible for: " + kv.getName());
-                } else {
-                    logger.info("Key responsible for: " + kv.getName());
-                }
-            }
-        }
-        logger.info("Keys not responsible for: " + keys.toString());
-        return keys;
-    }
-
-    public HashMap<String, String> getKVPairsNotResponsibleFor(List<String> keys) {
-        HashMap<String, String> kvPairs = new HashMap<>();
-        for (String key : keys) {
-            try {
-                kvPairs.put(key, getKV(key));
-            } catch (Exception e) {
-                e.printStackTrace();
+                    kvPairs.put(kv.getName(), getKV(kv.getName()));
+                    kv.delete();
+                } 
             }
         }
         logger.info("KVPairs not responsible for: " + kvPairs.toString());

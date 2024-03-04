@@ -135,11 +135,6 @@ public class ECSNode implements IECSNode, Serializable {
         this.hashEndRange = end;
     }
 
-    public void setNodeHashRange(BigInteger[] hashRange) {
-        this.hashStartRange = hashRange[0];
-        this.hashEndRange = hashRange[1];
-    }
-
     public void setNodeHashRange(String start, String end) {
         this.hashStartRange = new BigInteger(start, 16);
         this.hashEndRange = new BigInteger(end, 16);
