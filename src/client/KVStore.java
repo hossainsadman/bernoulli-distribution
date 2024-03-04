@@ -100,12 +100,12 @@ public class KVStore implements KVCommInterface {
 
     @Override
     public BasicKVMessage put(String key, String value) throws Exception {
-        BasicKVMessage invalidParmetersError = this.validateKeyValuePair(key, value);
-        if (invalidParmetersError != null)
-            return invalidParmetersError;
-
+        BasicKVMessage invalidParametersError = this.validateKeyValuePair(key, value);
+        if (invalidParametersError != null)
+            return invalidParametersError;
+            
         BasicKVMessage message = new BasicKVMessage(StatusType.PUT, key, value);
-        
+
         return this.sendMessageToServer(message);
     }
 

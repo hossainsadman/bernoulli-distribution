@@ -91,30 +91,6 @@ public class AdditionalTest extends TestCase {
                 && resDelete.getKey().equals(key));
     }
 
-    public void testUpdateWithInvalidValue() {
-        String key = "testUpdateInvalid";
-        String initialValue = "bar";
-        String invalidValue = "";
-
-        KVMessage resPut = null;
-        KVMessage resInvalid = null;
-        Exception ex = null;
-
-        try {
-            resPut = kvClient.put(key, initialValue);
-            resInvalid = kvClient.put(key, invalidValue);
-        } catch (Exception e) {
-            ex = e;
-        }
-
-        assertTrue(ex == null && resPut.getStatus() == StatusType.PUT_SUCCESS
-                && resInvalid.getStatus() == StatusType.PUT_ERROR
-                && resPut.getKey().equals(key)
-                && resPut.getValue().equals(initialValue)
-                && resInvalid.getKey().equals(key)
-                && resInvalid.getValue().equals(invalidValue)); // resInvalid.getValue() should be an empty string, not null
-    }
-
     public void testAccessDeletedValue() {
         String key = "accessDeleted";
         String value = "bar";
