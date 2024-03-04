@@ -578,12 +578,15 @@ public class KVServer implements IKVServer {
     public List<String> getKeysNotResponsibleFor() {
         List<String> keys = new ArrayList<>();
         File dir = new File(dirPath);
-        for (File file : dir.listFiles()) {
-            if (file.isDirectory()) {
-                for (File kv : file.listFiles()) {
-                    if (!metadata.isKeyInRange(kv.getName())) {
-                        keys.add(kv.getName());
-                    }
+        if (dir.isDirectory()) {
+            for (File kv : dir.listFiles()) {
+                logger.info("Checking key: " + kv.getName());
+                logger.info("key hash: " + MD5.getHash(kv.getName()));
+                if (!metadata.isKeyInRange(kv.getName())) {
+                    keys.add(kv.getName());
+                    logger.info("Key not responsible for: " + kv.getName());
+                } else {
+                    logger.info("Key responsible for: " + kv.getName());
                 }
             }
         }
