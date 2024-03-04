@@ -98,9 +98,10 @@ public class ClientConnection implements Runnable {
         String recvVal = recv.getValue();
         Boolean recvLocolProtocol = recv.getLocalProtocol();
         
-        if (recvStatus == StatusType.KEYRANGE){
-            res = new BasicKVMessage(StatusType.KEYRANGE_SUCCESS, this.server.getHashRing().toString(), null);
-        } else if (recvStatus == StatusType.PUT && recvKey != null && recvVal != null) { // PUT
+        // if (recvStatus == StatusType.KEYRANGE){
+        //     res = new BasicKVMessage(StatusType.KEYRANGE_SUCCESS, this.server.getHashRing().toString(), null);
+        // } else 
+        if (recvStatus == StatusType.PUT && recvKey != null && recvVal != null) { // PUT
             if(checkKeyInRange(recvKey)){
                 /*
                 * tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS
