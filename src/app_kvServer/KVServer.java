@@ -516,7 +516,13 @@ public class KVServer implements IKVServer {
             try {
                 String str = (String) readObjectFromSocket(ecsSocket);
 
-                if (str.equals("TRANSFER")) {
+                if (str.equals("KEYRANGE")){
+                    logger.info("Received KEYRANGE command from ECS");
+                    ECSHashRing ring = (ECSHashRing) readObjectFromSocket(ecsSocket);
+                    System.out.println(ring);
+                    this.setHashRing(ring);
+                }
+                else if (str.equals("TRANSFER")) {
                     logger.info("Received TRANSFER command from ECS");
                     // get metadata
                     logger.info("Old hashrange: " + metadata.toString());

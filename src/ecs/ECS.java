@@ -227,6 +227,10 @@ public class ECS {
                         writeObjectToSocket(oldNode.getServerSocket(), "TRANSFER");
                         writeObjectToSocket(oldNode.getServerSocket(), oldNode.getNodeHashRangeBigInt());
                         HashMap<String, String> kvPairs = (HashMap<String, String>) readObjectFromSocket(oldNode.getServerSocket());
+
+                        writeObjectToSocket(oldNode.getServerSocket(), "KEYRANGE");
+                        writeObjectToSocket(oldNode.getServerSocket(), hashRing);
+
                         logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + oldNode.getNodeName() + " to " + newNode.getNodeName());
                         logger.info("kvPairs: " + kvPairs.toString());
 
