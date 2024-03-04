@@ -73,7 +73,7 @@ public class KVStore implements KVCommInterface {
 
         do {
             if(this.metaData != null){
-                logger.info("[KVStore] :: Reconnecting to server");
+                System.out.println("[KVStore] :: Reconnecting to server");
                 ECSNode tryServer = this.metaData.getNodeForKey(message.getKey());
                 reconnect(tryServer.getNodeHost(), tryServer.getNodePort());
             }
@@ -82,6 +82,7 @@ public class KVStore implements KVCommInterface {
             response = this.communicationService.receiveMessage();
 
             if (response.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE){
+                System.out.println("[KVStore]: SERVER_NOT_RESPONSIBLE");
                 updateMetadata(response);
                 retryCount++;
             } else {

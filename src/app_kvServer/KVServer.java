@@ -516,7 +516,7 @@ public class KVServer implements IKVServer {
 
                 hashRing = (ECSHashRing) readObjectFromSocket(ecsSocket);
 
-                metadata = hashRing.getNodeForKey(getHostname() + ":" + getPort());
+                metadata = hashRing.getNodeForIdentifier(getHostname() + ":" + getPort());
                 logger.info("KVServer " + metadata.getNodeName() + " keyrange: " + metadata.toString());
 
                 new Thread(new Runnable() {

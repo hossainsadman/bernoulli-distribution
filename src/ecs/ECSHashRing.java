@@ -77,6 +77,21 @@ public class ECSHashRing implements Serializable {
         return node;
     }
 
+    public ECSNode getNodeForIdentifier(String identifier){
+        BigInteger identifierHash = MD5.getHash(identifier);
+        Map.Entry<BigInteger, ECSNode> foundEntry = null;
+        for (Map.Entry<BigInteger, ECSNode> entry : hashring.entrySet()) {
+            ECSNode node = entry.getValue();
+            if (node.getNodeIdentifier().equals(identifierHash)) {
+                foundEntry = entry;
+                break; // Found the node, exit the loop
+            }
+        }
+
+        ECSNode node = (foundEntry != null) ? foundEntry.getValue() : this.hashring.firstEntry().getValue();
+        return node;
+    }
+
     public ECSNode getNodeByHash(BigInteger hash) {
         return this.hashring.ceilingEntry(hash).getValue();
     }
