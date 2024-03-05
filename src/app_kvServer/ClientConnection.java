@@ -121,14 +121,22 @@ public class ClientConnection implements Runnable {
                         res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
                 }
             } else {
-                res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
+                if(recvLocolProtocol){
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
+                } else{
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.server.getHashRing().toString(), null);
+                }
             }
 
         } else if (recvStatus == StatusType.PUT && recvVal == null) {
             if(checkKeyInRange(recvKey)){
                 res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
             } else {
-                res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
+                if(recvLocolProtocol){
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
+                } else{
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.server.getHashRing().toString(), null);
+                }
             }
 
         } else if (recvStatus == StatusType.GET && recvKey != null) { // GET
@@ -144,7 +152,11 @@ public class ClientConnection implements Runnable {
                     res = new BasicKVMessage(StatusType.GET_ERROR, recvKey, null);
                 }
             } else {
-                res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
+                if(recvLocolProtocol){
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
+                } else{
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.server.getHashRing().toString(), null);
+                }
             }
 
         } else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { 
