@@ -124,7 +124,7 @@ public class ClientConnection implements Runnable {
                 if(recvLocolProtocol){
                     res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
                 } else{
-                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.server.getHashRing().toString(), null);
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, null, null);
                 }
             }
 
@@ -135,7 +135,7 @@ public class ClientConnection implements Runnable {
                 if(recvLocolProtocol){
                     res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
                 } else{
-                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.server.getHashRing().toString(), null);
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, null, null);
                 }
             }
 
@@ -155,7 +155,7 @@ public class ClientConnection implements Runnable {
                 if(recvLocolProtocol){
                     res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
                 } else{
-                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.server.getHashRing().toString(), null);
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, null, null);
                 }
             }
 
