@@ -521,6 +521,10 @@ public class KVServer implements IKVServer {
                     ECSHashRing ring = (ECSHashRing) readObjectFromSocket(ecsSocket);
                     System.out.println(ring);
                     this.setHashRing(ring);
+                    ECSNode node = ring.getNodeForIdentifier(this.getHostname() + ":" + String.valueOf(this.getPort()));
+                    // metadata.setNodeHashStartRange();
+                    // metadata.setNodeHashEndRange(hashRange[1]);
+                    metadata.setNodeHashRange(node.getNodeHashStartRange(), node.getNodeHashStartRange());
                 }
                 else if (str.equals("TRANSFER")) {
                     logger.info("Received TRANSFER command from ECS");
