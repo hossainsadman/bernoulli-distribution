@@ -228,8 +228,8 @@ public class ECS {
                         writeObjectToSocket(oldNode.getServerSocket(), oldNode.getNodeHashRangeBigInt());
                         HashMap<String, String> kvPairs = (HashMap<String, String>) readObjectFromSocket(oldNode.getServerSocket());
 
-                        writeObjectToSocket(oldNode.getServerSocket(), "KEYRANGE");
-                        writeObjectToSocket(oldNode.getServerSocket(), hashRing);
+                        // writeObjectToSocket(oldNode.getServerSocket(), "KEYRANGE");
+                        // writeObjectToSocket(oldNode.getServerSocket(), hashRing);
 
                         logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + oldNode.getNodeName() + " to " + newNode.getNodeName());
                         logger.info("kvPairs: " + kvPairs.toString());
@@ -240,6 +240,12 @@ public class ECS {
                         String transfer_complete = (String) readObjectFromSocket(newNode.getServerSocket());
                         writeObjectToSocket(oldNode.getServerSocket(), transfer_complete);
 
+                    }
+                    
+                    for (ECSNode node : this.hashRing.getHashring().values()) {
+                        sb.append(node.toString() + ";");
+                        writeObjectToSocket(node.getServerSocket(), "KEYRANGE");
+                        writeObjectToSocket(node.getServerSocket(), hashRing);
                     }
 
                 } catch (IOException e) {
