@@ -243,7 +243,6 @@ public class ECS {
                     }
                     
                     for (ECSNode node : this.hashRing.getHashring().values()) {
-                        sb.append(node.toString() + ";");
                         writeObjectToSocket(node.getServerSocket(), "KEYRANGE");
                         writeObjectToSocket(node.getServerSocket(), hashRing);
                     }
