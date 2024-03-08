@@ -235,4 +235,8 @@ public class BasicKVMessage implements KVMessage {
 
     return addCtrChars(buffer.array());
   }
+
+  public String toString(){
+    return this.msg;
+  }
 }

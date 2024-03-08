@@ -6,6 +6,7 @@ import org.json.*;
 
 import logger.LogSetup;
 import shared.messages.BasicKVMessage;
+import shared.messages.ECSMessage;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,14 +48,15 @@ public class ECS {
     JSONObject config = null;;
     JSONTokener tokener = null;
 
-    private ECSHashRing hashRing;
+    public ECSHashRing hashRing;
 
     /*
      * Integrity Constraint:
      * IECSNode in availableNodes = values of nodes
      */
-    private Map<String, IECSNode> nodes = new HashMap<>(); /* maps server name -> node */
+    public Map<String, IECSNode> nodes = new HashMap<>(); /* maps server name -> node */
     private ArrayList<IECSNode> availableNodes = new ArrayList<>();
+    private static final List<ServerConnection> connections = new CopyOnWriteArrayList<>();
 
     public ECS(String address, int port, Logger logger) {
         if (port < 1024 || port > 65535)
@@ -65,17 +67,7 @@ public class ECS {
         this.logger = logger;
         this.hashRing = new ECSHashRing();
 
-        try {
-            tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
-            this.config = new JSONObject(tokener);
-        } catch (FileNotFoundException e) {
-            logger.warn("No ecs_config.json file found.");
-        } catch (Exception e) {
-            System.err.println("An error occurred.");
-            e.printStackTrace();
-        }
-
-        /* zookeeper if needed */
+        this.init_config("./ecs_config.json");
     }
 
     public ECS(String address, int port) { // no logger
@@ -86,32 +78,21 @@ public class ECS {
         this.port = port;
         this.hashRing = new ECSHashRing();
 
-        try {
-            tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
-            this.config = new JSONObject(tokener);
-        } catch (FileNotFoundException e) {
-            logger.warn("No ecs_config.json file found.");
-        } catch (Exception e) {
-            System.err.println("An error occurred.");
-            e.printStackTrace();
-        }
+        this.init_config("./ecs_config.json");
 
         logger.info("ECS initialized at " + this.address + ":" + this.port);
-        /* zookeeper if needed */
     }
 
-    public ECS(Logger logger) {
-        try {
-            tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
-            this.config = new JSONObject(tokener);
+    public ECS(Logger logger) throws Exception{
+        this.init_config("./ecs_config.json");
+        if(this.config == null)
+            throw new Exception("Config file not initialized");
 
+        try {
             this.address = this.config.getJSONObject("ecs").getString("address");
             this.port = this.config.getJSONObject("ecs").getInt("port");
-        } catch (FileNotFoundException e) {
-            logger.error("No ecs_config.json file found.");
-            e.printStackTrace();
-        } catch (Exception e) {
-            System.err.println("An error occurred.");
+        } catch (JSONException e) {
+            logger.error("Error reading config file.");
             e.printStackTrace();
         }
 
@@ -121,8 +102,20 @@ public class ECS {
         this.hashRing = new ECSHashRing();
 
         logger.info("ECS initialized at " + this.address + ":" + this.port);
+    }
 
-        /* zookeeper if needed */
+    private void init_config(String configPath){
+        if(configPath == null) configPath = "./ecs_config.json";
+
+        try {
+            tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
+            this.config = new JSONObject(tokener);
+        } catch (FileNotFoundException e) {
+            logger.warn("No ecs_config.json file found.");
+        } catch (Exception e) {
+            System.err.println("An error occurred.");
+            e.printStackTrace();
+        }
     }
 
     public boolean start() {
@@ -133,7 +126,7 @@ public class ECS {
             Thread serverConnThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    ECS.this.acceptServerConnections();
+                    ECS.this._acceptServetConnections();
                 }
             });
 
@@ -149,108 +142,36 @@ public class ECS {
         }
     }
 
-    public void acceptServerConnections() {
 
-        if (config != null) {
-            // Get the servers from the config file (ecs_config.json
-            JSONArray servers = config.getJSONArray("servers");
+    public void _acceptServetConnections() {
+        if (ecsSocket == null) return;
 
-            for (int i = 0; i < servers.length(); i++) {
-                List<String> command = new ArrayList<>();
-
-                JSONObject server = servers.getJSONObject(i);
-                int port = server.getInt("port");
-                int cacheSize = server.getInt("cacheSize");
-                String strategy = server.getString("strategy");
-
-                try {
-                    command.add("java");
-                    command.add("-jar");
-                    command.add("m2-server.jar");
-                    command.add("-p");
-                    command.add(String.valueOf(port));
-                    command.add("-c");
-                    command.add(String.valueOf(cacheSize));
-                    command.add("-s");
-                    command.add(strategy);
-                    command.add("-b");
-                    command.add(this.address + ":" + this.port);
-
-                    logger.info("Executing command: " + String.join(" ", command));
-
-                    ProcessBuilder builder = new ProcessBuilder(command);
-                    builder.inheritIO(); // forwards the output of the process to the current Java process
-                    Process process = builder.start();
-                } catch (IOException e) {
-                    logger.error("Failed to start server on port " + port, e);
+        while (!ecsSocket.isClosed()) {
+            Socket kvServerSocket = null;
+            try {
+                kvServerSocket = ecsSocket.accept();
+                ServerConnection connection = new ServerConnection(this, kvServerSocket);
+                connections.add(connection);
+                new Thread(connection).start();
+            } catch (SocketException se) {
+                if (ecsSocket.isClosed()) {
+                    logger.info("ServerSocket is closed.");
+                    break;
                 }
+            } catch (IOException e) {
+                logger.error("Unable to establish connection.\n", e);
             }
         }
+    }
 
-        if (ecsSocket != null) {
-            while (!ecsSocket.isClosed()) {
-                try {
-                    Socket kvServerSocket = null;
-                    try {
-                        kvServerSocket = ecsSocket.accept();
-                    } catch (SocketException se) {
-                        if (ecsSocket.isClosed()) {
-                            logger.info("ServerSocket is closed.");
-                            break;
-                        }
-                    }
-                    logger.info("ECS connected to KVServer via " +  kvServerSocket.getInetAddress().getHostAddress() + ":" + kvServerSocket.getPort());
+    private void sendMessageToNode(Socket socket, ECSMessage messageType, Object data){
+        writeObjectToSocket(socket, messageType);
+        if (data != null) writeObjectToSocket(socket, data);
+    }
 
-                    String serverName = (String) readObjectFromSocket(kvServerSocket);
-                    // split serverName by : to get the server address and port
-                    String[] serverInfo = serverName.split(":");
-                    String serverAddress = serverInfo[0];
-                    int serverPort = Integer.parseInt(serverInfo[1]);
-
-                    logger.info("ECS connected to KVServer at " + serverAddress + ":" + serverPort);
-
-                    ECSNode newNode = new ECSNode(serverName, serverAddress, serverPort, kvServerSocket);
-                    nodes.put(serverName, newNode); // append to the table
-                    setNodeAvailability(newNode, true); // set the node available
-
-                    // WRITE_LOCK on kvserver
-
-                    ECSNode oldNode = hashRing.addNode(newNode);
-                    logger.info("Added " + serverName + " to the hashring.");
-                    logger.info("KEYRANGE: " + hashRing.toString());
-
-                    writeObjectToSocket(kvServerSocket, hashRing);
-
-                    // oldNode is null if newNode is the only node in the hashring
-                    if (oldNode != null) {
-                        // transfer appropriate key-value pairs from oldNode to newNode
-                        writeObjectToSocket(oldNode.getServerSocket(), "TRANSFER");
-                        writeObjectToSocket(oldNode.getServerSocket(), oldNode.getNodeHashRangeBigInt());
-                        HashMap<String, String> kvPairs = (HashMap<String, String>) readObjectFromSocket(oldNode.getServerSocket());
-
-                        // writeObjectToSocket(oldNode.getServerSocket(), "KEYRANGE");
-                        // writeObjectToSocket(oldNode.getServerSocket(), hashRing);
-
-                        logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + oldNode.getNodeName() + " to " + newNode.getNodeName());
-                        logger.info("kvPairs: " + kvPairs.toString());
-
-                        writeObjectToSocket(newNode.getServerSocket(), "RECEIVE");
-                        writeObjectToSocket(newNode.getServerSocket(), kvPairs);
-
-                        String transfer_complete = (String) readObjectFromSocket(newNode.getServerSocket());
-                        writeObjectToSocket(oldNode.getServerSocket(), transfer_complete);
-
-                    }
-                    
-                    for (ECSNode node : this.hashRing.getHashring().values()) {
-                        writeObjectToSocket(node.getServerSocket(), "KEYRANGE");
-                        writeObjectToSocket(node.getServerSocket(), hashRing);
-                    }
-
-                } catch (IOException e) {
-                    logger.error("Unable to establish connection.\n", e);
-                }
-            }
+    public void sendMetadataToNodes(){
+        for (ECSNode node : this.hashRing.getHashring().values()) {
+            sendMessageToNode(node.getServerSocket(), ECSMessage.HASHRING, this.hashRing);
         }
     }
 
@@ -297,23 +218,11 @@ public class ECS {
         this.shutdown();
     }
 
-    public boolean initServer(ECSNode newServer, String cacheStrategy, int cacheSize) {
-        try {
-            newServer.setCacheStrategy(cacheStrategy);
-            newServer.setCacheSize(cacheSize);
-            this.setNodeAvailability(newServer, false);
-            return true;
-        } catch (Exception e) {
-            logger.error("Can't initialize server: ", e);
-        }
-        return false;
-    }
-
     /*
      * Set the node's availability to true (in availableNodes) or false (rm from
      * availableNodes)
      */
-    private void setNodeAvailability(String nodeIdentifier, boolean isAvailable) {
+    public void setNodeAvailability(String nodeIdentifier, boolean isAvailable) {
         if (nodes.containsKey(nodeIdentifier)) {
             ECSNode node = (ECSNode) nodes.get(nodeIdentifier);
             if (isAvailable && !availableNodes.contains(node)) {
@@ -324,7 +233,7 @@ public class ECS {
         }
     }
 
-    private void setNodeAvailability(ECSNode node, boolean isAvailable) {
+    public void setNodeAvailability(ECSNode node, boolean isAvailable) {
         if (isAvailable && !availableNodes.contains(node)) {
             availableNodes.add(node);
             availableNodes.remove(node);
@@ -332,60 +241,60 @@ public class ECS {
             availableNodes.remove(node);
     }
 
-    public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-        if (count > availableNodes.size()) {
-            throw new IllegalArgumentException("Not enough available servers to fulfill the request.");
-        }
+    // public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
+    //     if (count > availableNodes.size()) {
+    //         throw new IllegalArgumentException("Not enough available servers to fulfill the request.");
+    //     }
 
-        Collection<IECSNode> addedNodes = new ArrayList<>();
+    //     Collection<IECSNode> addedNodes = new ArrayList<>();
 
-        for (int i = 0; i < count; ++i) {
-            /* Select and remove a server from the pool */
-            IECSNode newServer = availableNodes.get(0);
+    //     for (int i = 0; i < count; ++i) {
+    //         /* Select and remove a server from the pool */
+    //         IECSNode newServer = availableNodes.get(0);
 
-            if (initServer((ECSNode) newServer, cacheStrategy, cacheSize))
-                addedNodes.add(newServer);
+    //         if (initServer((ECSNode) newServer, cacheStrategy, cacheSize))
+    //             addedNodes.add(newServer);
 
-            // update Zookeeper or another coordination service here if needed
-        }
+    //         // update Zookeeper or another coordination service here if needed
+    //     }
 
-        // Rebalance the key space among all nodes
-        // rebalanceKeyspace();
+    //     // Rebalance the key space among all nodes
+    //     // rebalanceKeyspace();
 
-        return addedNodes;
-    }
+    //     return addedNodes;
+    // }
 
-    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO
-        return null;
-    }
+    // public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
+    //     // TODO
+    //     return null;
+    // }
 
-    public boolean awaitNodes(int count, int timeout) throws Exception {
-        // TODO
-        return false;
-    }
+    // public boolean awaitNodes(int count, int timeout) throws Exception {
+    //     // TODO
+    //     return false;
+    // }
 
-    public boolean removeNodes(Collection<String> nodeNames) {
-        boolean removedAll = true;
+    // public boolean removeNodes(Collection<String> nodeNames) {
+    //     boolean removedAll = true;
 
-        for (String nodeName : nodeNames) {
-            ECSNode removedNode = (ECSNode) nodes.remove(nodeName);
+    //     for (String nodeName : nodeNames) {
+    //         ECSNode removedNode = (ECSNode) nodes.remove(nodeName);
 
-            // Node not found in the server name to ECSNode map
-            if (removedNode == null) {
-                removedAll = false;
-                continue;
-            }
+    //         // Node not found in the server name to ECSNode map
+    //         if (removedNode == null) {
+    //             removedAll = false;
+    //             continue;
+    //         }
 
-            try {
-                removedNode.closeConnection();
-            } catch (Exception e) {
-                logger.error("Error closing connection with server " + nodeName, e);
-            }
-        }
+    //         try {
+    //             removedNode.closeConnection();
+    //         } catch (Exception e) {
+    //             logger.error("Error closing connection with server " + nodeName, e);
+    //         }
+    //     }
 
-        return removedAll;
-    }
+    //     return removedAll;
+    // }
 
     public Map<String, IECSNode> getNodes() {
         return this.nodes;

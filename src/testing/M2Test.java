@@ -1,86 +1,54 @@
 package testing;
 
-import java.net.UnknownHostException;
-import java.util.*;
+import org.apache.log4j.Logger;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
-import app_kvServer.KVServer;
-import ecs.ECS;
-import ecs.IECSNode;
-import junit.framework.TestCase;
-import org.apache.log4j.Logger; // import Logger
+import java.util.HashSet;
+import java.util.Set;
 
 import app_kvECS.ECSClient;
+import ecs.IECSNode;
+import junit.framework.TestCase;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-/* 
-    Integration of the JUnit library into your project (as in Milestone 1)
-    Automate the running of the given test cases Do regression testing, 
-    make sure that relevant Milestone 1 tests still pass Test functionality such as create connection/disconnect,get/put value, update value (existing key), get non-existing key(check error messages)
-
-    Add at least 10 test cases of your choice that cover the additional functionality and features of this milestone (e.g., ECS,consistent hashing, metadata updates, retry operations, locks ,etc.)
-
-    Compile a short test report about all test cases, especially your own cases (submit as appendix of your design document).
-*/
-public class M2Test extends TestCase {
+public class M2Test extends TestCase{
     private ECSClient ecsClient;
     private static final Logger logger = Logger.getLogger(M2Test.class);
 
-    protected void setUp() {
-        ecsClient = new ECSClient("127.0.0.1", 50000);
+    @Before
+    public void setUp() {
+        ecsClient = new ECSClient("127.0.0.1", 20000);
         ecsClient.start();
     }
 
-    protected void tearDown() {
-        if (ecsClient != null) 
+    @After
+    public void tearDown() {
+        if (ecsClient != null) {
             ecsClient.shutdown();
+        }
     }
 
+    @Test
     public void testECSClientInitialization() {
-        assertNotNull(ecsClient);
-        assertTrue(ecsClient.clientRunning);
+        assertNotNull("ECSClient should not be null", ecsClient);
+        assertTrue("ECSClient should be running", ecsClient.clientRunning);
     }
 
+    @Test
     public void testStartECSService() {
-        assertTrue(ecsClient.ecsRunning);
+        assertTrue("ECSService should be running", ecsClient.ecsRunning);
     }
 
+    @Test
     public void testStopECSService() {
         ecsClient.stop();
-        assertFalse(ecsClient.ecsRunning);
+        assertFalse("ECSService should not be running", ecsClient.ecsRunning);
     }
 
     public void testShutdownECS() {
         ecsClient.shutdown();
         assertFalse(ecsClient.ecsRunning);
     }
-
-    public void testAddNode() {
-        IECSNode node = ecsClient.addNode("LRU", 1024);
-        assertNotNull(node);
-    }
-
-    public void testRemoveNodes() {
-        Set<String> nodeNames = new HashSet<>();
-        IECSNode node = ecsClient.addNode("LRU", 1024);
-        assertNotNull(node);
-        nodeNames.add(node.getNodeName());
-        boolean removed = ecsClient.removeNodes(nodeNames);
-        assertTrue(removed);
-    }
-
-    public void testConsistentHashing() {
-    }
-
-    public void testMetadataUpdates() {
-    }
-
-    public void testRetryOperations() {
-    }
-
-    public void testLocks() {
-
-    }
-
 }

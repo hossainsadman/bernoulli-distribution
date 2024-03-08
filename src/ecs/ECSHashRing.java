@@ -14,8 +14,8 @@ public class ECSHashRing implements Serializable {
         this.hashring = new TreeMap<BigInteger, ECSNode>();
     }
 
-    //TODO transferring kv pairs to new node
     public ECSNode addNode(ECSNode node) {
+        System.out.println("Adding node ; " + node.getNodeIdentifier());
         this.hashring.put(node.getNodeIdentifier(), node);
         System.out.println(this.hashring.size() + " nodes in hashring");
 
@@ -25,47 +25,42 @@ public class ECSHashRing implements Serializable {
             return null; // no next node (to get kv pairs from)
         }
 
-        Map.Entry<BigInteger, ECSNode> nextEntry = this.hashring.higherEntry(node.getNodeIdentifier());
-        // if the new node is the last node in the hashring, then its next node is
-        // the first node in the hashring
-        ECSNode next = (nextEntry != null) ? nextEntry.getValue() : this.hashring.firstEntry().getValue();
+        ECSNode successor = getNodeSuccessor(node.getNodeIdentifier());
+        ECSNode predecessor = getNodePredecessor(node.getNodeIdentifier());
 
-        // set the start of the next node's range to the new node's hash
-        next.setNodeHashStartRange(node.getNodeIdentifier());
+        node.setNodeHashRange(predecessor.getNodeHashEndRange(), node.getNodeIdentifier());
+        successor.setNodeHashStartRange(node.getNodeIdentifier());
 
-        Map.Entry<BigInteger, ECSNode> prevEntry = this.hashring.lowerEntry(node.getNodeIdentifier());
-        // if the new node is the first node in the hashring, then its previous node is
-        // the last node in the hashring
-        ECSNode prev = (prevEntry != null) ? prevEntry.getValue() : this.hashring.lastEntry().getValue();
-
-        // set the start of the new node's range to the previous node's hash and the end to the new node's hash
-        node.setNodeHashStartRange(prev.getNodeIdentifier());
-        node.setNodeHashEndRange(node.getNodeIdentifier());
-
-        return next;
+        // Transfer KV pairs from predecessor to new node
+        return successor;
     } 
 
-    //TODO transferring kv pairs to preexisting node
     public ECSNode removeNode(ECSNode node) {
         if (this.hashring.size() == 1) {
             this.hashring.remove(node.getNodeIdentifier());
             return null; // no next node (to transfer kv pairs to)
         }
 
-        Map.Entry<BigInteger, ECSNode> nextEntry = this.hashring.higherEntry(node.getNodeIdentifier());
-        // if the removed node is the last node in the hashring, then its next node is
-        // the first node in the hashring
-        ECSNode next = (nextEntry != null) ? nextEntry.getValue() : this.hashring.firstEntry().getValue();
-
-        assert(next != null);
-        assert(next != node);
-
+        ECSNode successor = getNodeSuccessor(node.getNodeIdentifier());
         // set the start of the next node's range to the removed node's range start
-        next.setNodeHashStartRange(node.getNodeHashStartRange());
-
+        successor.setNodeHashStartRange(node.getNodeHashStartRange());
         this.hashring.remove(node.getNodeIdentifier());
 
-        return next;
+        return successor;
+    }
+
+    public ECSNode getNodePredecessor(BigInteger nodeIdentifier){
+        Map.Entry<BigInteger, ECSNode> prevEntry = this.hashring.lowerEntry(nodeIdentifier);
+        // if the new node is the first node in the hashring, then its previous node is
+        // the last node in the hashring
+        return (prevEntry != null) ? prevEntry.getValue() : this.hashring.lastEntry().getValue();
+    }
+
+    public ECSNode getNodeSuccessor(BigInteger nodeIdentifier){
+        Map.Entry<BigInteger, ECSNode> nextEntry = this.hashring.higherEntry(nodeIdentifier);
+        // if the new node is the last node in the hashring, then its next node is
+        // the first node in the hashring
+        return (nextEntry != null) ? nextEntry.getValue() : this.hashring.firstEntry().getValue();
     }
 
     public ECSNode getNodeForKey(String key) {
@@ -73,6 +68,20 @@ public class ECSHashRing implements Serializable {
         Map.Entry<BigInteger, ECSNode> foundEntry = this.hashring.ceilingEntry(keyHash);
         // if key is greater than the largest node hash in the hashring, then the
         // first node in the hashring is returned
+        ECSNode node = (foundEntry != null) ? foundEntry.getValue() : this.hashring.firstEntry().getValue();
+        return node;
+    }
+
+    public ECSNode getNodeForIdentifier(BigInteger identifierHash){
+        Map.Entry<BigInteger, ECSNode> foundEntry = null;
+        for (Map.Entry<BigInteger, ECSNode> entry : hashring.entrySet()) {
+            ECSNode node = entry.getValue();
+            if (node.getNodeIdentifier().equals(identifierHash)) {
+                foundEntry = entry;
+                break; // Found the node, exit the loop
+            }
+        }
+
         ECSNode node = (foundEntry != null) ? foundEntry.getValue() : this.hashring.firstEntry().getValue();
         return node;
     }

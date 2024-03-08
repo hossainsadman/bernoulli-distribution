@@ -82,9 +82,7 @@ public class ClientConnection implements Runnable {
     }
 
     private boolean checkKeyInRange(String key) {
-        if (this.server.getMetadata() != null)
-            return this.server.getMetadata().isKeyInRange(key);
-        return true;
+        return this.server.getMetadata().isKeyInRange(key);
     }
 
     /**
@@ -97,7 +95,6 @@ public class ClientConnection implements Runnable {
         String recvKey = recv.getKey();
         String recvVal = recv.getValue();
         Boolean recvLocolProtocol = recv.getLocalProtocol();
-        System.out.println(recvLocolProtocol);
         if (recvStatus == StatusType.KEYRANGE){
             res = new BasicKVMessage(StatusType.KEYRANGE_SUCCESS, this.server.getHashRing().toString(), null);
         } else if (recvStatus == StatusType.PUT && recvKey != null && recvVal != null) { // PUT

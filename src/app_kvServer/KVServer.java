@@ -28,6 +28,7 @@ import app_kvServer.Caches.LRUCache;
 import app_kvServer.ClientConnection;
 import app_kvServer.IKVServer.CacheStrategy;
 import shared.messages.KVMessage;
+import shared.messages.ECSMessage;
 import shared.messages.KVMessage.StatusType;
 import shared.*;
 import static app_kvServer.Caches.*;
@@ -494,6 +495,9 @@ public class KVServer implements IKVServer {
         try {
             ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
             obj = in.readObject();
+        } catch(EOFException e){
+            // Connection has been closed by ECS, handle gracefully
+            System.out.println("Connection has been closed by the other side.");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -510,41 +514,70 @@ public class KVServer implements IKVServer {
         }
     }
 
-    public void listenForTransfer() {
-        HashMap<String, String> kvPairs = null;
-        while (ecsSocket != null && !ecsSocket.isClosed()) {
-            try {
-                String str = (String) readObjectFromSocket(ecsSocket);
+    private void sendMessageToECS(ECSMessage messageType, Object... obj){
+        writeObjectToSocket(this.ecsSocket, messageType);
+        for(Object o : obj)
+            writeObjectToSocket(this.ecsSocket, o);
+    }
 
-                if (str.equals("KEYRANGE")){
-                    logger.info("Received KEYRANGE command from ECS");
+    private void listenToEcsSocket() {
+        HashMap<String, String> kvPairs = new HashMap<>();
+        while (ecsSocket != null && !ecsSocket.isClosed()) {
+            Object receivedObject = readObjectFromSocket(ecsSocket);
+            if (receivedObject == null) {
+                // Connection has been closed by ECS, handle gracefully
+                System.out.println("Socket connection closed, stopping listener.");
+                break;
+            }
+            // If receivedObject is not null, cast to ECSMessage and process further
+            ECSMessage message = (ECSMessage) receivedObject;
+
+            switch (message){
+                case HASHRING: {
+                    System.out.println("RECEIVED HASHRING COMMAND");
+                    hashRing = (ECSHashRing) readObjectFromSocket(ecsSocket);
+                    if(metadata != null) logger.info("Old hashrange: " + metadata.toString());
+                    metadata = hashRing.getNodeForIdentifier(this.getHostaddress() + ":" + String.valueOf(this.getPort()));
+                    if(metadata != null) logger.info("Up to date hashrange: " + metadata.toString());
+                    
+                    break;
+                }
+
+                case KEYRANGE: {
+                    logger.info("Received KEYRANGE command from ECS"); 
                     ECSHashRing ring = (ECSHashRing) readObjectFromSocket(ecsSocket);
                     System.out.println(ring);
                     this.setHashRing(ring);
-                    ECSNode node = ring.getNodeForIdentifier(this.getHostname() + ":" + String.valueOf(this.getPort()));
-                    // metadata.setNodeHashStartRange();
-                    // metadata.setNodeHashEndRange(hashRange[1]);
+                    ECSNode node = ring.getNodeForIdentifier(this.getHostaddress() + ":" + String.valueOf(this.getPort()));
+                    
                     metadata.setNodeHashRange(node.getNodeHashStartRange(), node.getNodeHashStartRange());
+                    break;
                 }
-                else if (str.equals("TRANSFER")) {
-                    logger.info("Received TRANSFER command from ECS");
-                    // get metadata
-                    logger.info("Old hashrange: " + metadata.toString());
-                    BigInteger[] hashRange = (BigInteger[]) readObjectFromSocket(ecsSocket);
-                    metadata.setNodeHashStartRange(hashRange[0]);
-                    metadata.setNodeHashEndRange(hashRange[1]);
-                    logger.info("New hashrange: " + metadata.toString());
+
+                case TRANSFER_FROM:{
+
+                    logger.info("Received TRANSFER_FROM command from ECS");
+                    ECSNode toNode = (ECSNode) readObjectFromSocket(ecsSocket);
                     // get keys to transfer
-                    kvPairs = getKVPairsNotResponsibleFor();
+                    try{
+                        kvPairs = getKVPairsNotResponsibleFor();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     // transfer keys
-                    writeObjectToSocket(ecsSocket, kvPairs);
+                    sendMessageToECS(ECSMessage.TRANSFER_TO, toNode, kvPairs);
+                    break;
+                }
+                
+                case RECEIVE:{
 
-                } else if (str.equals("RECEIVE")) {
-                    logger.info("Received RECEIVE command from ECS");
-
+                    logger.info("Received RECIEVE command from ECS");
+                    ECSNode fromNode = (ECSNode) readObjectFromSocket(ecsSocket);
+                    
                     this.write_lock = true;
-
+                    
                     kvPairs = (HashMap<String, String>) readObjectFromSocket(ecsSocket);
+                    System.out.println(kvPairs);
                     for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
                         try {
                             putKV(entry.getKey(), entry.getValue(), true);
@@ -552,11 +585,16 @@ public class KVServer implements IKVServer {
                             e.printStackTrace();
                         }
                     }
-
+                    
                     this.write_lock = false;
+                    if(fromNode != null)
+                        sendMessageToECS(ECSMessage.TRANSFER_COMPLETE, fromNode);
+                    break;
+                }
 
-                    writeObjectToSocket(ecsSocket, "TRANSFER_COMPLETE");
-                } else if (str.equals("TRANSFER_COMPLETE")) {
+                case TRANSFER_COMPLETE:{
+
+                    logger.info("Received TRANSFER_COMPLETE command from ECS");
                     for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
                         try {
                             putKV(entry.getKey(), "null");
@@ -564,33 +602,53 @@ public class KVServer implements IKVServer {
                             e.printStackTrace();
                         }
                     }
+                    break;
                 }
 
-            } catch (Exception e) {
-                e.printStackTrace();
+                default:
+                    System.out.println("Unrecognized Command " + message);
             }
         }
     }
 
     public void connectECS() {
         if (ecsHost != null && ecsPort > -1) {
+            System.out.println("Here");
             try {
                 ecsSocket = new Socket(ecsHost, ecsPort);
                 logger.info("Connected to ECS at " + ecsHost + ":" + ecsPort + " via "
                         + ecsSocket.getInetAddress().getHostAddress()
                         + ":" + ecsSocket.getLocalPort());
 
+
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    HashMap<String, String> kvPairs = null;
+                    System.out.println("Running shutdown hook");
+                    try {
+                        kvPairs =  getAllKVPairs();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    if(kvPairs != null && kvPairs.size() > 0){
+                        sendMessageToECS(ECSMessage.SHUTDOWN, kvPairs);
+                        for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
+                            try {
+                                putKV(entry.getKey(), "null");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }));
+
                 String serverName = this.getHostaddress() + ":" + String.valueOf(this.getPort());
-                writeObjectToSocket(ecsSocket, serverName);
-
-                hashRing = (ECSHashRing) readObjectFromSocket(ecsSocket);
-
-                metadata = hashRing.getNodeForIdentifier(this.getHostname() + ":" + String.valueOf(this.getPort()));
-                logger.info("KVServer " + metadata.getNodeName() + " keyrange: " + metadata.toString());
+                System.out.println(serverName);
+                sendMessageToECS(ECSMessage.INIT, serverName);
+                // writeObjectToSocket(ecsSocket, getAllKVPairs());
 
                 new Thread(new Runnable() {
                     public void run() {
-                        listenForTransfer();
+                        listenToEcsSocket();
                     }
                 }).start();
 
@@ -662,17 +720,29 @@ public class KVServer implements IKVServer {
 
     public HashMap<String, String> getKVPairsNotResponsibleFor() throws Exception {
         HashMap<String, String> kvPairs = new HashMap<>();
-        List<String> keys = new ArrayList<>();
         File dir = new File(dirPath);
         if (dir.isDirectory()) {
             for (File kv : dir.listFiles()) {
                 String key = kv.getName();
                 if (!metadata.isKeyInRange(key)) {
-                    kvPairs.put(key, getKV(key));
+                    kvPairs.put(unescape(key), getKV(unescape(key)));
                 }
             }
         }
         logger.info("KVPairs not responsible for: " + kvPairs.toString());
+        return kvPairs;
+    }
+
+    public HashMap<String, String> getAllKVPairs() throws Exception { 
+        HashMap<String, String> kvPairs = new HashMap<>();
+        File dir = new File(dirPath);
+        if (dir.isDirectory()) {
+            for (File kv : dir.listFiles()) {
+                String key = kv.getName();
+                kvPairs.put(unescape(key), getKV(unescape(key)));
+            }
+        }
+        logger.info("KVPairs responsible for: " + kvPairs.toString());
         return kvPairs;
     }
 

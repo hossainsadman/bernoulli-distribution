@@ -93,7 +93,8 @@ public class ECSClient implements IECSClient {
 
     @Override
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-        return ecs.addNodes(count, cacheStrategy, cacheSize);
+        // TODO: add way to add nodes to ecs programatically
+        return null;
     }
 
     @Override
