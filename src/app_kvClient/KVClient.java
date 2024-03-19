@@ -139,7 +139,10 @@ public class KVClient implements IKVClient {
     private void handleCommand(String cmdLine) {
         String[] tokens = cmdLine.split("\\s+");
 
-        if (tokens[0].equals("help")) {
+        if (tokens[0].equals("clear")){
+            System.out.print("\033[H\033[2J");  
+            System.out.flush();  
+        } else if (tokens[0].equals("help")) {
             printHelp();
 
         } else if (tokens[0].equals("quit")) {

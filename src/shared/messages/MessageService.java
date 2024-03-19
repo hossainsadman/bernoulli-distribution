@@ -1,17 +1,62 @@
 package shared.messages;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.log4j.Logger; // import Logger
+
+import shared.messages.ECSMessage.ECSMessageType;
 
 public class MessageService {
   private static Logger logger = Logger.getRootLogger();
 
   private static final int BUFFER_SIZE = 1024;
 	private static final int DROP_SIZE = 128 * BUFFER_SIZE;
+
+  public void sendECSMessage(Socket socket, ECSMessageType messageType, Object... params) throws Exception{
+    if (params.length % 2 != 0) {
+        throw new IllegalArgumentException("Parameters should be in key-value pairs");
+    }
+    HashMap<String, Serializable> parameters = new HashMap<>();
+    for (int i = 0; i < params.length; i += 2) {
+        if (!(params[i] instanceof String)) {
+            throw new IllegalArgumentException("Key must be a string");
+        }
+        parameters.put((String) params[i], (Serializable) params[i + 1]);
+    }
+
+    // Verify required parameters for the message type
+    for (String requiredParam : messageType.getRequiredParameters()) {
+        if (!parameters.containsKey(requiredParam)) {
+            throw new IllegalArgumentException("Missing required parameter: " + requiredParam);
+        }
+    }
+    
+    
+    ECSMessage message = new ECSMessage(messageType, parameters);
+    
+    writeObjectToSocket(socket, message);
+  }
+
+  public ECSMessage receiveECSMessage(Socket socket) throws Exception{
+    Object receivedObject = readObjectFromSocket(socket);
+    if (receivedObject == null) {
+        // Connection has been closed, handle gracefully
+        this.logger.info("Socket connection closed, stopping listener.");
+        return null;
+    }
+    // If receivedObject is not null, cast to ECSMessage and process further
+    return (ECSMessage) receivedObject;
+  }
+
   
   /**
    * Send message (that implements MessageInterface) to the specified socket
@@ -21,7 +66,6 @@ public class MessageService {
    * @throws IOException
    */
   public void sendBasicKVMessage(Socket socket, BasicKVMessage msg) throws IOException {
-    this.logger.info("Sending Message on socket");
     OutputStream output = socket.getOutputStream();
     byte[] msgBytes = msg.getMsgBytes();
     output.write(msgBytes, 0, msgBytes.length);
@@ -37,7 +81,6 @@ public class MessageService {
    */
   public BasicKVMessage receiveBasicKVMessage(Socket socket) throws IOException {
     byte[] receivedMessageBytes = this.receiveMessage(socket);
-    this.logger.info("Received message on socket");
     BasicKVMessage msg = new BasicKVMessage(receivedMessageBytes);
     return msg;
   }
@@ -96,5 +139,30 @@ public class MessageService {
 
     msgBytes = tmp;
     return msgBytes;
+  }
+
+
+  private Object readObjectFromSocket(Socket socket) {
+    Object obj = null;
+    try {
+        ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+        obj = in.readObject();
+    } catch(EOFException e){
+        // Connection has been closed by ECS, handle gracefully
+        System.out.println("Connection has been closed by the other side.");
+    } catch (IOException | ClassNotFoundException e) {
+        e.printStackTrace();
+    }
+    return obj;
+  }
+
+  private void writeObjectToSocket(Socket socket, Object obj) {
+    try {
+        ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+        out.writeObject(obj);
+        out.flush();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
   }
 }

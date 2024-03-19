@@ -1,17 +1,18 @@
 package ecs;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.HashMap;
+
 import org.apache.log4j.*;
 
 import shared.messages.ECSMessage;
+import shared.messages.ECSMessage.ECSMessageType;
+import shared.messages.MessageService;
 
 
 public class ServerConnection implements Runnable {
+    private MessageService messageService = new MessageService();
     private static Logger logger = Logger.getRootLogger();
     private Socket serverSocket;
     private ECSNode node;
@@ -30,15 +31,12 @@ public class ServerConnection implements Runnable {
             if(this.serverSocket == null) isOpen = false;
             else{
                 try {
-                    Object receivedObject = readObjectFromSocket(this.serverSocket);
-                    if (receivedObject == null) {
-                        // Connection has been closed by ECS, handle gracefully
-                        System.out.println("Socket connection closed, stopping listener.");
+                    ECSMessage message = messageService.receiveECSMessage(this.serverSocket);
+                    if (message == null) {
                         isOpen = false;
                         break;
                     }
-                    // If receivedObject is not null, cast to ECSMessage and process further
-                    ECSMessage message = (ECSMessage) receivedObject;
+
                     processMessage(message);
                 } catch (Exception ioe) {
                     System.out.println(ioe);
@@ -46,23 +44,32 @@ public class ServerConnection implements Runnable {
                 }
             }
         }
-        shutdown();
+
+        try{
+            handleShutdown(null);
+        } catch (Exception e){
+            System.out.println(e);
+        }
     }
 
-    public void shutdown() {
+    @SuppressWarnings("unchecked")
+    public void handleShutdown(ECSMessage message) throws Exception{
         if (serverSocket == null) return;
-        HashMap<String, String> kvPairs = (HashMap<String, String>) readObjectFromSocket(this.serverSocket);
-        System.out.println(kvPairs);
-        if (node != null){
-            ECSNode nextNode = this.ecs.hashRing.removeNode(node);
-            if (nextNode != null && kvPairs != null && kvPairs.size() > 0){
-                sendMessage(nextNode.getServerSocket(), ECSMessage.RECEIVE, null, kvPairs);
+        ECSNode nextNode = this.ecs.removeNode(node);
+        if (message != null){
+            HashMap<String, String> kvPairs = (HashMap<String, String>) message.getParameter("KV_PAIRS");
+            if(!kvPairs.isEmpty()){
+                logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + this.node.getNodeName() + " to " + nextNode.getNodeName());
+                logger.info("kvPairs: " + kvPairs.toString());
+                
+                if (node != null && nextNode != null && kvPairs != null && kvPairs.size() > 0){
+                    messageService.sendECSMessage(nextNode.getServerSocket(), ECSMessageType.RECEIVE, "FROM_NODE", null, "KV_PAIRS", kvPairs);
+                }
             }
-            this.ecs.nodes.remove(this.node.getNodeName());
-            this.ecs.sendMetadataToNodes();
         }
 
-        System.out.println("Closing connection");
+        ECS.connections.remove(this);
+
         try {
             if (serverSocket != null)
                 serverSocket.close();
@@ -74,130 +81,69 @@ public class ServerConnection implements Runnable {
         }
     }
 
-    private Object readObjectFromSocket(Socket socket) {
-        Object obj = null;
-        try {
-            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-            obj = in.readObject();
-        } catch(EOFException e){
-            // Connection has been closed by ECS, handle gracefully
-            System.out.println("Connection has been closed by the other side.");
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return obj;
-    }
 
-    private void writeObjectToSocket(Socket socket, Object obj) {
-        try {
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            out.writeObject(obj);
-            out.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void sendMessage(Socket socket, ECSMessage messageType, Object... data){
-        writeObjectToSocket(socket, messageType);
-        for(Object o: data) writeObjectToSocket(socket, o);
-    }
-
-    private void initServer(){
+    private void handleInit(ECSMessage message) throws Exception{
+        String serverName = (String) message.getParameter("SERVER_NAME");
         logger.info("ECS connected to KVServer via " +  serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getPort());
 
-        String serverName = (String) readObjectFromSocket(serverSocket);
-        System.out.println("Connected : " + serverName);
         // split serverName by : to get the server address and port
         String[] serverInfo = serverName.split(":");
         String serverAddress = serverInfo[0];
         int serverPort = Integer.parseInt(serverInfo[1]);
 
-        logger.info("ECS connected to KVServer at " + serverAddress + ":" + serverPort);
+        this.node = new ECSNode(serverName, serverAddress, serverPort, serverSocket);
 
-        ECSNode newNode = new ECSNode(serverName, serverAddress, serverPort, serverSocket);
-        this.node = newNode;
-        this.ecs.nodes.put(serverName, newNode); // append to the table
-        this.ecs.setNodeAvailability(newNode, true); // set the node available
-
-        // WRITE_LOCK on kvserver
-
-        ECSNode oldNode = this.ecs.hashRing.addNode(newNode);
-        logger.info("Added " + serverName + " to the hashring.");
-        logger.info("KEYRANGE: " + this.ecs.hashRing.toString());
-
-        this.ecs.sendMetadataToNodes();
+        ECSNode oldNode = this.ecs.addNode(this.node);
 
         // oldNode is null if newNode is the only node in the hashring
         if (oldNode != null) {
-            sendMessage(oldNode.getServerSocket(), ECSMessage.TRANSFER_FROM, newNode);
+            messageService.sendECSMessage(oldNode.getServerSocket(), ECSMessageType.TRANSFER_FROM, "TO_NODE", this.node);
         }
     }
 
-    private void transferKeys() {
+    @SuppressWarnings("unchecked")
+    private void handleTransferTo(ECSMessage message) throws Exception{
         System.out.println("TRANSFER_TO Command");
-        ECSNode toNode = (ECSNode) readObjectFromSocket(this.serverSocket);
-        HashMap<String, String> kvPairs = (HashMap) readObjectFromSocket(this.serverSocket);
+        ECSNode toNode = (ECSNode) message.getParameter("TO_NODE");
+        HashMap<String, String> kvPairs = (HashMap<String, String>) message.getParameter("KV_PAIRS");
 
         if(kvPairs != null && kvPairs.size() > 0){
             logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + this.node.getNodeName() + " to " + this.node.getNodeName());
             logger.info("kvPairs: " + kvPairs.toString());
+            Socket toNodeSocket = this.ecs.nodes.get(toNode.getNodeName()).getServerSocket();
 
-            Socket toNodeSocket = this.ecs.hashRing.getNodeForIdentifier(toNode.getNodeIdentifier()).getServerSocket();
-            sendMessage(toNodeSocket, ECSMessage.RECEIVE, this.node, kvPairs);
+            messageService.sendECSMessage(toNodeSocket, ECSMessageType.RECEIVE, "FROM_NODE", node, "KV_PAIRS", kvPairs);
         }
     }
 
-    private void handleTransferComplete() {
+    private void handleTransferComplete(ECSMessage message) throws Exception{
         System.out.println("TRANSFER_COMPLETE Command");
-        ECSNode pingNode = (ECSNode) readObjectFromSocket(this.serverSocket);
-        Socket pingNodeSocket = this.ecs.hashRing.getNodeForIdentifier(pingNode.getNodeIdentifier()).getServerSocket();
-        sendMessage(pingNodeSocket, ECSMessage.TRANSFER_COMPLETE);
+        ECSNode pingNode = (ECSNode) message.getParameter("PING_NODE");
+        Socket pingNodeSocket = this.ecs.nodes.get(pingNode.getNodeName()).getServerSocket();
+
+        messageService.sendECSMessage(pingNodeSocket, ECSMessageType.TRANSFER_COMPLETE, "PING_NODE", pingNode);
     }
 
-    /**
-     * KVServer <-> ECS message Protocol
-     * 
-     * INIT <server-name:String> 
-     * - Called when KVServer connects to ECS
-     * 
-     * HASHRING <hashring:ECSHashRing>
-     * - Update hashring on KVServer
-     * 
-     * TRANSFER_FROM <toNode:ECSNode>
-     * - Sent from ECS -> KVServer to allow KVServer to tranfer nodes to specified toNode
-     * 
-     * TRANSFER_TO <toNode:ECSNode> <kvPairs:HashMap<String, String>>
-     * - Sent from KVServer -> ECS to trigger transfer of kvPairs to toNode
-     * - Sent after TRANSFER_FROM from the node tranferring kvPairs to the node receiving them
-     * - TRANSFER_TO.toNode == TRANSFER_FROM.toNode
-     * 
-     * RECEIVE <fromNode:ECSNode> <kvPairs:HashMap<String, String>>
-     * - Sent from ECS -> KVServer that is getting kvPairs tranfered to
-     * - Sent after TRANSFER_TO command received from KVServer
-     * - Sent is the fromNode that is transferring the kvPairs
-     * 
-     * TRANSFER_COMPLETE <pingNode:ECSNode>
-     * - Sent after the keys have been transfered to a specific KVServer from pingServer, and pingServer is notified
-     * - Sent after the KVServer processes the RECEIVE command
-     * - TRANSFER_COMPLETE.pingNode == RECEIVE.fromNode
-     */
     private void processMessage(ECSMessage message){
-        switch (message){
-            case INIT:
-                initServer();
-                break;
-            case TRANSFER_TO:
-                transferKeys();
-                break;
-            case SHUTDOWN:
-                shutdown();
-                break;
-            case TRANSFER_COMPLETE:
-                handleTransferComplete();
-                break;
-            default:
-                System.out.println("Unrecognized Command " + message);
+        try{
+            switch (message.getType()){
+                case INIT:
+                    handleInit(message);
+                    break;
+                case TRANSFER_TO:
+                    handleTransferTo(message);
+                    break;
+                case SHUTDOWN:
+                    handleShutdown(message);
+                    break;
+                case TRANSFER_COMPLETE:
+                    handleTransferComplete(message);
+                    break;
+                default:
+                    System.out.println("Unrecognized Command in ECS" + message);
+            }
+        } catch (Exception e){
+            System.out.println(e);
         }
     }
 }

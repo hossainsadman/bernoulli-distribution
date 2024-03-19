@@ -15,7 +15,7 @@ import java.net.Socket;
 import java.text.ParseException;
 
 import ecs.ECS;
-import ecs.IECSNode;
+import ecs.ECSNode;
 
 /* ECSClient should focus on CLI interaction */
 public class ECSClient implements IECSClient {
@@ -24,6 +24,7 @@ public class ECSClient implements IECSClient {
     public boolean clientRunning = false; /* Represents the status of ECSClient not the ECS */
     public boolean ecsRunning = false; /* Represents the status of ECS */
     private ECS ecs;
+    private static final String PROMPT = "ECS-Client> ";
 
     public ECSClient(String address, int port) {
         ecs = new ECS(address, port, logger);
@@ -49,15 +50,18 @@ public class ECSClient implements IECSClient {
     public boolean start() {
         if (ecs == null)
             return false;
-        ecsRunning = ecs.start();
-
+        if(!ecsRunning){
+            ecsRunning = ecs.start();
+        } else{
+            this.logger.info("[ECSClient] ECS already running");
+        }
         return ecsRunning;
     }
 
     public void run() {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-
         while (clientRunning) {
+            BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+            System.out.print(PROMPT);
             try {
                 this.handleUserCommands(br.readLine());
             } catch (IOException e) {
@@ -82,53 +86,58 @@ public class ECSClient implements IECSClient {
     }
 
     @Override
-    public IECSNode addNode(String cacheStrategy, int cacheSize) {
-        Collection<IECSNode> server = this.addNodes(1, cacheStrategy, cacheSize);
-
-        if (!server.isEmpty())
-            return server.iterator().next();
+    public ECSNode addNode(String cacheStrategy, int cacheSize) {
+        this.ecs.addNode(cacheStrategy, cacheSize);
 
         return null;
     }
 
     @Override
-    public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO: add way to add nodes to ecs programatically
+    public Collection<ECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
+        this.ecs.addNodes(count, cacheStrategy, cacheSize);
         return null;
     }
 
     @Override
-    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO
+    public Collection<ECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
         return null;
     }
 
     @Override
     public boolean awaitNodes(int count, int timeout) throws Exception {
-        // TODO
-        return false;
+        return this.ecs.awaitNodes(count, timeout);
     }
 
     @Override
     public boolean removeNodes(Collection<String> nodeNames) {
-        return removeNodes(nodeNames);
+        return this.ecs.removeNodes(nodeNames);
     }
 
     @Override
-    public Map<String, IECSNode> getNodes() {
+    public Map<String, ECSNode> getNodes() {
         return ecs.getNodes();
     }
 
     @Override
-    public IECSNode getNodeByKey(String Key) {
+    public ECSNode getNodeByKey(String Key) {
         return ecs.getNodeByServerName(Key);
     }
+
+    public void listNodes() {
+        int counter = 1;
+        for(Map.Entry<String, ECSNode> entry : this.ecs.nodes.entrySet()) {
+            System.out.println(counter + ". " + entry.getValue()); 
+            counter++; 
+        }
+    }
+    
 
     private void displayHelperMessage() {
         Map<String, String> commands = new LinkedHashMap<>();
         commands.put("start", "Starts the ECS");
         commands.put("stop", "Stops the ECS");
         commands.put("quit", "Quits the ECS");
+        commands.put("list", "List all available nodes on ECS");
         commands.put("addnode <cacheStrategy> <cacheSize>", "Adds a KVServer to the ECS");
         commands.put("addnodes <count> <cacheStrategy> <cacheSize>", "Adds multiple KVServers to the ECS.");
         commands.put("removenodes <nodename> <nodename> ...",
@@ -172,6 +181,14 @@ public class ECSClient implements IECSClient {
                     }
 
                     clientRunning = !this.shutdown();
+                    break;
+                case "list":
+                    if (!this.ecsRunning) {
+                        System.out.println("[Error] ECSClient is not running in the first place.");
+                        break;
+                    }
+
+                    this.listNodes();
                     break;
                 case "addnode":
                     if (!this.ecsRunning) {
@@ -219,6 +236,12 @@ public class ECSClient implements IECSClient {
                     break;
                 case "help":
                     this.displayHelperMessage();
+                    break;
+                case "clear":
+                    System.out.print("\033[H\033[2J");  
+                    System.out.flush();  
+                    break;
+                case "":
                     break;
                 default:
                     this.displayHelperMessage();
@@ -292,11 +315,7 @@ public class ECSClient implements IECSClient {
             new LogSetup(ecsLogFile, LogSetup.getLogLevel(ecsLogLevel));
             logger.info("logger setup is complete.");
             ECSClient ecsClient = new ECSClient(ecsAddress, Integer.parseInt(ecsPort));
-            if (cmd.hasOption("cli")) {
-                ecsClient.run();
-            } else {
-                ecsClient.start();
-            }
+            ecsClient.run();
         } catch (Exception e) {
             System.out.println("[Error] Unable to setup logger: ");
             e.printStackTrace();

@@ -1,20 +1,14 @@
 package ecs;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.json.*;
 
-import logger.LogSetup;
-import shared.messages.BasicKVMessage;
-import shared.messages.ECSMessage;
+import shared.messages.ECSMessage.ECSMessageType;
+import shared.messages.MessageService;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.math.BigInteger;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -22,19 +16,16 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import app_kvECS.ECSClient;
-import app_kvServer.ClientConnection;
-
-import ecs.ECSHashRing;
-
-import org.apache.zookeeper.*;
 /* 
     ECSClient should initialize ECS. 
     If needed, integrate zookeeper here.
 */
 
 public class ECS {
+    private MessageService messageService = new MessageService();
     private static Logger logger;
 
     private static final String DEFAULT_ECS_ADDR = "127.0.0.1";
@@ -54,9 +45,10 @@ public class ECS {
      * Integrity Constraint:
      * IECSNode in availableNodes = values of nodes
      */
-    public Map<String, IECSNode> nodes = new HashMap<>(); /* maps server name -> node */
-    private ArrayList<IECSNode> availableNodes = new ArrayList<>();
-    private static final List<ServerConnection> connections = new CopyOnWriteArrayList<>();
+    public Map<String, ECSNode> nodes = new HashMap<>(); /* maps server name -> node */
+    private HashSet<Integer> availablePorts = new HashSet<Integer>();
+    private ArrayList<ECSNode> availableNodes = new ArrayList<>();
+    public static final List<ServerConnection> connections = new CopyOnWriteArrayList<>();
 
     public ECS(String address, int port, Logger logger) {
         if (port < 1024 || port > 65535)
@@ -85,16 +77,6 @@ public class ECS {
 
     public ECS(Logger logger) throws Exception{
         this.init_config("./ecs_config.json");
-        if(this.config == null)
-            throw new Exception("Config file not initialized");
-
-        try {
-            this.address = this.config.getJSONObject("ecs").getString("address");
-            this.port = this.config.getJSONObject("ecs").getInt("port");
-        } catch (JSONException e) {
-            logger.error("Error reading config file.");
-            e.printStackTrace();
-        }
 
         this.address = DEFAULT_ECS_ADDR;
         this.port = DEFAULT_ECS_PORT;
@@ -106,10 +88,15 @@ public class ECS {
 
     private void init_config(String configPath){
         if(configPath == null) configPath = "./ecs_config.json";
-
         try {
             tokener = new JSONTokener(new FileInputStream("./ecs_config.json"));
             this.config = new JSONObject(tokener);
+            this.address = this.config.getJSONObject("ecs").getString("address");
+            this.port = this.config.getJSONObject("ecs").getInt("port");
+            JSONArray portsArray = this.config.getJSONArray("ports");
+            this.availablePorts = IntStream.range(0, portsArray.length())
+                                    .mapToObj(portsArray::getInt)
+                                    .collect(Collectors.toCollection(HashSet::new));
         } catch (FileNotFoundException e) {
             logger.warn("No ecs_config.json file found.");
         } catch (Exception e) {
@@ -164,34 +151,12 @@ public class ECS {
         }
     }
 
-    private void sendMessageToNode(Socket socket, ECSMessage messageType, Object data){
-        writeObjectToSocket(socket, messageType);
-        if (data != null) writeObjectToSocket(socket, data);
-    }
-
-    public void sendMetadataToNodes(){
-        for (ECSNode node : this.hashRing.getHashring().values()) {
-            sendMessageToNode(node.getServerSocket(), ECSMessage.HASHRING, this.hashRing);
-        }
-    }
-
-    public Object readObjectFromSocket(Socket socket) {
-        Object obj = null;
+    public void sendMetadataToNodes() {
         try {
-            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-            obj = in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return obj;
-    }
-
-    public void writeObjectToSocket(Socket socket, Object obj) {
-        try {
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            out.writeObject(obj);
-            out.flush();
-        } catch (IOException e) {
+            for (ECSNode node : this.hashRing.getHashring().values()) {
+                messageService.sendECSMessage(node.getServerSocket(), ECSMessageType.HASHRING, "HASHRING", hashRing);
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -206,7 +171,7 @@ public class ECS {
 
     public void stop() {
         try {
-            for (Map.Entry<String, IECSNode> entry : nodes.entrySet()) {
+            for (Map.Entry<String, ECSNode> entry : nodes.entrySet()) {
                 ECSNode node = (ECSNode) entry.getValue();
                 nodes.remove(entry);
                 node.closeConnection();
@@ -241,38 +206,88 @@ public class ECS {
             availableNodes.remove(node);
     }
 
-    // public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-    //     if (count > availableNodes.size()) {
-    //         throw new IllegalArgumentException("Not enough available servers to fulfill the request.");
-    //     }
+    public void startKVServer(String cacheStrategy, int cacheSize){
+        if (this.availablePorts.isEmpty()) return;
 
-    //     Collection<IECSNode> addedNodes = new ArrayList<>();
+        Iterator<Integer> iterator = this.availablePorts.iterator();
+        Integer port = iterator.next();
+        availablePorts.remove(port); // Remove the element from the set
 
-    //     for (int i = 0; i < count; ++i) {
-    //         /* Select and remove a server from the pool */
-    //         IECSNode newServer = availableNodes.get(0);
+        String[] command = {"java", "-jar", "m2-server.jar", "-p", port.toString(), "-c", String.valueOf(cacheSize), "-s",  cacheStrategy};
 
-    //         if (initServer((ECSNode) newServer, cacheStrategy, cacheSize))
-    //             addedNodes.add(newServer);
+        try {
+            ProcessBuilder builder = new ProcessBuilder(command);
+            builder.inheritIO();
+            builder.start();
+        } catch (Exception e) {
+            this.logger.error(e);
+            e.printStackTrace();
+        }
+    }
 
-    //         // update Zookeeper or another coordination service here if needed
-    //     }
+    public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
+        for(int i = 0; i < count; i++){
+            this.addNode(cacheStrategy, cacheSize);
+        }
+        return null;
+    }
 
-    //     // Rebalance the key space among all nodes
-    //     // rebalanceKeyspace();
+    public void addNode(String cacheStrategy, int cacheSize) {
+        int newCount = this.nodes.size() + 1;
+        this.startKVServer(cacheStrategy, cacheSize);
+        try {
+            this.awaitNodes(newCount, 5000);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-    //     return addedNodes;
-    // }
+    public ECSNode addNode(ECSNode node){
+        logger.info("ECS connected to KVServer at " + node.getNodeHost() + ":" + node.getNodePort());
+        availablePorts.remove(node.getNodePort());
 
-    // public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-    //     // TODO
-    //     return null;
-    // }
+        this.nodes.put(node.getNodeName(), node); // append to the table
+        this.setNodeAvailability(node, true); // set the node available
 
-    // public boolean awaitNodes(int count, int timeout) throws Exception {
-    //     // TODO
-    //     return false;
-    // }
+        ECSNode oldNode = this.hashRing.addNode(node);
+        logger.info("Added " + node.getNodeName() + " to the hashring.");
+        logger.info("KEYRANGE: " + this.hashRing.toString());
+
+        this.sendMetadataToNodes();
+
+        return oldNode;
+    }
+
+    public boolean removeNodes(Collection<String> nodeNames){
+        try {
+            for(String name: nodeNames){
+                int prevNodeCount = this.nodes.size();
+                messageService.sendECSMessage(this.nodes.get(name).getServerSocket(), ECSMessageType.SHUTDOWN_SERVER);
+                this.awaitNodes(prevNodeCount - 1, 10000);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+    public synchronized ECSNode removeNode(ECSNode node) {
+        System.out.println("Removing NODE...");
+        ECSNode nextNode = this.hashRing.removeNode(node);
+        this.nodes.remove(node.getNodeName());
+        this.sendMetadataToNodes();
+
+        return nextNode;
+    }
+
+
+    public boolean awaitNodes(int count, int timeout) throws Exception {
+        long start = System.currentTimeMillis();
+        while (System.currentTimeMillis() - start < timeout && connections.size() != count) {}
+
+        if(connections.size() == count) return true;
+        throw new Exception("Await nodes timeout expired");
+    }
 
     // public boolean removeNodes(Collection<String> nodeNames) {
     //     boolean removedAll = true;
@@ -296,11 +311,11 @@ public class ECS {
     //     return removedAll;
     // }
 
-    public Map<String, IECSNode> getNodes() {
+    public Map<String, ECSNode> getNodes() {
         return this.nodes;
     }
 
-    public IECSNode getNodeByServerName(String serverName) {
+    public ECSNode getNodeByServerName(String serverName) {
         return nodes.get(serverName);
     }
 
