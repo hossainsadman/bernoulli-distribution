@@ -154,9 +154,10 @@ public class ECS {
         }
     }
 
-    public void sendMetadataToNodes() {
+    public void sendMetadataToNodes(ECSHashRing hashRing) {
         try {
-            for (ECSNode node : this.hashRing.getHashring().values()) {
+            for (ECSNode node : hashRing.getHashring().values()) {
+                System.out.println("\n\nSending to " + node.getNodeName() + " \n\nFrom ECS: " + hashRing.toString() + "\n");
                 messageService.sendECSMessage(node.getServerSocket(), node.getObjectOutputStream(), ECSMessageType.HASHRING, "HASHRING", hashRing);
             }
         } catch (Exception e) {
@@ -236,10 +237,10 @@ public class ECS {
     }
 
     public void addNode(String cacheStrategy, int cacheSize) {
-        int newCount = this.nodes.size() + 1;
+        int newCount = connections.size() + 1;
         this.startKVServer(cacheStrategy, cacheSize);
         try {
-            this.awaitNodes(newCount, 6000);
+            this.awaitNodes(newCount, 2000);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -256,7 +257,7 @@ public class ECS {
         logger.info("Added " + node.getNodeName() + " to the hashring.");
         logger.info("KEYRANGE: " + this.hashRing.toString());
 
-        this.sendMetadataToNodes();
+        this.sendMetadataToNodes(this.hashRing);
 
         return oldNode;
     }
@@ -268,9 +269,10 @@ public class ECS {
                 ECSNode node = this.nodes.get(name);
                 if (node != null){
                     messageService.sendECSMessage(node.getServerSocket(), node.getObjectOutputStream(), ECSMessageType.SHUTDOWN_SERVER);
-                    this.awaitNodes(prevNodeCount - 1, 10000);
+                    this.awaitNodes(prevNodeCount - 1, 2000);
                 }
             }
+            this.sendMetadataToNodes(this.hashRing);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -281,7 +283,7 @@ public class ECS {
         System.out.println("Removing NODE...");
         ECSNode nextNode = this.hashRing.removeNode(node);
         this.nodes.remove(node.getNodeName());
-        this.sendMetadataToNodes();
+        this.sendMetadataToNodes(this.hashRing);
 
         return nextNode;
     }
@@ -289,7 +291,9 @@ public class ECS {
 
     public boolean awaitNodes(int count, int timeout) throws Exception {
         long start = System.currentTimeMillis();
-        while (System.currentTimeMillis() - start < timeout && connections.size() != count) {}
+        System.out.println("Before await " + connections.size());
+        while (System.currentTimeMillis() - start < timeout) {}
+        System.out.println("after await " + connections.size());
 
         if(connections.size() == count) return true;
         throw new Exception("Await nodes timeout expired");

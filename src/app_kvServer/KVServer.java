@@ -498,10 +498,12 @@ public class KVServer implements IKVServer {
                 case HASHRING: {
                     System.out.println("RECEIVED HASHRING COMMAND");
                     hashRing = (ECSHashRing) message.getParameter("HASHRING");
+                    System.out.println(hashRing.toString());
+
+
                     if(metadata != null) logger.info("Old hashrange: " + metadata.toString());
                     metadata = hashRing.getNodeForIdentifier(getHostaddress() + ":" + String.valueOf(this.getPort()));
                     if(metadata != null) logger.info("Up to date hashrange: " + metadata.toString());
-                    
                     break;
                 }
 

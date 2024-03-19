@@ -158,6 +158,7 @@ public class MessageService {
   private void writeObjectToSocket(Socket socket, ObjectOutputStream out, Object obj) {
     try {
         out.writeObject(obj);
+        out.reset();
         out.flush();
     } catch (IOException e) {
         e.printStackTrace();

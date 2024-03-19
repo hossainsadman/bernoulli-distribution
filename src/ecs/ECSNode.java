@@ -16,6 +16,7 @@ import shared.CommunicationService;
 import shared.messages.BasicKVMessage;
 import shared.messages.KVMessage.StatusType;
 import shared.MD5;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class ECSNode implements IECSNode, Serializable {
     private String name;
@@ -29,6 +30,7 @@ public class ECSNode implements IECSNode, Serializable {
     private transient Socket serverSocket = null;
     private transient CommunicationService comm;
 
+    @JsonIgnore
     private transient ObjectOutputStream ecsOutStream;
 
     private static Logger logger = Logger.getRootLogger();
@@ -175,10 +177,6 @@ public class ECSNode implements IECSNode, Serializable {
 
     public void setNodeIdentifier(BigInteger identifier) {
         this.identifier = identifier;
-    }
-
-    public void setObjectOutputStream(ObjectOutputStream out){
-        this.ecsOutStream = out;
     }
 
     public ObjectOutputStream getObjectOutputStream(){
