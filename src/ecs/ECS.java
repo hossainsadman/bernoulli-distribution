@@ -9,6 +9,7 @@ import shared.messages.MessageService;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -137,7 +138,9 @@ public class ECS {
             Socket kvServerSocket = null;
             try {
                 kvServerSocket = ecsSocket.accept();
-                ServerConnection connection = new ServerConnection(this, kvServerSocket);
+                ObjectOutputStream outputStream = new ObjectOutputStream(kvServerSocket.getOutputStream());
+                outputStream.flush();
+                ServerConnection connection = new ServerConnection(this, kvServerSocket, outputStream);
                 connections.add(connection);
                 new Thread(connection).start();
             } catch (SocketException se) {
@@ -154,7 +157,7 @@ public class ECS {
     public void sendMetadataToNodes() {
         try {
             for (ECSNode node : this.hashRing.getHashring().values()) {
-                messageService.sendECSMessage(node.getServerSocket(), ECSMessageType.HASHRING, "HASHRING", hashRing);
+                messageService.sendECSMessage(node.getServerSocket(), node.getObjectOutputStream(), ECSMessageType.HASHRING, "HASHRING", hashRing);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -236,7 +239,7 @@ public class ECS {
         int newCount = this.nodes.size() + 1;
         this.startKVServer(cacheStrategy, cacheSize);
         try {
-            this.awaitNodes(newCount, 5000);
+            this.awaitNodes(newCount, 6000);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -262,8 +265,11 @@ public class ECS {
         try {
             for(String name: nodeNames){
                 int prevNodeCount = this.nodes.size();
-                messageService.sendECSMessage(this.nodes.get(name).getServerSocket(), ECSMessageType.SHUTDOWN_SERVER);
-                this.awaitNodes(prevNodeCount - 1, 10000);
+                ECSNode node = this.nodes.get(name);
+                if (node != null){
+                    messageService.sendECSMessage(node.getServerSocket(), node.getObjectOutputStream(), ECSMessageType.SHUTDOWN_SERVER);
+                    this.awaitNodes(prevNodeCount - 1, 10000);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

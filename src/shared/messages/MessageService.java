@@ -21,7 +21,7 @@ public class MessageService {
   private static final int BUFFER_SIZE = 1024;
 	private static final int DROP_SIZE = 128 * BUFFER_SIZE;
 
-  public void sendECSMessage(Socket socket, ECSMessageType messageType, Object... params) throws Exception{
+  public void sendECSMessage(Socket socket, ObjectOutputStream out, ECSMessageType messageType, Object... params) throws Exception{
     if (params.length % 2 != 0) {
         throw new IllegalArgumentException("Parameters should be in key-value pairs");
     }
@@ -43,11 +43,11 @@ public class MessageService {
     
     ECSMessage message = new ECSMessage(messageType, parameters);
     
-    writeObjectToSocket(socket, message);
+    writeObjectToSocket(socket, out, message);
   }
 
-  public ECSMessage receiveECSMessage(Socket socket) throws Exception{
-    Object receivedObject = readObjectFromSocket(socket);
+  public ECSMessage receiveECSMessage(Socket socket, ObjectInputStream in) throws Exception{
+    Object receivedObject = readObjectFromSocket(socket, in);
     if (receivedObject == null) {
         // Connection has been closed, handle gracefully
         this.logger.info("Socket connection closed, stopping listener.");
@@ -142,10 +142,9 @@ public class MessageService {
   }
 
 
-  private Object readObjectFromSocket(Socket socket) {
+  private Object readObjectFromSocket(Socket socket, ObjectInputStream in) {
     Object obj = null;
     try {
-        ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
         obj = in.readObject();
     } catch(EOFException e){
         // Connection has been closed by ECS, handle gracefully
@@ -156,9 +155,8 @@ public class MessageService {
     return obj;
   }
 
-  private void writeObjectToSocket(Socket socket, Object obj) {
+  private void writeObjectToSocket(Socket socket, ObjectOutputStream out, Object obj) {
     try {
-        ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         out.writeObject(obj);
         out.flush();
     } catch (IOException e) {

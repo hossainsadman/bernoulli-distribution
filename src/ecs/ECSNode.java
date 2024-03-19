@@ -1,6 +1,8 @@
 package ecs;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.*;
@@ -26,6 +28,8 @@ public class ECSNode implements IECSNode, Serializable {
     private transient int cacheSize = 0;
     private transient Socket serverSocket = null;
     private transient CommunicationService comm;
+
+    private transient ObjectOutputStream ecsOutStream;
 
     private static Logger logger = Logger.getRootLogger();
 
@@ -57,13 +61,14 @@ public class ECSNode implements IECSNode, Serializable {
         this.identifier = MD5.getHash(host + ":" + port);
     }
 
-    public ECSNode(String name, String host, Integer port, Socket serverSocket) {
+    public ECSNode(String name, String host, Integer port, Socket serverSocket, ObjectOutputStream outputStream) {
         this.name = name;
         this.host = host;
         this.port = port;
         this.identifier = MD5.getHash(host + ":" + port);
         this.serverSocket = serverSocket;
         this.comm = new CommunicationService(serverSocket);
+        this.ecsOutStream = outputStream;
     }
 
     public void closeConnection() throws IOException {
@@ -171,6 +176,15 @@ public class ECSNode implements IECSNode, Serializable {
     public void setNodeIdentifier(BigInteger identifier) {
         this.identifier = identifier;
     }
+
+    public void setObjectOutputStream(ObjectOutputStream out){
+        this.ecsOutStream = out;
+    }
+
+    public ObjectOutputStream getObjectOutputStream(){
+        return this.ecsOutStream;
+    }
+
 
     public static boolean isKeyInRange(BigInteger keyHash, BigInteger start, BigInteger end) {
         // if start > end, then the range wraps around the hashring

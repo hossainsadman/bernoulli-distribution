@@ -65,6 +65,9 @@ public class KVServer implements IKVServer {
     private ECSHashRing hashRing = null;
     private ECSNode metadata = null;
 
+    private ObjectInputStream ecsInStream;
+    private ObjectOutputStream ecsOutStream;
+
     public KVServer(int port, int cacheSize, String strategy) {
         if (port < 1024 || port > 65535)
             throw new IllegalArgumentException("port is out of range.");
@@ -484,7 +487,7 @@ public class KVServer implements IKVServer {
     private void listenToEcsSocket() throws Exception{
         HashMap<String, String> kvPairs = new HashMap<>();
         while (ecsSocket != null && !ecsSocket.isClosed() && running) {
-            ECSMessage message = messageService.receiveECSMessage(ecsSocket);
+            ECSMessage message = messageService.receiveECSMessage(ecsSocket, this.ecsInStream);
             if (message == null) {
                 // Connection has been closed by ECS, handle gracefully
                 System.out.println("Socket connection closed, stopping listener.");
@@ -513,7 +516,7 @@ public class KVServer implements IKVServer {
                         e.printStackTrace();
                     }
                     // transfer keys
-                    messageService.sendECSMessage(ecsSocket, ECSMessageType.TRANSFER_TO, "TO_NODE", toNode, "KV_PAIRS", kvPairs);
+                    messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.TRANSFER_TO, "TO_NODE", toNode, "KV_PAIRS", kvPairs);
 
                     break;
                 }
@@ -536,7 +539,7 @@ public class KVServer implements IKVServer {
                     
                     this.write_lock = false;
                     if(fromNode != null)
-                        messageService.sendECSMessage(ecsSocket, ECSMessageType.TRANSFER_COMPLETE, "PING_NODE", fromNode);
+                        messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.TRANSFER_COMPLETE, "PING_NODE", fromNode);
 
                     break;
                 }
@@ -577,7 +580,11 @@ public class KVServer implements IKVServer {
 
                 String serverName = getHostaddress() + ":" + String.valueOf(this.getPort());
                 System.out.println(serverName);
-                messageService.sendECSMessage(ecsSocket, ECSMessageType.INIT, "SERVER_NAME", serverName);
+                ecsOutStream = new ObjectOutputStream(ecsSocket.getOutputStream());
+                ecsOutStream.flush();
+                ecsInStream = new ObjectInputStream(ecsSocket.getInputStream());
+
+                messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.INIT, "SERVER_NAME", serverName);
 
                 new Thread(new Runnable() {
                     public void run() {
@@ -669,9 +676,13 @@ public class KVServer implements IKVServer {
         }
 
         try {
-            messageService.sendECSMessage(ecsSocket, ECSMessageType.SHUTDOWN, "KV_PAIRS", kvPairs);
-            for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
-                putKV(entry.getKey(), "null");
+            if(this.hashRing.getHashring().size() > 1){
+                messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.SHUTDOWN, "KV_PAIRS", kvPairs);
+                for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
+                    putKV(entry.getKey(), "null");
+                }
+            } else {
+                System.out.println("Last server, not transferring KV Pairs");
             }
         } catch (Exception e) {
             System.out.println("GOT AN ERRROR");

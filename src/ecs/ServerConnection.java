@@ -1,6 +1,8 @@
 package ecs;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.HashMap;
 
@@ -18,12 +20,20 @@ public class ServerConnection implements Runnable {
     private ECSNode node;
     private ECS ecs;
     private boolean isOpen;
+    private ObjectInputStream inStream;
+    private ObjectOutputStream outStream;
 
-    ServerConnection(ECS ecs, Socket serverSocket){
+    ServerConnection(ECS ecs, Socket serverSocket, ObjectOutputStream outStream){
         this.node = null;
         this.serverSocket = serverSocket;
         this.ecs = ecs;
         this.isOpen = true;
+        this.outStream = outStream;
+        try {
+            this.inStream = new ObjectInputStream(serverSocket.getInputStream());
+        } catch (Exception e) {
+            // TODO: handle exception
+        }
     }
 
     public void run() {
@@ -31,7 +41,7 @@ public class ServerConnection implements Runnable {
             if(this.serverSocket == null) isOpen = false;
             else{
                 try {
-                    ECSMessage message = messageService.receiveECSMessage(this.serverSocket);
+                    ECSMessage message = messageService.receiveECSMessage(this.serverSocket, this.inStream);
                     if (message == null) {
                         isOpen = false;
                         break;
@@ -58,12 +68,12 @@ public class ServerConnection implements Runnable {
         ECSNode nextNode = this.ecs.removeNode(node);
         if (message != null){
             HashMap<String, String> kvPairs = (HashMap<String, String>) message.getParameter("KV_PAIRS");
-            if(!kvPairs.isEmpty()){
+            if(!kvPairs.isEmpty() && nextNode != null){
                 logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + this.node.getNodeName() + " to " + nextNode.getNodeName());
                 logger.info("kvPairs: " + kvPairs.toString());
                 
                 if (node != null && nextNode != null && kvPairs != null && kvPairs.size() > 0){
-                    messageService.sendECSMessage(nextNode.getServerSocket(), ECSMessageType.RECEIVE, "FROM_NODE", null, "KV_PAIRS", kvPairs);
+                    messageService.sendECSMessage(nextNode.getServerSocket(), outStream, ECSMessageType.RECEIVE, "FROM_NODE", null, "KV_PAIRS", kvPairs);
                 }
             }
         }
@@ -91,13 +101,13 @@ public class ServerConnection implements Runnable {
         String serverAddress = serverInfo[0];
         int serverPort = Integer.parseInt(serverInfo[1]);
 
-        this.node = new ECSNode(serverName, serverAddress, serverPort, serverSocket);
+        this.node = new ECSNode(serverName, serverAddress, serverPort, serverSocket, outStream);
 
         ECSNode oldNode = this.ecs.addNode(this.node);
 
         // oldNode is null if newNode is the only node in the hashring
         if (oldNode != null) {
-            messageService.sendECSMessage(oldNode.getServerSocket(), ECSMessageType.TRANSFER_FROM, "TO_NODE", this.node);
+            messageService.sendECSMessage(oldNode.getServerSocket(), outStream,ECSMessageType.TRANSFER_FROM, "TO_NODE", this.node);
         }
     }
 
@@ -112,7 +122,7 @@ public class ServerConnection implements Runnable {
             logger.info("kvPairs: " + kvPairs.toString());
             Socket toNodeSocket = this.ecs.nodes.get(toNode.getNodeName()).getServerSocket();
 
-            messageService.sendECSMessage(toNodeSocket, ECSMessageType.RECEIVE, "FROM_NODE", node, "KV_PAIRS", kvPairs);
+            messageService.sendECSMessage(toNodeSocket, outStream, ECSMessageType.RECEIVE, "FROM_NODE", node, "KV_PAIRS", kvPairs);
         }
     }
 
@@ -121,7 +131,7 @@ public class ServerConnection implements Runnable {
         ECSNode pingNode = (ECSNode) message.getParameter("PING_NODE");
         Socket pingNodeSocket = this.ecs.nodes.get(pingNode.getNodeName()).getServerSocket();
 
-        messageService.sendECSMessage(pingNodeSocket, ECSMessageType.TRANSFER_COMPLETE, "PING_NODE", pingNode);
+        messageService.sendECSMessage(pingNodeSocket, outStream, ECSMessageType.TRANSFER_COMPLETE, "PING_NODE", pingNode);
     }
 
     private void processMessage(ECSMessage message){
