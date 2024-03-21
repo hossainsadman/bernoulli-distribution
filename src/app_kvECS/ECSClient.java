@@ -51,6 +51,7 @@ public class ECSClient implements IECSClient {
         if (ecs == null)
             return false;
         if(!ecsRunning){
+            System.out.println("[ECSClient] Starting ECS");
             ecsRunning = ecs.start();
         } else{
             this.logger.info("[ECSClient] ECS already running");

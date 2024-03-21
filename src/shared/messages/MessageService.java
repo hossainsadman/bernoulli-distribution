@@ -8,6 +8,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -147,8 +148,9 @@ public class MessageService {
     try {
         obj = in.readObject();
     } catch(EOFException e){
-        // Connection has been closed by ECS, handle gracefully
-        System.out.println("Connection has been closed by the other side.");
+        System.out.println("[MessageService.readObjectFromSocket] Connection has been closed by the other side.");
+    } catch (SocketException e) {
+        System.out.println("[MessageService.readObjectFromSocket] java.net.SocketException: Socket most likely closed from other side");
     } catch (IOException | ClassNotFoundException e) {
         e.printStackTrace();
     }

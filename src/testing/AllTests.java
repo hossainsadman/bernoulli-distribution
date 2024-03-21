@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.apache.log4j.Level;
 
+import app_kvECS.ECSClient;
 import app_kvServer.KVServer;
 import ecs.ECS;
 import junit.framework.Test;
@@ -14,6 +15,7 @@ import shared.MD5;
 
 public class AllTests {
 	static KVServer server;
+	static ECSClient ecsClient;
 
 	static {
 		try {
@@ -21,6 +23,9 @@ public class AllTests {
 			String ecsHostCli = ECS.getDefaultECSAddr();
             int ecsPortCli = ECS.getDefaultECSPort();
 			new LogSetup("logs/testing/test.log", Level.ERROR);
+			ecsClient = new ECSClient("127.0.0.1", 20000);
+        	ecsClient.start();
+
 			server = new KVServer(50000, 10, "FIFO", dbPath, ecsHostCli, ecsPortCli);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -30,6 +35,10 @@ public class AllTests {
 	public static KVServer getServer() {
 		return server;
 	}	
+
+	public static ECSClient getECS(){
+		return ecsClient;
+	}
 	
 	public static Test suite() {
 		TestSuite clientSuite = new TestSuite("Basic Storage ServerTest-Suite");

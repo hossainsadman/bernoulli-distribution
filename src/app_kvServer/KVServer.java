@@ -60,6 +60,7 @@ public class KVServer implements IKVServer {
     private String ecsHost = null;
     private int ecsPort = -1;
     private Socket ecsSocket;
+    private Boolean connectEcs = true; // for testing purposes
 
     /* Meta Data */
     private ECSHashRing hashRing = null;
@@ -68,7 +69,7 @@ public class KVServer implements IKVServer {
     private ObjectInputStream ecsInStream;
     private ObjectOutputStream ecsOutStream;
 
-    public KVServer(int port, int cacheSize, String strategy) {
+    public KVServer(int port, int cacheSize, String strategy, Boolean connectEcs) {
         if (port < 1024 || port > 65535)
             throw new IllegalArgumentException("port is out of range.");
         if (cacheSize < 0)
@@ -77,6 +78,9 @@ public class KVServer implements IKVServer {
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
         this.status = KVMessage.StatusType.SERVER_ACTIVE;
+        this.ecsHost = ECS.getDefaultECSAddr();
+        this.ecsPort = ECS.getDefaultECSPort();
+        this.connectEcs = connectEcs;
 
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
@@ -123,7 +127,7 @@ public class KVServer implements IKVServer {
         serverThread.start(); // Start the thread
     }
 
-    public KVServer(int port, int cacheSize, String strategy, String dbPath) {
+    public KVServer(int port, int cacheSize, String strategy, String dbPath, Boolean connectEcs) {
         if (port < 1024 || port > 65535)
             throw new IllegalArgumentException("port is out of range.");
         if (cacheSize < 0)
@@ -132,6 +136,7 @@ public class KVServer implements IKVServer {
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
         this.status = KVMessage.StatusType.SERVER_ACTIVE;
+        this.connectEcs = connectEcs;
 
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
@@ -593,7 +598,7 @@ public class KVServer implements IKVServer {
                         try {
                             listenToEcsSocket();
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            System.out.println("[KVServer] ECS Disconnected.");
                         }
                     }
                 }).start();
@@ -627,7 +632,9 @@ public class KVServer implements IKVServer {
             this.shutdownHook();
         }));
 
-        connectECS();
+        if (this.connectEcs){
+            connectECS();
+        }
 
         if (serverSocket != null) {
             while (running) {
@@ -678,7 +685,7 @@ public class KVServer implements IKVServer {
         }
 
         try {
-            if(this.hashRing.getHashring().size() > 1){
+            if(this.hashRing != null && this.hashRing.getHashring().size() > 1 && this.ecsSocket != null){
                 messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.SHUTDOWN, "KV_PAIRS", kvPairs);
                 for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
                     putKV(entry.getKey(), "null");
@@ -691,7 +698,8 @@ public class KVServer implements IKVServer {
             e.printStackTrace();
         }
         try {
-            ecsSocket.close();
+            if (this.ecsSocket != null)
+                ecsSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
