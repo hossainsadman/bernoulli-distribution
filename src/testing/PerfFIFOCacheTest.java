@@ -41,7 +41,7 @@ public class PerfFIFOCacheTest extends TestCase {
 	private KVServer server;
 
     public void setUp() {
-		server = new KVServer(PORT, CACHE_SIZE, CACHE_STRATEGY);
+		server = new KVServer(PORT, CACHE_SIZE, CACHE_STRATEGY, false);
 		kvStore = new KVStore(ADDRESS, PORT);
 		try {
 			kvStore.connect();

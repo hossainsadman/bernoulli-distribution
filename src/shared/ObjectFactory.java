@@ -18,7 +18,7 @@ public final class ObjectFactory {
      */
 	public static IKVServer createKVServerObject(int port, int cacheSize, String strategy) {
         // TODO Auto-generated method stub
-        KVServer server = new KVServer(20010, 3, "LRU");
+        KVServer server = new KVServer(20010, 3, "LRU", false);
 		return null;
 	}
 }
