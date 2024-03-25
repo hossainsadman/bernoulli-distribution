@@ -84,10 +84,29 @@ public class ClientConnection implements Runnable {
         String recvKey = recv.getKey();
         String recvVal = recv.getValue();
         Boolean recvLocolProtocol = recv.getLocalProtocol();
-        if (recvStatus == StatusType.KEYRANGE){
+
+        if (recvStatus == StatusType.KEYRANGE_READ){
+            res = new BasicKVMessage(StatusType.KEYRANGE_READ_SUCCESS, this.server.getHashRing().keyrangeRead(), null);
+        }
+        else if (recvStatus == StatusType.KEYRANGE){
             res = new BasicKVMessage(StatusType.KEYRANGE_SUCCESS, this.server.getHashRing().toString(), null);
-        } else if (recvStatus == StatusType.PUT && recvKey != null && recvVal != null) { // PUT
-            if(checkKeyInRange(recvKey)){
+        } 
+        else if (recvStatus == StatusType.REPLICATE){
+            System.out.println("[KVServer] Received REPLICATE command");
+
+            try {
+                server.putKV(recvKey, recvVal);
+                res = new BasicKVMessage(StatusType.REPLICATE_SUCCESS, recvKey, recvVal);
+            } catch (Exception e) { 
+                if (recvVal.equals("null"))
+                    res = new BasicKVMessage(StatusType.DELETE_ERROR, recvKey, recvVal);
+                else
+                    res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
+            }
+
+        } 
+        else if (recvStatus == StatusType.PUT && recvKey != null && recvVal != null) { // PUT
+            if(this.server.isCoordinator(recvKey)){
                 /*
                 * tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS
                 * <key> <value>
@@ -100,6 +119,15 @@ public class ClientConnection implements Runnable {
                     StatusType putStatus;
                     putStatus = server.putKV(recvKey, recvVal);
                     res = new BasicKVMessage(putStatus, recvKey, recvVal);
+
+                    if (putStatus != StatusType.SERVER_WRITE_LOCK){
+                        if (this.server.replicate(recvKey, recvVal)){
+                            this.logger.info("Replication success");
+                        } else {
+                            this.logger.info("Replication failure");
+                        }
+                    }
+
                 } catch (Exception e) {
                     if (recvVal.equals("null"))
                         res = new BasicKVMessage(StatusType.DELETE_ERROR, recvKey, recvVal);
@@ -114,8 +142,9 @@ public class ClientConnection implements Runnable {
                 }
             }
 
-        } else if (recvStatus == StatusType.PUT && recvVal == null) {
-            if(checkKeyInRange(recvKey)){
+        } 
+        else if (recvStatus == StatusType.PUT && recvVal == null) {
+            if(this.server.isCoordinator(recvKey)){
                 res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
             } else {
                 if(recvLocolProtocol){
@@ -125,8 +154,9 @@ public class ClientConnection implements Runnable {
                 }
             }
 
-        } else if (recvStatus == StatusType.GET && recvKey != null) { // GET
-            if(checkKeyInRange(recvKey)){
+        } 
+        else if (recvStatus == StatusType.GET && recvKey != null) { // GET
+            if(this.server.isCoordinatorOrReplicator(recvKey)){
                 try {
                     String value = server.getKV(recvKey);
     
@@ -145,12 +175,15 @@ public class ClientConnection implements Runnable {
                 }
             }
 
-        } else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { 
+        } 
+        else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { 
             // message size exceeded
             res = new BasicKVMessage(StatusType.FAILED, recvKey, null);
-        } else { // Message format unknown
+        } 
+        else { // Message format unknown
             res = new BasicKVMessage(StatusType.FAILED, "Message format is unknown.", null);
         }
+
         res.setLocalProtocl(recvLocolProtocol);
         comm.sendMessage(res);
     }

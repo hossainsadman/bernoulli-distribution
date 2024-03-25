@@ -133,6 +133,34 @@ public class ECSHashRing implements Serializable {
         return this.hashring.size();
     }
 
+    public ECSNode[] getNextTwoNodeSuccessors(ECSNode node){
+        ECSNode[] result = new ECSNode[]{null, null};
+        BigInteger identifier = node.getNodeIdentifier();
+        
+        ECSNode firstSuccessor = this.getNodeSuccessor(identifier);
+        if (firstSuccessor != null && !firstSuccessor.getNodeIdentifier().equals(identifier)){
+            result[0] = firstSuccessor;
+
+            ECSNode secondSuccessor = this.getNodeSuccessor(firstSuccessor.getNodeIdentifier());
+
+            if (secondSuccessor != null && !secondSuccessor.getNodeIdentifier().equals(identifier)){
+                result[1] = secondSuccessor;
+            }
+        }
+
+        return result;
+    }
+
+    public String keyrangeRead(){
+        StringBuilder sb = new StringBuilder();
+        for (ECSNode node: this.hashring.values()){
+            ECSNode[] successors = this.getNextTwoNodeSuccessors(node);
+            sb.append(node.keyrangeRead(successors[0], successors[1]) + ";");
+        }
+
+        return sb.toString();
+    }
+
     public String toString() {
         StringBuilder sb = new StringBuilder();
         for (ECSNode node : this.hashring.values()) {

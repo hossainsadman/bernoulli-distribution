@@ -214,4 +214,18 @@ public class ECSNode implements IECSNode, Serializable {
     public String toString() {
         return this.hashStartRange.toString(16) + "," + this.hashEndRange.toString(16) + "," + this.host + ":" + this.port;
     }
+
+    public String keyrangeRead(ECSNode firstReplica, ECSNode secondReplica) {
+        BigInteger hashEnd = this.hashEndRange;
+        if (firstReplica != null) {
+            System.out.println("Updating end range to (first)" + firstReplica.getNodeHashEndRange().toString(16) + ",");
+            hashEnd = firstReplica.getNodeHashEndRange();
+        }
+        if (secondReplica != null) {
+            System.out.println("Updating end range to (second)" + secondReplica.getNodeHashEndRange().toString(16) + ",");
+            hashEnd = secondReplica.getNodeHashEndRange();
+        }
+        
+        return this.hashStartRange.toString(16) + "," + hashEnd.toString(16) + "," + this.host + ":" + this.port;
+    }
 }

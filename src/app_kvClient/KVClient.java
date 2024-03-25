@@ -62,6 +62,9 @@ public class KVClient implements IKVClient {
         sb.append(PROMPT).append("keyrange");
         sb.append("\t\t\t retrieve keyranges for all servers \n");
 
+        sb.append(PROMPT).append("keyrange_read");
+        sb.append("\t\t\t retrieve key ranges of the KV Servers including replicas \n");
+
         sb.append(PROMPT).append("logLevel");
         sb.append("\t\t\t changes the logLevel \n");
         sb.append(PROMPT).append("\t\t\t\t " + LogSetup.getPossibleLogLevels() + "\n");
@@ -165,7 +168,21 @@ public class KVClient implements IKVClient {
             } else {
                 printError("Not connected to server!");
             }
-
+        } else if (tokens[0].equals("keyrange_read")){
+            if (kvStore != null){
+                try {
+                    KVMessage msg = kvStore.keyrangeRead();
+                    if (msg != null) {
+                        System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey());
+                    } else {
+                        System.out.println(PROMPT + "KEYRANGE_READ ERROR: null msg!");
+                    }
+                } catch (Exception e) {
+                    logger.error("Put to server failed!", e);
+                }
+            } else {
+                printError("Not connected to server!");
+            }
         } else if (tokens[0].equals("connect")) {
             if (tokens.length == 3) {
                 String serverAddress = tokens[1];

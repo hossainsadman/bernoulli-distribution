@@ -24,7 +24,13 @@ public interface KVMessage {
         SERVER_ACTIVE, /* Server is active, requests are processed */
         
         KEYRANGE, /* Keyrange - Request to get keyrange of all nodes */
-        KEYRANGE_SUCCESS /* Respond with keyrange ofr ECS Nodes*/
+        KEYRANGE_SUCCESS, /* Respond with keyrange ofr ECS Nodes*/
+
+        REPLICATE,
+        REPLICATE_SUCCESS,
+
+        KEYRANGE_READ,
+        KEYRANGE_READ_SUCCESS,
     }
 
     /**

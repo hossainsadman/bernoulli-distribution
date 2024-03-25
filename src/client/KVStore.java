@@ -58,7 +58,6 @@ public class KVStore implements KVCommInterface {
     }
 
     private void updateMetadata(BasicKVMessage message) {
-        // TODO: Unserialize response and update metadata
         try {
             this.metaData = this.om.readValue(message.getKey(), ECSHashRing.class);
         } catch (JsonProcessingException e) {
@@ -122,6 +121,17 @@ public class KVStore implements KVCommInterface {
 
     public BasicKVMessage keyrange() throws Exception {
         BasicKVMessage message = new BasicKVMessage(StatusType.KEYRANGE, null, null);
+        if(this.metaData != null){
+            ECSNode server = this.metaData.getFirstNode();
+            reconnect(server.getNodeHost(), server.getNodePort());
+        }
+
+        this.communicationService.sendMessage(message);
+        return this.communicationService.receiveMessage();
+    }
+
+    public BasicKVMessage keyrangeRead() throws Exception {
+        BasicKVMessage message = new BasicKVMessage(StatusType.KEYRANGE_READ, null, null);
         if(this.metaData != null){
             ECSNode server = this.metaData.getFirstNode();
             reconnect(server.getNodeHost(), server.getNodePort());

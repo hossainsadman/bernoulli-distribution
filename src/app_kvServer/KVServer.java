@@ -69,6 +69,8 @@ public class KVServer implements IKVServer {
     private ObjectInputStream ecsInStream;
     private ObjectOutputStream ecsOutStream;
 
+    private Replicator replicator;
+
     public KVServer(int port, int cacheSize, String strategy, Boolean connectEcs) {
         if (port < 1024 || port > 65535)
             throw new IllegalArgumentException("port is out of range.");
@@ -81,6 +83,7 @@ public class KVServer implements IKVServer {
         this.ecsHost = ECS.getDefaultECSAddr();
         this.ecsPort = ECS.getDefaultECSPort();
         this.connectEcs = connectEcs;
+        this.replicator = new Replicator(this);
 
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
@@ -137,6 +140,7 @@ public class KVServer implements IKVServer {
         this.cacheSize = cacheSize; // Set cache size
         this.status = KVMessage.StatusType.SERVER_ACTIVE;
         this.connectEcs = connectEcs;
+        this.replicator = new Replicator(this);
 
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
@@ -194,6 +198,7 @@ public class KVServer implements IKVServer {
         this.status = KVMessage.StatusType.SERVER_ACTIVE;
         this.ecsHost = ecsHost;
         this.ecsPort = ecsPort;
+        this.replicator = new Replicator(this);
 
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
@@ -241,7 +246,9 @@ public class KVServer implements IKVServer {
     }
 
     public void setHashRing(ECSHashRing hashRing) {
+        System.out.println("setting hash ring");
         this.hashRing = hashRing;
+        this.replicator.connect();
     }
 
     public ECSHashRing getHashRing() {
@@ -254,6 +261,32 @@ public class KVServer implements IKVServer {
 
     public ECSNode getMetadata() {
         return metadata;
+    }
+
+    public boolean replicate(String key, String value){
+        try {
+            return this.replicator.replicate(key, value);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error occured when replicating");
+        }
+        return false;
+    }
+
+    public boolean isCoordinator(String key){
+        return this.getMetadata().isKeyInRange(key);
+    }
+
+    public boolean isReplicator(String key){
+        return this.replicator.isReplicator(key);
+    }
+
+    public boolean isCoordinatorOrReplicator(String key){
+        return this.isCoordinator(key) || this.isReplicator(key);
+    }
+
+    public String getStringIdentifier(){
+        return getHostaddress() + ":" + String.valueOf(this.getPort());
     }
 
     @Override
@@ -502,7 +535,7 @@ public class KVServer implements IKVServer {
             switch (message.getType()){
                 case HASHRING: {
                     System.out.println("RECEIVED HASHRING COMMAND");
-                    hashRing = (ECSHashRing) message.getParameter("HASHRING");
+                    this.setHashRing((ECSHashRing) message.getParameter("HASHRING"));
                     System.out.println(hashRing.toString());
 
 
@@ -598,6 +631,7 @@ public class KVServer implements IKVServer {
                         try {
                             listenToEcsSocket();
                         } catch (Exception e) {
+                            e.printStackTrace();
                             System.out.println("[KVServer] ECS Disconnected.");
                         }
                     }
