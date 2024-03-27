@@ -409,7 +409,7 @@ public class KVServer implements IKVServer {
         return cache != null && cache.containsKey(key);
     }
 
-    private static String escape(String s) {
+    public static String escape(String s) {
         return s.replace("\\", "\\\\")
                 .replace("\t", "\\t")
                 .replace("\b", "\\b")

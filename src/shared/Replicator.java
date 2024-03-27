@@ -64,6 +64,7 @@ public class Replicator {
         ECSNode[] successors = hashRing.getNextTwoNodeSuccessors(hashRing.getNodeForIdentifier(this.server.getStringIdentifier()));
 
         if (successors[0] != null){
+            System.out.println("First replica: " + successors[0].getNodeName());
             ECSNode firstSuccessor = successors[0];
             this.firstReplicaHash = firstSuccessor.getNodeIdentifier();
             this.firstReplicaHashRange = firstSuccessor.getNodeHashRangeBigInt();
@@ -72,6 +73,7 @@ public class Replicator {
         }
 
         if (successors[1] != null){
+            System.out.println("Second replica: " + successors[1].getNodeName());
             ECSNode secondSuccessor = successors[1];
             this.secondReplicaHash = secondSuccessor.getNodeIdentifier();
             this.secondReplicaHashRange = secondSuccessor.getNodeHashRangeBigInt();

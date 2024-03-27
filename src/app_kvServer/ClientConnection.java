@@ -97,7 +97,7 @@ public class ClientConnection implements Runnable {
             res = new BasicKVMessage(StatusType.KEYRANGE_SUCCESS, this.server.getHashRing().toString(), null);
         } 
         else if (recvStatus == StatusType.REPLICATE){
-            System.out.println("[KVServer] Received REPLICATE command");
+            System.out.println("[KVServer] Received REPLICATE command (" + recvKey + "," + recvVal + ")");
 
             try {
                 server.putKV(recvKey, recvVal);
@@ -111,7 +111,7 @@ public class ClientConnection implements Runnable {
 
         } 
         else if (recvStatus == StatusType.PUT && recvKey != null && recvVal != null) { // PUT
-            if(this.server.isCoordinator(recvKey)){
+            if(this.server.isCoordinator(KVServer.escape(recvKey))){
                 /*
                 * tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS
                 * <key> <value>
@@ -149,7 +149,7 @@ public class ClientConnection implements Runnable {
 
         } 
         else if (recvStatus == StatusType.PUT && recvVal == null) {
-            if(this.server.isCoordinator(recvKey)){
+            if(this.server.isCoordinator(KVServer.escape(recvKey))){
                 res = new BasicKVMessage(StatusType.PUT_ERROR, recvKey, recvVal);
             } else {
                 if(recvLocolProtocol){
@@ -161,7 +161,7 @@ public class ClientConnection implements Runnable {
 
         } 
         else if (recvStatus == StatusType.GET && recvKey != null) { // GET
-            if(this.server.isCoordinatorOrReplicator(recvKey)){
+            if(this.server.isCoordinatorOrReplicator(KVServer.escape(recvKey))){
                 try {
                     String value = server.getKV(recvKey);
     
