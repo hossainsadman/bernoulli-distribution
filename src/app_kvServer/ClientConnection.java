@@ -161,7 +161,7 @@ public class ClientConnection implements Runnable {
 
         } 
         else if (recvStatus == StatusType.GET && recvKey != null) { // GET
-            if(this.server.isCoordinatorOrReplicator(KVServer.escape(recvKey))){
+            if(this.server.isCoordinatorOrReplicator(KVServer.escape(recvKey)) || true){
                 try {
                     String value = server.getKV(recvKey);
     
