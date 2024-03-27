@@ -61,7 +61,7 @@ public class Replicator {
         if (hashRing == null) return;
 
         this.disconnect(); // disconnect if there are existing connections
-        ECSNode[] successors = hashRing.getPrevTwoPredecessors(hashRing.getNodeForIdentifier(this.server.getStringIdentifier()));
+        ECSNode[] successors = hashRing.getNextTwoNodeSuccessors(hashRing.getNodeForIdentifier(this.server.getStringIdentifier()));
 
         if (successors[0] != null){
             System.out.println("First replica: " + successors[0].getNodeName());
