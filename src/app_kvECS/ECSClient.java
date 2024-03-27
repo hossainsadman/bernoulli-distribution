@@ -127,7 +127,7 @@ public class ECSClient implements IECSClient {
     public void listNodes() {
         int counter = 1;
         for(Map.Entry<String, ECSNode> entry : this.ecs.nodes.entrySet()) {
-            System.out.println(counter + ". " + entry.getValue()); 
+            System.out.println(counter + ". " + entry.getValue() + " " + entry.getValue().getNodeIdentifier()); 
             counter++; 
         }
     }

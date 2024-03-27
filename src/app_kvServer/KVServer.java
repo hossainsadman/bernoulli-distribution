@@ -1,6 +1,7 @@
 package app_kvServer;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -245,10 +246,70 @@ public class KVServer implements IKVServer {
         serverThread.start(); // Start the thread
     }
 
-    public void setHashRing(ECSHashRing hashRing) {
+    public void removeKeys(){
+        File dir = new File(dirPath);
+        File[] db = dir.listFiles();
+        for (File kv : db) {
+            if(isCoordinatorOrReplicator(kv.getName())) continue;
+            System.out.println("Deleting " + kv.getName());
+            kv.delete();
+            cache.remove(unescape(kv.getName()));
+        }
+    }
+
+    public void moveKeys() throws Exception{
+        File dir = new File(dirPath);
+        File[] db = dir.listFiles();
+        for (File kv : db) {
+            String key = kv.getName();
+            if(isCoordinator(key)) {
+                System.out.println("Moving " + key);
+                this.replicate(unescape(key), getKV(unescape(key)));
+            }
+        }
+    }
+
+    public void setHashRing(ECSHashRing newHashRing) throws Exception{
+        BigInteger prevStartHash = null, prevEndHash = null;
+        ECSNode newNode = newHashRing.getNodeForIdentifier(this.getStringIdentifier());
+        ECSNode successor = newHashRing.getNodeSuccessor(newNode.getNodeIdentifier());
+        
+        BigInteger startHash = newNode.getNodeHashStartRange();
+        BigInteger endHash = newNode.getNodeHashEndRange();
+
+        if (this.hashRing != null){
+            ECSNode prevNode = this.hashRing.getNodeForIdentifier(this.getStringIdentifier());
+            prevStartHash = prevNode.getNodeHashStartRange();
+            prevEndHash = prevNode.getNodeHashEndRange();
+        }
+        HashMap<String, String> kvPairs = new HashMap<>();
+
+        if (prevStartHash != null && prevEndHash != null){
+            File dir = new File(dirPath);
+            File[] db = dir.listFiles();
+            for (File kv : db) {
+                String key = kv.getName();
+                if (isCoordinator(key) && ECSNode.isKeyInRange(key, prevStartHash, prevEndHash) && !ECSNode.isKeyInRange(key, startHash, endHash)){
+                    kvPairs.put(unescape(key), getKV(unescape(key)));
+                }
+            }
+
+            if (kvPairs.size() > 0){
+                messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.TRANSFER_TO, "TO_NODE", successor, "KV_PAIRS", kvPairs);
+            }
+        }
+
         System.out.println("setting hash ring");
-        this.hashRing = hashRing;
+        this.hashRing = newHashRing;
         this.replicator.connect();
+        this.removeKeys();
+
+        try {
+            this.moveKeys();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error occured when moving keys");
+        }
     }
 
     public ECSHashRing getHashRing() {
@@ -278,7 +339,14 @@ public class KVServer implements IKVServer {
     }
 
     public boolean isReplicator(String key){
-        return this.replicator.isReplicator(key);
+        ECSNode[] replicaNodes = this.getHashRing().getPrevTwoPredecessors(this.getMetadata());
+        if (replicaNodes[0] != null){
+            if (replicaNodes[0].isKeyInRange(key)) return true;
+        }
+        if (replicaNodes[1] != null){
+            if (replicaNodes[1].isKeyInRange(key)) return true;
+        }
+        return false;
     }
 
     public boolean isCoordinatorOrReplicator(String key){
@@ -540,7 +608,7 @@ public class KVServer implements IKVServer {
 
 
                     if(metadata != null) logger.info("Old hashrange: " + metadata.toString());
-                    metadata = hashRing.getNodeForIdentifier(getHostaddress() + ":" + String.valueOf(this.getPort()));
+                    setMetadata(hashRing.getNodeForIdentifier(getHostaddress() + ":" + String.valueOf(this.getPort())));
                     if(metadata != null) logger.info("Up to date hashrange: " + metadata.toString());
                     break;
                 }
@@ -556,7 +624,9 @@ public class KVServer implements IKVServer {
                         e.printStackTrace();
                     }
                     // transfer keys
-                    messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.TRANSFER_TO, "TO_NODE", toNode, "KV_PAIRS", kvPairs);
+                    if (kvPairs != null && kvPairs.size() > 0){
+                        messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.TRANSFER_TO, "TO_NODE", toNode, "KV_PAIRS", kvPairs);
+                    }
 
                     break;
                 }
@@ -571,7 +641,14 @@ public class KVServer implements IKVServer {
                     System.out.println(kvPairs);
                     for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
                         try {
-                            putKV(entry.getKey(), entry.getValue(), true);
+                            StatusType putStatus = putKV(entry.getKey(), entry.getValue(), true);
+                            if (putStatus != StatusType.SERVER_WRITE_LOCK){
+                                if (this.replicate(entry.getKey(), entry.getValue())){
+                                    this.logger.info("Replication success");
+                                } else {
+                                    this.logger.info("Replication failure");
+                                }
+                            }
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -713,7 +790,7 @@ public class KVServer implements IKVServer {
         HashMap<String, String> kvPairs = null;
         System.out.println("Running shutdown hook");
         try {
-            kvPairs =  getAllKVPairs();
+            kvPairs = getAllKVPairs();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -751,6 +828,20 @@ public class KVServer implements IKVServer {
             }
         }
         logger.info("KVPairs not responsible for: " + kvPairs.toString());
+        return kvPairs;
+    }
+
+    public HashMap<String, String> getAllKvPairsResponsibleFor() throws Exception {
+        HashMap<String, String> kvPairs = new HashMap<>();
+        File dir = new File(dirPath);
+        if (dir.isDirectory()) {
+            for (File kv : dir.listFiles()) {
+                String key = kv.getName();
+                if (metadata.isKeyInRange(key)) {
+                    kvPairs.put(unescape(key), getKV(unescape(key)));
+                }
+            }
+        }
         return kvPairs;
     }
 

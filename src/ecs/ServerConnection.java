@@ -103,12 +103,12 @@ public class ServerConnection implements Runnable {
 
         this.node = new ECSNode(serverName, serverAddress, serverPort, serverSocket, outStream);
 
-        ECSNode oldNode = this.ecs.addNode(this.node);
-
+        // ECSNode oldNode = this.ecs.addNode(this.node);
+        this.ecs.addNode(this.node);
         // oldNode is null if newNode is the only node in the hashring
-        if (oldNode != null) {
-            messageService.sendECSMessage(oldNode.getServerSocket(), oldNode.getObjectOutputStream(),ECSMessageType.TRANSFER_FROM, "TO_NODE", this.node);
-        }
+        // if (oldNode != null) {
+        //     messageService.sendECSMessage(oldNode.getServerSocket(), oldNode.getObjectOutputStream(),ECSMessageType.TRANSFER_FROM, "TO_NODE", this.node);
+        // }
     }
 
     @SuppressWarnings("unchecked")

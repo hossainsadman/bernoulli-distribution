@@ -183,6 +183,21 @@ public class KVClient implements IKVClient {
             } else {
                 printError("Not connected to server!");
             }
+        } else if (tokens[0].equals("get_all_keys")){
+            if (kvStore != null){
+                try {
+                    KVMessage msg = kvStore.getAllKeys();
+                    if (msg != null) {
+                        System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey());
+                    } else {
+                        System.out.println(PROMPT + "GET_ALL_KEYS ERROR: null msg!");
+                    }
+                } catch (Exception e) {
+                    logger.error("Put to server failed!", e);
+                }
+            } else {
+                printError("Not connected to server!");
+            }
         } else if (tokens[0].equals("connect")) {
             if (tokens.length == 3) {
                 String serverAddress = tokens[1];

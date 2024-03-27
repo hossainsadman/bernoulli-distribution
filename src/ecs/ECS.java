@@ -154,7 +154,7 @@ public class ECS {
         }
     }
 
-    public void sendMetadataToNodes(ECSHashRing hashRing) {
+    public void sendMetadataToNodes() {
         try {
             for (ECSNode node : hashRing.getHashring().values()) {
                 System.out.println("\n\nSending to " + node.getNodeName() + " \n\nFrom ECS: " + hashRing.toString() + "\n");
@@ -257,7 +257,7 @@ public class ECS {
         logger.info("Added " + node.getNodeName() + " to the hashring.");
         logger.info("KEYRANGE: " + this.hashRing.toString());
 
-        this.sendMetadataToNodes(this.hashRing);
+        this.sendMetadataToNodes();
 
         return oldNode;
     }
@@ -272,7 +272,7 @@ public class ECS {
                     this.awaitNodes(prevNodeCount - 1, 2000);
                 }
             }
-            this.sendMetadataToNodes(this.hashRing);
+            this.sendMetadataToNodes();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -283,7 +283,7 @@ public class ECS {
         System.out.println("Removing NODE...");
         ECSNode nextNode = this.hashRing.removeNode(node);
         this.nodes.remove(node.getNodeName());
-        this.sendMetadataToNodes(this.hashRing);
+        this.sendMetadataToNodes();
 
         return nextNode;
     }

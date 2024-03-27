@@ -151,6 +151,24 @@ public class ECSHashRing implements Serializable {
         return result;
     }
 
+    public ECSNode[] getPrevTwoPredecessors(ECSNode node){
+        ECSNode[] result = new ECSNode[]{null, null};
+        BigInteger identifier = node.getNodeIdentifier();
+        
+        ECSNode firstPredecessor = this.getNodePredecessor(identifier);
+        if (firstPredecessor != null && !firstPredecessor.getNodeIdentifier().equals(identifier)){
+            result[0] = firstPredecessor;
+
+            ECSNode secondPredecessor = this.getNodePredecessor(firstPredecessor.getNodeIdentifier());
+
+            if (secondPredecessor != null && !secondPredecessor.getNodeIdentifier().equals(identifier)){
+                result[1] = secondPredecessor;
+            }
+        }
+
+        return result;
+    }
+
     public String keyrangeRead(){
         StringBuilder sb = new StringBuilder();
         for (ECSNode node: this.hashring.values()){

@@ -119,6 +119,11 @@ public class KVStore implements KVCommInterface {
         return this.sendMessageToServer(message);
     }
 
+    public BasicKVMessage getAllKeys() throws Exception {
+        BasicKVMessage message = new BasicKVMessage(StatusType.GET_ALL_KEYS, null, null);
+        return this.sendMessageToServer(message);
+    }
+
     public BasicKVMessage keyrange() throws Exception {
         BasicKVMessage message = new BasicKVMessage(StatusType.KEYRANGE, null, null);
         if(this.metaData != null){

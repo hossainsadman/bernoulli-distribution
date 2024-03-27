@@ -31,6 +31,8 @@ public interface KVMessage {
 
         KEYRANGE_READ,
         KEYRANGE_READ_SUCCESS,
+
+        GET_ALL_KEYS,
     }
 
     /**

@@ -50,6 +50,8 @@ public class ClientConnection implements Runnable {
                 processMessage(recv);
             } catch (IOException ioe) {
                 isOpen = false;
+            } catch (Exception e) {
+                logger.error("Error! while processing message", e);
             }
         }
         close();
@@ -78,14 +80,17 @@ public class ClientConnection implements Runnable {
     /**
      * Processes received messages, and send it back to the client.
      */
-    private void processMessage(BasicKVMessage recv) throws IOException {
+    private void processMessage(BasicKVMessage recv) throws IOException, Exception {
         BasicKVMessage res;
         StatusType recvStatus = recv.getStatus();
         String recvKey = recv.getKey();
         String recvVal = recv.getValue();
         Boolean recvLocolProtocol = recv.getLocalProtocol();
 
-        if (recvStatus == StatusType.KEYRANGE_READ){
+        if (recvStatus == StatusType.GET_ALL_KEYS){
+            res = new BasicKVMessage(StatusType.GET_ALL_KEYS, this.server.getAllKvPairsResponsibleFor().toString(), null);
+        }
+        else if (recvStatus == StatusType.KEYRANGE_READ){
             res = new BasicKVMessage(StatusType.KEYRANGE_READ_SUCCESS, this.server.getHashRing().keyrangeRead(), null);
         }
         else if (recvStatus == StatusType.KEYRANGE){

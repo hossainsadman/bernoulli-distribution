@@ -30,13 +30,6 @@ public class Replicator {
         this.server = server;
     }
 
-    public boolean isReplicator(String key){
-        return (
-            (this.firstReplicaEcsNode != null && this.firstReplicaEcsNode.isKeyInRange(key)) ||
-            (this.secondReplicaEcsNode != null && this.secondReplicaEcsNode.isKeyInRange(key))
-        );
-    }
-
     public boolean replicate(String key, String value) throws Exception{
         BasicKVMessage replicateMessage = new BasicKVMessage(StatusType.REPLICATE, key, value);
 
@@ -86,6 +79,14 @@ public class Replicator {
             this.secondReplicaEcsNode = hashRing.getNodeForIdentifier(this.secondReplicaHash);
         }
     }
+
+    public CommunicationService getFirstReplicaConn(){
+        return this.firstReplicaConn;
+    }
+
+    public CommunicationService getSecondReplicaConn(){
+        return this.secondReplicaConn;
+    }   
 
     private CommunicationService connectToServer(ECSNode serverNode){
         System.out.println("Connecting to " + serverNode.getNodeHost() + ":" + serverNode.getNodePort());
