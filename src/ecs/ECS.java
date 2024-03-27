@@ -217,7 +217,7 @@ public class ECS {
         Integer port = iterator.next();
         availablePorts.remove(port); // Remove the element from the set
 
-        String[] command = {"java", "-jar", "m2-server.jar", "-p", port.toString(), "-c", String.valueOf(cacheSize), "-s",  cacheStrategy};
+        String[] command = {"java", "-jar", "m3-server.jar", "-p", port.toString(), "-c", String.valueOf(cacheSize), "-s",  cacheStrategy};
 
         try {
             ProcessBuilder builder = new ProcessBuilder(command);

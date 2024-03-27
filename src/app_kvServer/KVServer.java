@@ -911,7 +911,7 @@ public class KVServer implements IKVServer {
         }
 
         if (cmd.hasOption("help")) {
-            formatter.printHelp("m2-server.jar", options);
+            formatter.printHelp("m3-server.jar", options);
             System.exit(0);
         }
 

@@ -17,7 +17,7 @@ import shared.messages.KVMessage;
 
 public class KVClient implements IKVClient {
     private static Logger logger = Logger.getRootLogger();
-    private static final String PROMPT = "M2-Client> ";
+    private static final String PROMPT = "M3-Client> ";
 
     private static final int MAX_KEY_LEN = 20;
     private static final int MAX_KEY_VAL = 120 * 1024; // 120KB
