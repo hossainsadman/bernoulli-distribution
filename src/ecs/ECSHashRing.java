@@ -172,8 +172,8 @@ public class ECSHashRing implements Serializable {
     public String keyrangeRead(){
         StringBuilder sb = new StringBuilder();
         for (ECSNode node: this.hashring.values()){
-            ECSNode[] successors = this.getNextTwoNodeSuccessors(node);
-            sb.append(node.keyrangeRead(successors[0], successors[1]) + ";");
+            ECSNode[] predecessors = this.getPrevTwoPredecessors(node);
+            sb.append(node.keyrangeRead(predecessors[0], predecessors[1]) + ";");
         }
 
         return sb.toString();
