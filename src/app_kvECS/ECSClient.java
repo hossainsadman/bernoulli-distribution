@@ -60,6 +60,7 @@ public class ECSClient implements IECSClient {
     }
 
     public void run() {
+        this.start();
         while (clientRunning) {
             BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
             System.out.print(PROMPT);
@@ -317,6 +318,7 @@ public class ECSClient implements IECSClient {
             logger.info("logger setup is complete.");
             ECSClient ecsClient = new ECSClient(ecsAddress, Integer.parseInt(ecsPort));
             ecsClient.run();
+
         } catch (Exception e) {
             System.out.println("[Error] Unable to setup logger: ");
             e.printStackTrace();
