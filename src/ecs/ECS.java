@@ -162,7 +162,7 @@ public class ECS {
     public void sendMetadataToNodes() {
         try {
             for (ECSNode node : hashRing.getHashring().values()) {
-                System.out.println("\n\nSending to " + node.getNodeName() + " \n\nFrom ECS: " + hashRing.toString() + "\n");
+                // System.out.println("\n\nSending to " + node.getNodeName() + " \n\nFrom ECS: " + hashRing.toString() + "\n");
                 messageService.sendECSMessage(node.getServerSocket(), node.getObjectOutputStream(), ECSMessageType.HASHRING, "HASHRING", hashRing);
             }
         } catch (Exception e) {
@@ -311,7 +311,7 @@ public class ECS {
                 ECSNode node = this.nodes.get(name);
                 if (node != null){
                     messageService.sendECSMessage(node.getServerSocket(), node.getObjectOutputStream(), ECSMessageType.SHUTDOWN_SERVER);
-                    this.awaitNodes(prevNodeCount - 1, 1500);
+                    this.awaitNodes(prevNodeCount - 1, 1800);
                 }
             }
             this.sendMetadataToNodes();

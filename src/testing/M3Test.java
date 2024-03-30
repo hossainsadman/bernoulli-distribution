@@ -42,12 +42,12 @@ public class M3Test {
             secondServer = ecsClient.addNode("FIFO", 10, 5002);
             thirdServer = ecsClient.addNode("FIFO", 10, 5003);
             fourthServer = ecsClient.addNode("FIFO", 10, 5001);
-            // fifthServer = ecsClient.addNode("FIFO", 10, 5005);
+            fifthServer = ecsClient.addNode("FIFO", 10, 5005);
             allNodes.add(firstServer);
             allNodes.add(secondServer);
             allNodes.add(thirdServer);
             allNodes.add(fourthServer);
-            // allNodes.add(fifthServer);
+            allNodes.add(fifthServer);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -224,8 +224,6 @@ public class M3Test {
             ex = e;
         }
 
-        System.out.println(response1.getStatus() + " " + response2.getStatus() + " " + response3.getStatus());
-        System.out.println(response1.getValue() + " " + response2.getValue() + " " + response3.getValue());
         assertTrue(ex == null && response1.getValue().equals("bar") 
                 && response1.getStatus() == StatusType.GET_SUCCESS
                 && response2.getStatus() == StatusType.GET_SUCCESS
@@ -319,6 +317,7 @@ public class M3Test {
 
     @Test
     public void testPutUpdateAfterCoordinatorFails() {
+        createNode(5007);
         String key = "abc123";
         String value = "about to update";
         BasicKVMessage response = null;
@@ -388,7 +387,6 @@ public class M3Test {
 
     @Test
     public void testShutdownRestore() {
-        createNode(5007);
         String key = "onetwothre";
         String value = "test";
         BasicKVMessage response = null;
@@ -414,32 +412,85 @@ public class M3Test {
             ex = e;
         }
 
-        if (response != null){
-            System.out.println("rEPONSE IS NOT NULL");
-            System.out.println(response.getStatus());
-            System.out.println(response.getKey());
-            System.out.println(response.getValue());    
-        } else {
-            System.out.println("rEPONSE IS NULL");
-        }
-
         assertTrue(ex == null && response != null && response.getStatus() == StatusType.GET_SUCCESS && response.getValue().equals(value));
     }
 
+    @Test
+    public void testShutdownRestoreReplicas(){
+        String key = "onetwothre";
+        String value = "test";
+        String updatedValue = "updated";
+        BasicKVMessage response = null, response1 = null, response2 = null;
+        Exception ex = null;
+
+        ECSNode node = getReponsibleNode(key);
+
+        kvClient = createKVClient(node.getNodeHost(), node.getNodePort());
+
+        try {
+            kvClient.connect();
+            kvClient.put(key, value);
+            ecsClient.removeNodes(Arrays.asList(node.getNodeHost() + ":" + node.getNodePort()));
+            removeNodeFromAllNodes(node);
+            TimeUnit.MILLISECONDS.sleep(500);
+            createNode(node.getNodePort());
+            ECSNode[] replicas = getReplicas(node);
+
+            kvClient.reconnect(node.getNodeHost(), node.getNodePort());
+            response = kvClient.put(key, updatedValue);
+
+            kvClient.reconnect(replicas[0].getNodeHost(), replicas[0].getNodePort());
+            response1 = kvClient.get(key);
+            
+            kvClient.reconnect(replicas[1].getNodeHost(), replicas[1].getNodePort());
+            response2 = kvClient.get(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ex = e;
+        }
+
+        System.out.println(response.getStatus() + " " + response1.getStatus() + " " + response2.getStatus());
+
+        assertTrue(ex == null && response != null 
+                && response.getStatus() == StatusType.PUT_UPDATE 
+                && response.getValue().equals(updatedValue)
+                && response1.getStatus() == StatusType.GET_SUCCESS
+                && response1.getValue().equals(updatedValue)
+                && response2.getStatus() == StatusType.GET_SUCCESS
+                && response2.getValue().equals(updatedValue));
+    }
+
+    @Test
+    public void testPutCommandOnReplicas(){
+        String key = "testDel";
+        String value = "test";
+        String updatedValue = "updated";
+        BasicKVMessage response = null, response1 = null, response2 = null;
+        Exception ex = null;
+
+        ECSNode node = getReponsibleNode(key);
+        ECSNode[] replicas = getReplicas(node);
+
+        kvClient = createKVClient(node.getNodeHost(), node.getNodePort());
+
+        try {
+            kvClient.connect();
+            kvClient.put(key, value);
+
+            kvClient.reconnect(replicas[0].getNodeHost(), replicas[0].getNodePort());
+            response = kvClient.put(key, updatedValue);
+
+            kvClient.reconnect(replicas[1].getNodeHost(), replicas[1].getNodePort());
+            response1 = kvClient.put(key, updatedValue);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            ex = e;
+        }
+
+        assertTrue(ex == null && response != null 
+                && response.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE
+                && response1.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE);
+
+    }
 }
-
-/**
- * e73eb7edc6b16f4bfdbfe7bd78f9ac14,1898ed79a9d5451a3af7c309d5a43f0a,127.0.0.1:5007;
- * 1898ed79a9d5451a3af7c309d5a43f0a,866b8c19657a7bce49f19d8a752e060c,127.0.0.1:5004;
- * 866b8c19657a7bce49f19d8a752e060c,a55ce0afec21e9932739a9d707df9b3c,127.0.0.1:5002;
- * a55ce0afec21e9932739a9d707df9b3c,b07a61972b0a0e3c8ad559e0037dfcd2,127.0.0.1:5003;
- * b07a61972b0a0e3c8ad559e0037dfcd2,e73eb7edc6b16f4bfdbfe7bd78f9ac14,127.0.0.1:5001;
- * 
- * 
- * e73eb7edc6b16f4bfdbfe7bd78f9ac14,1898ed79a9d5451a3af7c309d5a43f0a,127.0.0.1:5007;
- * 1898ed79a9d5451a3af7c309d5a43f0a,866b8c19657a7bce49f19d8a752e060c,127.0.0.1:5004;
- * 866b8c19657a7bce49f19d8a752e060c,a55ce0afec21e9932739a9d707df9b3c,127.0.0.1:5002;
- * a55ce0afec21e9932739a9d707df9b3c,b07a61972b0a0e3c8ad559e0037dfcd2,127.0.0.1:5003;
- * b07a61972b0a0e3c8ad559e0037dfcd2,e73eb7edc6b16f4bfdbfe7bd78f9ac14,127.0.0.1:5001;
- */
-
