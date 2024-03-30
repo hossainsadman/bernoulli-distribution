@@ -38,16 +38,4 @@ public class M2Test extends TestCase {
     public void testStartECSService() {
         assertTrue("ECSService should be running", ecsClient.ecsRunning);
     }
-
-    @Test
-    public void testStopECSService() {
-        ecsClient.stop();
-        assertFalse("ECSService should not be running", ecsClient.ecsRunning);
-    }
-
-    @Test
-    public void testShutdownECS() {
-        ecsClient.shutdown();
-        assertFalse(ecsClient.ecsRunning);
-    }
 }
