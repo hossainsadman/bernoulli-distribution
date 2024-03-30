@@ -32,6 +32,9 @@ public class KVStore implements KVCommInterface {
     private static final int MAX_KEY_BYTES = 20;
     private static final int MAX_VALUE_BYTES = 120 * 1024; // 120 kB
 
+    public int maxRetries = 10;
+    public boolean testing = false;
+
     public KVStore(String address, int port) {
         this.serverAddress = address;
         this.serverPort = port;
@@ -50,7 +53,7 @@ public class KVStore implements KVCommInterface {
         this.communicationService.disconnect();
     }
 
-    private void reconnect(String server, int port) throws Exception {
+    public void reconnect(String server, int port) throws Exception {
         disconnect();
         this.serverAddress = server;
         this.serverPort = port;
@@ -65,13 +68,24 @@ public class KVStore implements KVCommInterface {
         }
     }
 
+    public void setMaxRetries(int maxRetries) {
+        this.maxRetries = maxRetries;
+    }
+
+    public void setTesting(boolean testing) {
+        this.testing = testing;
+    }
+
+    public ECSNode getResponsibleNode(String key) {
+        return this.metaData.getNodeForKey(key);
+    }
+
     private BasicKVMessage sendMessageToServer(BasicKVMessage message) throws Exception {
         BasicKVMessage response = null;
         int retryCount = 0;
-        int maxRetries = 10; // Configure the maximum number of retries
 
         do {
-            if(this.metaData != null){
+            if(this.metaData != null && !this.testing){
                 System.out.println("[KVStore] :: Reconnecting to server");
                 ECSNode tryServer = this.metaData.getNodeForKey(message.getKey());
                 reconnect(tryServer.getNodeHost(), tryServer.getNodePort());
@@ -88,11 +102,9 @@ public class KVStore implements KVCommInterface {
                 // Request sent to correct server
                 break;
             }
-        } while (retryCount <= maxRetries);
-
-        if (retryCount > maxRetries) {
-            return new BasicKVMessage(StatusType.SERVER_NOT_FOUND, "Error", "Maximum retry limit reached.");
-        }
+            System.out.println("retryCount " + retryCount);
+            System.out.println("maxRetries " +this.maxRetries);
+        } while (retryCount <= this.maxRetries);
 
         return response;
     }

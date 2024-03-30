@@ -139,6 +139,15 @@
     </junit>
   </target>
 
+  <target name="m3-test" depends="build">
+    <junit>
+      <classpath refid="project.classpath" />
+      <formatter type="brief" usefile="false" />
+      <!-- <formatter type="brief" usefile="false" /> -->
+      <test name="testing.M3Test" />
+    </junit>
+  </target>
+
   <!-- run PERFORMANCE test cases -->
   <target name="testperf" depends="build">
     <junit>

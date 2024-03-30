@@ -272,7 +272,6 @@ public class KVServer implements IKVServer {
     public void setHashRing(ECSHashRing newHashRing) throws Exception{
         BigInteger prevStartHash = null, prevEndHash = null;
         ECSNode newNode = newHashRing.getNodeForIdentifier(this.getStringIdentifier());
-        ECSNode successor = newHashRing.getNodeSuccessor(newNode.getNodeIdentifier());
         
         BigInteger startHash = newNode.getNodeHashStartRange();
         BigInteger endHash = newNode.getNodeHashEndRange();
@@ -282,7 +281,7 @@ public class KVServer implements IKVServer {
             prevStartHash = prevNode.getNodeHashStartRange();
             prevEndHash = prevNode.getNodeHashEndRange();
         }
-        HashMap<String, String> kvPairs = new HashMap<>();
+        HashMap<BigInteger, HashMap<String, String>> serverKvPairs = new HashMap<>();
 
         if (prevStartHash != null && prevEndHash != null){
             File dir = new File(dirPath);
@@ -290,18 +289,23 @@ public class KVServer implements IKVServer {
             for (File kv : db) {
                 String key = kv.getName();
                 if (isCoordinator(key) && ECSNode.isKeyInRange(key, prevStartHash, prevEndHash) && !ECSNode.isKeyInRange(key, startHash, endHash)){
-                    kvPairs.put(unescape(key), getKV(unescape(key)));
+                    BigInteger bigIntegerKey = newHashRing.getNodeForKey(key).getNodeIdentifier();
+                    serverKvPairs.computeIfAbsent(bigIntegerKey, k -> new HashMap<>()).put(unescape(key), getKV(unescape(key)));
                 }
             }
 
-            if (kvPairs.size() > 0){
-                messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.TRANSFER_TO, "TO_NODE", successor, "KV_PAIRS", kvPairs);
+            if (serverKvPairs.size() > 0){
+                for (Map.Entry<BigInteger, HashMap<String, String>> entry : serverKvPairs.entrySet()) {
+                    ECSNode toNode = newHashRing.getNodeForIdentifier(entry.getKey());
+                    HashMap<String, String> kvPairs = entry.getValue();
+                    messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.TRANSFER_TO, "TO_NODE", toNode, "KV_PAIRS", kvPairs);
+                }
             }
         }
 
         System.out.println("setting hash ring");
         this.hashRing = newHashRing;
-        this.replicator.connect();
+        this.replicator.connect(newHashRing);
         this.removeKeys();
 
         try {
@@ -801,6 +805,8 @@ public class KVServer implements IKVServer {
                 for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
                     putKV(entry.getKey(), "null");
                 }
+                File index = new File(dirPath);
+                index.delete();
             } else {
                 System.out.println("Last server, not transferring KV Pairs");
             }

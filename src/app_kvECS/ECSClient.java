@@ -89,9 +89,11 @@ public class ECSClient implements IECSClient {
 
     @Override
     public ECSNode addNode(String cacheStrategy, int cacheSize) {
-        this.ecs.addNode(cacheStrategy, cacheSize);
+        return this.ecs.addNode(cacheStrategy, cacheSize);
+    }
 
-        return null;
+    public ECSNode addNode(String cacheStrategy, int cacheSize, int port) {
+        return this.ecs.addNode(cacheStrategy, cacheSize, port);
     }
 
     @Override
@@ -132,7 +134,14 @@ public class ECSClient implements IECSClient {
             counter++; 
         }
     }
-    
+
+    public void setTesting(boolean testing) {
+        ecs.setTesting(testing);
+    }
+
+    public ECS getECS() {
+        return ecs;
+    }
 
     private void displayHelperMessage() {
         Map<String, String> commands = new LinkedHashMap<>();

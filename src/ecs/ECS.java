@@ -41,6 +41,7 @@ public class ECS {
     JSONTokener tokener = null;
 
     public ECSHashRing hashRing;
+    public boolean testing = false;
 
     /*
      * Integrity Constraint:
@@ -130,6 +131,10 @@ public class ECS {
         }
     }
 
+    public void setTesting(boolean testing) {
+        this.testing = testing;
+    }
+
 
     public void _acceptServetConnections() {
         if (ecsSocket == null) return;
@@ -210,23 +215,44 @@ public class ECS {
             availableNodes.remove(node);
     }
 
-    public void startKVServer(String cacheStrategy, int cacheSize){
-        if (this.availablePorts.isEmpty()) return;
+    public int startKVServer(String cacheStrategy, int cacheSize, int serverPort){
+        if (this.availablePorts.isEmpty()) return -1;
 
-        Iterator<Integer> iterator = this.availablePorts.iterator();
-        Integer port = iterator.next();
-        availablePorts.remove(port); // Remove the element from the set
-
+        Integer port;
+        if (serverPort == -1){
+            Iterator<Integer> iterator = this.availablePorts.iterator();
+            port = iterator.next();
+            availablePorts.remove(port); // Remove the element from the set
+        } else {
+            port = serverPort;
+        }
         String[] command = {"java", "-jar", "m3-server.jar", "-p", port.toString(), "-c", String.valueOf(cacheSize), "-s",  cacheStrategy};
 
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
-            builder.inheritIO();
+            if (!this.testing){
+                builder.inheritIO();
+            }
             builder.start();
         } catch (Exception e) {
             this.logger.error(e);
             e.printStackTrace();
         }
+
+        return port;
+    }
+
+    public ECSHashRing getHashRing() {
+        return hashRing;
+    }
+
+    public ECSNode getNodeByPort(int port) {
+        for (ECSNode node : hashRing.getHashring().values()) {
+            if (node.getNodePort() == port) {
+                return node;
+            }
+        }
+        return null;
     }
 
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
@@ -236,14 +262,30 @@ public class ECS {
         return null;
     }
 
-    public void addNode(String cacheStrategy, int cacheSize) {
+    public ECSNode addNode(String cacheStrategy, int cacheSize, int port) {
         int newCount = connections.size() + 1;
-        this.startKVServer(cacheStrategy, cacheSize);
+        System.out.println("Adding node " + newCount + " to ECS");
+        int serverPort = this.startKVServer(cacheStrategy, cacheSize, port);
+        System.out.println("Started server on port " + serverPort);
         try {
-            this.awaitNodes(newCount, 2000);
+            this.awaitNodes(newCount, 1500);
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return this.getNodeByPort(serverPort);
+    }
+
+    public ECSNode addNode(String cacheStrategy, int cacheSize) {
+        int newCount = connections.size() + 1;
+        System.out.println("Adding node " + newCount + " to ECS");
+        int serverPort = this.startKVServer(cacheStrategy, cacheSize, -1);
+        System.out.println("Started server on port " + serverPort);
+        try {
+            this.awaitNodes(newCount, 1500);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return this.getNodeByPort(serverPort);
     }
 
     public ECSNode addNode(ECSNode node){
@@ -269,7 +311,7 @@ public class ECS {
                 ECSNode node = this.nodes.get(name);
                 if (node != null){
                     messageService.sendECSMessage(node.getServerSocket(), node.getObjectOutputStream(), ECSMessageType.SHUTDOWN_SERVER);
-                    this.awaitNodes(prevNodeCount - 1, 2000);
+                    this.awaitNodes(prevNodeCount - 1, 1500);
                 }
             }
             this.sendMetadataToNodes();
