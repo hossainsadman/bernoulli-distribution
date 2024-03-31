@@ -53,7 +53,8 @@ public class PerfEnronTest {
     private static final int ECS_PORT = 20000;
 
     private static final int SERVER_PORT_START = 5000;
-    private static final int NUM_NODES = 4;
+    private static final int NUM_NODES = 1;
+    private static final int NUM_CLIENTS = 1;
 
     private static final String CACHE_STRAT = "FIFO";
     private static final int CACHE_SIZE = 10;
@@ -61,6 +62,8 @@ public class PerfEnronTest {
     private static ECSClient ecsClient;
     private static ArrayList<ECSNode> allNodes;
     private static HashMap<Integer, KVClient> clients = new HashMap<>();
+
+    private static File[] files = null;
 
     public KVStore kvClient;
 
@@ -80,17 +83,30 @@ public class PerfEnronTest {
         }
     }
 
+    // @AfterClass
+	// public static void tearDown() {
+    //     for (ECSNode node : allNodes) {
+    //         ecsClient.removeNodes(Arrays.asList(node.getNodeHost() + ":" + node.getNodePort()));
+    //         try {
+    //             TimeUnit.MILLISECONDS.sleep(500);
+    //         } catch (InterruptedException e) {
+    //             // TODO Auto-generated catch block
+    //             e.printStackTrace();
+    //         }
+    //     }
+    // }
+
     @AfterClass
 	public static void tearDown() {
-        for (ECSNode node : allNodes) {
-            ecsClient.removeNodes(Arrays.asList(node.getNodeHost() + ":" + node.getNodePort()));
-            try {
-                TimeUnit.MILLISECONDS.sleep(500);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
+        // for (ECSNode node : allNodes) {
+        //     ecsClient.removeNodes(Arrays.asList(node.getNodeHost() + ":" + node.getNodePort()));
+        //     try {
+        //         TimeUnit.MILLISECONDS.sleep(500);
+        //     } catch (InterruptedException e) {
+        //         // TODO Auto-generated catch block
+        //         e.printStackTrace();
+        //     }
+        // }
     }
 
     private static void createNode(int port){
@@ -228,7 +244,17 @@ public class PerfEnronTest {
                 BufferedWriter processInput = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
 
                 // Send the command to the process
-                sendCommand(processInput, "help");
+                sendCommand(processInput, "connect ug65 5000");
+                sendCommand(processInput, "put 1 1");
+                sendCommand(processInput, "get 1");
+
+                
+                // Read the output from the command
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(line);
+                }
 
                 logger.info("Command sent to the process");
 
@@ -245,25 +271,34 @@ public class PerfEnronTest {
         PerfEnronTest test = new PerfEnronTest();
         System.out.println("1");
 
-        // Create an ExecutorService with a fixed thread pool
-        int numberOfClients = 1; // replace with the number of clients you want
-        ExecutorService executor = Executors.newFixedThreadPool(numberOfClients);
+        files = test.loadCachedEnron("enron_files.txt");
+        
+        String key = fileToKey(files[0]);
+        // String value = fileToVal(files[0]);
+        
+        // System.out.println("Key: " + key);
+        // System.out.println("Value: " + value);
+
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_CLIENTS);
 
         // Run multiple ClientProcesses in separate threads
-        for (int i = 0; i < numberOfClients; i++) {
+        for (int i = 0; i < NUM_CLIENTS; i++) {
             executor.submit(new ClientProcess());
         }
 
         // Shutdown the executor to prevent new tasks from being submitted
         executor.shutdown();
 
-        // File[] files = test.loadCachedEnron("enron_files.txt");
-        
-        // String key = fileToKey(files[0]);
-        // String value = fileToVal(files[0]);
-        
-        // System.out.println("Key: " + key);
-        // System.out.println("Value: " + value);
+        try {
+            // Wait for all tasks to finish for up to 1 hour
+            if (!executor.awaitTermination(2, TimeUnit.MINUTES)) {
+                // Optional: handle tasks that did not finish in time
+                System.out.println("Some tasks did not finish in time");
+            }
+        } catch (InterruptedException e) {
+            // Optional: handle interruption
+            System.out.println("Executor was interrupted");
+        }
         
         // // get first node in allnodes
         // System.out.println("3");
