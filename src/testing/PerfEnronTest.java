@@ -53,7 +53,7 @@ public class PerfEnronTest {
     private static final int ECS_PORT = 20000;
 
     private static final int SERVER_PORT_START = 5000;
-    private static final int NUM_NODES = 1;
+    private static final int NUM_NODES = 4;
     private static final int NUM_CLIENTS = 1;
 
     private static final String CACHE_STRAT = "FIFO";
@@ -116,8 +116,8 @@ public class PerfEnronTest {
 
     private static KVStore createKVClient(String host, int port) {
         KVStore kvClient = new KVStore(host, port);
-        kvClient.setTesting(true);
-        kvClient.setMaxRetries(0);
+        kvClient.setTesting(false);
+        kvClient.setMaxRetries(5);
         return kvClient;
     }
 
@@ -227,45 +227,6 @@ public class PerfEnronTest {
         return sb.toString();
     }
 
-    public class ClientProcess implements Runnable {
-        public void sendCommand(BufferedWriter processInput, String command) throws IOException {
-            processInput.write(command);
-            processInput.newLine();
-            processInput.flush();
-        }
-
-        @Override
-        public void run() {
-            try {
-                ProcessBuilder builder = new ProcessBuilder("java", "-jar", "m3-client.jar");
-                Process process = builder.start();
-
-                // Get the input stream
-                BufferedWriter processInput = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
-
-                // Send the command to the process
-                sendCommand(processInput, "connect ug65 5000");
-                sendCommand(processInput, "put 1 1");
-                sendCommand(processInput, "get 1");
-
-                
-                // Read the output from the command
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
-                }
-
-                logger.info("Command sent to the process");
-
-                // Don't forget to close the input stream
-                processInput.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     @Test
     public void PerfEnron() {
         PerfEnronTest test = new PerfEnronTest();
@@ -274,50 +235,29 @@ public class PerfEnronTest {
         files = test.loadCachedEnron("enron_files.txt");
         
         String key = fileToKey(files[0]);
-        // String value = fileToVal(files[0]);
+        String value = fileToVal(files[0]);
         
-        // System.out.println("Key: " + key);
-        // System.out.println("Value: " + value);
+        System.out.println("Key: " + key);
+        System.out.println("Value: " + value);
 
-        ExecutorService executor = Executors.newFixedThreadPool(NUM_CLIENTS);
-
-        // Run multiple ClientProcesses in separate threads
-        for (int i = 0; i < NUM_CLIENTS; i++) {
-            executor.submit(new ClientProcess());
-        }
-
-        // Shutdown the executor to prevent new tasks from being submitted
-        executor.shutdown();
-
+        // get first node in allnodes
+        System.out.println("3");
+        ECSNode node = allNodes.get(0);
+        kvClient = createKVClient(node.getNodeHost(), node.getNodePort());
         try {
-            // Wait for all tasks to finish for up to 1 hour
-            if (!executor.awaitTermination(2, TimeUnit.MINUTES)) {
-                // Optional: handle tasks that did not finish in time
-                System.out.println("Some tasks did not finish in time");
-            }
-        } catch (InterruptedException e) {
-            // Optional: handle interruption
-            System.out.println("Executor was interrupted");
+            kvClient.connect();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        
-        // // get first node in allnodes
-        // System.out.println("3");
-        // ECSNode node = allNodes.get(0);
-        // kvClient = createKVClient(node.getNodeHost(), node.getNodePort());
-        // try {
-        //     kvClient.connect();
-        // } catch (Exception e) {
-        //     e.printStackTrace();
-        // }
 
-        // BasicKVMessage response = null;
-        // try {
-        //     response = kvClient.put(key, value);
-        // } catch (Exception e) {
-        //     e.printStackTrace();
-        // }
+        BasicKVMessage response = null;
+        try {
+            response = kvClient.put(key, value);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        // System.out.println("Put Response: " + response.getStatus() + " - " + response.getValue() + " - " + response.getKey());
+        System.out.println("Put Response: " + response.getStatus() + " - " + response.getValue() + " - " + response.getKey());
 
         assertTrue(1 == 1);
     }
