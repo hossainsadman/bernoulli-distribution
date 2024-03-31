@@ -158,6 +158,15 @@
     </junit>
   </target>
 
+  <target name="perfenron" depends="build">
+    <junit>
+      <classpath refid="project.classpath" />
+      <formatter type="plain" usefile="false" />
+      <!-- <formatter type="brief" usefile="false" /> -->
+      <test name="testing.PerfEnronTest" />
+    </junit>
+  </target>
+
   <target name="run" >
     <java classname="${main.class}" classpathref="class.path"/>
   </target>
