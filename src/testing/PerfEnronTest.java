@@ -12,9 +12,18 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.FileWriter;
+import java.io.InputStream;
+import java.io.FileInputStream;
+import java.io.BufferedInputStream;
+import java.io.FileReader;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.util.List;
 import java.util.ArrayList;
@@ -23,8 +32,12 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import app_kvECS.ECSClient;
+import app_kvClient.KVClient;
 import client.KVStore;
 import ecs.ECSHashRing;
 import ecs.ECSNode;
@@ -40,26 +53,28 @@ public class PerfEnronTest {
     private static final int ECS_PORT = 20000;
 
     private static final int SERVER_PORT_START = 5000;
-    private static final int NUM_NODES = 5;
+    private static final int NUM_NODES = 4;
 
     private static final String CACHE_STRAT = "FIFO";
-    private static final int CACHE_fileNum = 10;
+    private static final int CACHE_SIZE = 10;
 
     private static ECSClient ecsClient;
     private static ArrayList<ECSNode> allNodes;
-    public static KVStore kvClient;
+    private static HashMap<Integer, KVClient> clients = new HashMap<>();
+
+    public KVStore kvClient;
 
     static {
         try {
             new LogSetup("logs/testing/test.log", Level.ERROR);
-            // ecsClient = new ECSClient(ECS_ADDR, ECS_PORT);
-            // ecsClient.setTesting(true);
-            // ecsClient.start();
+            ecsClient = new ECSClient(ECS_ADDR, ECS_PORT);
+            ecsClient.setTesting(true);
+            ecsClient.start();
 
-            // allNodes = new ArrayList<>(NUM_NODES);
-            // for (int i = 0; i < NUM_NODES; i++) {
-            //     allNodes.add(ecsClient.addNode(CACHE_STRAT, CACHE_fileNum, SERVER_PORT_START + i));
-            // }
+            allNodes = new ArrayList<>(NUM_NODES);
+            for (int i = 0; i < NUM_NODES; i++) {
+                allNodes.add(ecsClient.addNode(CACHE_STRAT, CACHE_SIZE, SERVER_PORT_START + i));
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -67,16 +82,15 @@ public class PerfEnronTest {
 
     @AfterClass
 	public static void tearDown() {
-        // for (ECSNode node : allNodes) {
-        //     ecsClient.removeNodes(Arrays.asList(node.getNodeHost() + ":" + node.getNodePort()));
-        //     try {
-        //         TimeUnit.MILLISECONDS.sleep(500);
-        //     } catch (InterruptedException e) {
-        //         // TODO Auto-generated catch block
-        //         e.printStackTrace();
-        //     }
-        // }
-
+        for (ECSNode node : allNodes) {
+            ecsClient.removeNodes(Arrays.asList(node.getNodeHost() + ":" + node.getNodePort()));
+            try {
+                TimeUnit.MILLISECONDS.sleep(500);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
     }
 
     private static void createNode(int port){
@@ -177,22 +191,102 @@ public class PerfEnronTest {
         return files.toArray(new File[0]);
     }
 
+    private static String fileToKey(File file) {
+        String output = file.getParentFile().getParentFile().getName()
+                      + file.getParentFile().getName()
+                      + file.getName();
+        if (output.length() > 20) {
+            output = output.substring(output.length() - 20);
+        }
+        return output;
+    }
+
+    public String fileToVal(File file) {
+        StringBuilder sb = new StringBuilder();
+        try (Stream<String> stream = Files.lines(file.toPath(), StandardCharsets.UTF_8)) {
+            stream.forEach(line -> sb.append(line));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    public class ClientProcess implements Runnable {
+        @Override
+        public void run() {
+            try {
+                ProcessBuilder builder = new ProcessBuilder("java", "-jar", "m3-client.jar");
+                Process process = builder.start();
+
+                // Get the input stream
+                BufferedWriter processInput = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+
+                // Send the command to the process
+                processInput.write("help");
+                processInput.newLine();
+                processInput.flush();
+
+                logger.info("Command sent to the process");
+
+                // Read the output from the command
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(line);
+                }
+
+                // Don't forget to close the input stream
+                processInput.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     @Test
     public void PerfEnron() {
         PerfEnronTest test = new PerfEnronTest();
-        File[] files = test.loadCachedEnron("enron_files.txt");
-        System.out.println("Number of files: " + files.length);
-        // print each file path but only 2 folders above from the actual file
-        // for the first 10 files
-        for (int i = 0; i < 10; i++) {
-            String output = files[i].getParentFile().getParentFile().getName()
-                          + files[i].getParentFile().getName()
-                          + files[i].getName();
-            if (output.length() > 20) {
-                output = output.substring(output.length() - 20);
-            }
-            System.out.println(output);
+        System.out.println("1");
+
+        // Create an ExecutorService with a fixed thread pool
+        int numberOfClients = 5; // replace with the number of clients you want
+        ExecutorService executor = Executors.newFixedThreadPool(numberOfClients);
+
+        // Run multiple ClientProcesses in separate threads
+        for (int i = 0; i < numberOfClients; i++) {
+            executor.submit(new ClientProcess());
         }
+
+        // Shutdown the executor to prevent new tasks from being submitted
+        executor.shutdown();
+
+        // File[] files = test.loadCachedEnron("enron_files.txt");
+        
+        // String key = fileToKey(files[0]);
+        // String value = fileToVal(files[0]);
+        
+        // System.out.println("Key: " + key);
+        // System.out.println("Value: " + value);
+        
+        // // get first node in allnodes
+        // System.out.println("3");
+        // ECSNode node = allNodes.get(0);
+        // kvClient = createKVClient(node.getNodeHost(), node.getNodePort());
+        // try {
+        //     kvClient.connect();
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        // }
+
+        // BasicKVMessage response = null;
+        // try {
+        //     response = kvClient.put(key, value);
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        // }
+
+        // System.out.println("Put Response: " + response.getStatus() + " - " + response.getValue() + " - " + response.getKey());
+
         assertTrue(1 == 1);
     }
 }

@@ -31,6 +31,7 @@ public class ECS {
 
     private static final String DEFAULT_ECS_ADDR = "127.0.0.1";
     private static final int DEFAULT_ECS_PORT = 9999;
+    private static final int TIMEOUT_AWAIT_NODES = 1500;
 
     private String address;
     private int port;
@@ -270,7 +271,7 @@ public class ECS {
         int serverPort = this.startKVServer(cacheStrategy, cacheSize, port);
         System.out.println("Started server on port " + serverPort);
         try {
-            this.awaitNodes(newCount, 1500);
+            this.awaitNodes(newCount, TIMEOUT_AWAIT_NODES);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -283,7 +284,7 @@ public class ECS {
         int serverPort = this.startKVServer(cacheStrategy, cacheSize, -1);
         System.out.println("Started server on port " + serverPort);
         try {
-            this.awaitNodes(newCount, 1500);
+            this.awaitNodes(newCount, TIMEOUT_AWAIT_NODES);
         } catch (Exception e) {
             e.printStackTrace();
         }
