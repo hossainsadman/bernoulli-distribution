@@ -212,6 +212,12 @@ public class PerfEnronTest {
     }
 
     public class ClientProcess implements Runnable {
+        public void sendCommand(BufferedWriter processInput, String command) throws IOException {
+            processInput.write(command);
+            processInput.newLine();
+            processInput.flush();
+        }
+
         @Override
         public void run() {
             try {
@@ -222,18 +228,9 @@ public class PerfEnronTest {
                 BufferedWriter processInput = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
 
                 // Send the command to the process
-                processInput.write("help");
-                processInput.newLine();
-                processInput.flush();
+                sendCommand(processInput, "help");
 
                 logger.info("Command sent to the process");
-
-                // Read the output from the command
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
-                }
 
                 // Don't forget to close the input stream
                 processInput.close();
@@ -249,7 +246,7 @@ public class PerfEnronTest {
         System.out.println("1");
 
         // Create an ExecutorService with a fixed thread pool
-        int numberOfClients = 5; // replace with the number of clients you want
+        int numberOfClients = 1; // replace with the number of clients you want
         ExecutorService executor = Executors.newFixedThreadPool(numberOfClients);
 
         // Run multiple ClientProcesses in separate threads
