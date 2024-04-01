@@ -31,7 +31,7 @@ public class ECS {
 
     private static final String DEFAULT_ECS_ADDR = "127.0.0.1";
     private static final int DEFAULT_ECS_PORT = 9999;
-    private static final int TIMEOUT_AWAIT_NODES = 1500;
+    private static final int TIMEOUT_AWAIT_NODES = 5000;
 
     private String address;
     private int port;
