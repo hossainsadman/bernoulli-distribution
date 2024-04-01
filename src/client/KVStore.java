@@ -102,8 +102,6 @@ public class KVStore implements KVCommInterface {
                 // Request sent to correct server
                 break;
             }
-            System.out.println("retryCount " + retryCount);
-            System.out.println("maxRetries " +this.maxRetries);
         } while (retryCount <= this.maxRetries);
 
         return response;
