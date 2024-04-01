@@ -62,7 +62,9 @@ public class PerfEnronTest {
     private static final String CACHE_STRAT = "FIFO";
     private static final int CACHE_SIZE = 10;
 
-    private static final int[] NUM_NODES_VALS = {1,5,20,50,100};
+    private static final int TOTAL_PAIRS = 1000;
+
+    private static final int[] NUM_NODES_VALS = {1,5,10,15,20};
     private static final int[] NUM_CLIENTS_VALS = {1,5,20,50,100};
     private static final String[] CACHE_STRAT_VALS = {"FIFO", "LFU", "LRU", "None"};
     private static final int[] CACHE_SIZE_VALS = {0,5,20,50,100};
@@ -94,12 +96,28 @@ public class PerfEnronTest {
         for (int i = 0; i < numNodes; i++) {
             allNodes.add(ecsClient.addNode(cacheStrat, cacheSize, SERVER_PORT_START + i));
         }
+        // print all nodes
+        for (ECSNode node : allNodes) {
+            logger.info("Node: " + node.getNodeHost() + ":" + node.getNodePort());
+        }
     }
 
     private void setupClients(int numClients, int numNodes) {
+        // print all nodes
+        for (ECSNode node : allNodes) {
+            logger.info("Node: " + node.getNodeHost() + ":" + node.getNodePort());
+        }
+
         allClients = new ArrayList<>(numClients);
         for (int i = 0; i < numClients; i++) {
             int nodeIndex = i % numNodes;
+            ECSNode node = allNodes.get(nodeIndex);
+            assert(node != null);
+            String host = node.getNodeHost();
+            assert(host != null);
+            int port = node.getNodePort();
+            assert(port > 0);
+
             KVStore kvClient = createKVClient(allNodes.get(nodeIndex).getNodeHost(), allNodes.get(nodeIndex).getNodePort());
             try {
                 kvClient.connect();
@@ -122,6 +140,10 @@ public class PerfEnronTest {
 
     @After
 	public void tearDown() {
+        // print allnodes
+        for (ECSNode node : allNodes) {
+            logger.info("Node: " + node.getNodeHost() + ":" + node.getNodePort());
+        }
         for (ECSNode node : allNodes) {
             ecsClient.removeNodes(Arrays.asList(node.getNodeHost() + ":" + node.getNodePort()));
             try {
@@ -130,6 +152,10 @@ public class PerfEnronTest {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
+        }
+        // print allnodes
+        for (ECSNode node : allNodes) {
+            logger.info("Node: " + node.getNodeHost() + ":" + node.getNodePort());
         }
 
         for (KVStore kvClient : allClients) {
@@ -146,6 +172,11 @@ public class PerfEnronTest {
     }
 
     private static KVStore createKVClient(String host, int port) {
+        // if (host == null) {
+        //     host = allNodes.get(0).getNodeHost();
+        //     port = allNodes.get(0).getNodePort();
+        // }
+    
         KVStore kvClient = new KVStore(host, port);
         kvClient.setTesting(false);
         kvClient.setMaxRetries(5);
@@ -278,51 +309,51 @@ public class PerfEnronTest {
         }
     }
 
-    // public void putToClient(KVStore kvClient, String key, String value) {
-    //     ExecutorService executor = Executors.newSingleThreadExecutor();
-    //     Future<BasicKVMessage> future = executor.submit(() -> {
-    //         try {
-    //             return kvClient.put(key, value);
-    //         } catch (Exception e) {
-    //             throw new RuntimeException(e);
-    //         }
-    //     });
+    public void putToClientEarlyExit(KVStore kvClient, String key, String value) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<BasicKVMessage> future = executor.submit(() -> {
+            try {
+                return kvClient.put(key, value);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     
-    //     try {
-    //         BasicKVMessage response = future.get(500, TimeUnit.MILLISECONDS);
-    //         // logger.info("Response: " + response.getStatus());
-    //     } catch (TimeoutException e) {
-    //         logger.info("Execution took longer than 500 ms. Returning...");
-    //         return;
-    //     } catch (Exception e) {
-    //         logger.error("Error! while processing message", e);
-    //     } finally {
-    //         executor.shutdownNow();
-    //     }
-    // }
+        try {
+            BasicKVMessage response = future.get(500, TimeUnit.MILLISECONDS);
+            // logger.info("Response: " + response.getStatus());
+        } catch (TimeoutException e) {
+            logger.info("Execution took longer than 500 ms. Returning...");
+            return;
+        } catch (Exception e) {
+            logger.error("Error! while processing message", e);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
     
-    // public void getFromClient(KVStore kvClient, String key) {
-    //     ExecutorService executor = Executors.newSingleThreadExecutor();
-    //     Future<BasicKVMessage> future = executor.submit(() -> {
-    //         try {
-    //             return kvClient.get(key);
-    //         } catch (Exception e) {
-    //             throw new RuntimeException(e);
-    //         }
-    //     });
+    public void getFromClientEarlyExit(KVStore kvClient, String key) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<BasicKVMessage> future = executor.submit(() -> {
+            try {
+                return kvClient.get(key);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     
-    //     try {
-    //         BasicKVMessage response = future.get(500, TimeUnit.MILLISECONDS);
-    //         // logger.info("Response: " + response.getStatus());
-    //     } catch (TimeoutException e) {
-    //         logger.info("Execution took longer than 500 ms. Returning...");
-    //         return;
-    //     } catch (Exception e) {
-    //         logger.error("Error! while processing message", e);
-    //     } finally {
-    //         executor.shutdownNow();
-    //     }
-    // }
+        try {
+            BasicKVMessage response = future.get(500, TimeUnit.MILLISECONDS);
+            // logger.info("Response: " + response.getStatus());
+        } catch (TimeoutException e) {
+            logger.info("Execution took longer than 500 ms. Returning...");
+            return;
+        } catch (Exception e) {
+            logger.error("Error! while processing message", e);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
     
     public void putToRandomClient(int startIndex, int numValues) {
         for (int i = startIndex; i < startIndex + numValues && i < files.length; i++) {
@@ -418,39 +449,105 @@ public class PerfEnronTest {
         }
     }
 
-    @Test
-    public void ExampleTest() {
-        PerfEnronTest test = new PerfEnronTest();
-        int totalPairs = 100;
-        int numPairsPerClient = totalPairs / NUM_CLIENTS;
+    // @Test
+    // public void ExampleTest() {
+    //     PerfEnronTest test = new PerfEnronTest();
+    //     int numPairsPerClient = TOTAL_PAIRS / NUM_CLIENTS;
 
-        startTime = System.nanoTime();
-        setupNodes(NUM_NODES, CACHE_STRAT, CACHE_SIZE);
-        endTime = System.nanoTime();
+    //     startTime = System.nanoTime();
+    //     setupNodes(NUM_NODES, CACHE_STRAT, CACHE_SIZE);
+    //     endTime = System.nanoTime();
+    //     long timeForSetupNodes = calculateTimeTaken(startTime, endTime);
+
+    //     setupClients(NUM_CLIENTS, NUM_NODES);
+    //     connectClients();
+
+    //     files = test.loadCachedEnron("enron_files.txt");     
+        
+    //     startTime = System.nanoTime();
+    //     putToRandomClient(0, TOTAL_PAIRS);
+    //     endTime = System.nanoTime();
+    //     long timeForPutRequests = calculateTimeTaken(startTime, endTime);
+
+    //     startTime = System.nanoTime();
+    //     getFromRandomClient(0, TOTAL_PAIRS);
+    //     endTime = System.nanoTime();
+    //     long timeForGetRequests = calculateTimeTaken(startTime, endTime);
+
+    //     timeTaken(startTime, endTime, TOTAL_PAIRS, numPairsPerClient, NUM_NODES, timeForSetupNodes, NUM_CLIENTS, CACHE_STRAT, CACHE_SIZE, timeForPutRequests, timeForGetRequests);
+    //     tearDown();
+    // }    
+
+    @Test
+    public void runTestForSpecificValues() {
+        int numNodes        = 5;
+        int numClients      = 5;
+        String cacheStrat   = "LRU";
+        int cacheSize       = 100;
+
+        PerfEnronTest test = new PerfEnronTest();
+        int numPairsPerClient = TOTAL_PAIRS / numClients;
+
+        long startTime = System.nanoTime();
+        setupNodes(numNodes, cacheStrat, cacheSize);
+        long endTime = System.nanoTime();
         long timeForSetupNodes = calculateTimeTaken(startTime, endTime);
 
-        setupClients(NUM_CLIENTS, NUM_NODES);
+        setupClients(numClients, numNodes);
         connectClients();
 
-        files = test.loadCachedEnron("enron_files.txt");     
-        
+        files = test.loadCachedEnron("enron_files.txt");
+
         startTime = System.nanoTime();
-        putToRandomClient(0, totalPairs);
+        putToRandomClient(0, TOTAL_PAIRS);
         endTime = System.nanoTime();
         long timeForPutRequests = calculateTimeTaken(startTime, endTime);
 
         startTime = System.nanoTime();
-        getFromRandomClient(0, totalPairs);
+        getFromRandomClient(0, TOTAL_PAIRS);
         endTime = System.nanoTime();
         long timeForGetRequests = calculateTimeTaken(startTime, endTime);
 
-        timeTaken(startTime, endTime, totalPairs, numPairsPerClient, NUM_NODES, timeForSetupNodes, NUM_CLIENTS, CACHE_STRAT, CACHE_SIZE, timeForPutRequests, timeForGetRequests);
+        timeTaken(startTime, endTime, TOTAL_PAIRS, numPairsPerClient, numNodes, timeForSetupNodes, numClients, cacheStrat, cacheSize, timeForPutRequests, timeForGetRequests);
         tearDown();
     }
+
+    // @Test
+    // public void AllTests() {
+    //     PerfEnronTest test = new PerfEnronTest();
+    //     int TOTAL_PAIRS = 100;
+    
+    //     for (int numNodes : NUM_NODES_VALS) {
+    //         for (int numClients : NUM_CLIENTS_VALS) {
+    //             for (String cacheStrat : CACHE_STRAT_VALS) {
+    //                 for (int cacheSize : CACHE_SIZE_VALS) {
+    //                     int numPairsPerClient = TOTAL_PAIRS / numClients;
+    
+    //                     long startTime = System.nanoTime();
+    //                     setupNodes(numNodes, cacheStrat, cacheSize);
+    //                     long endTime = System.nanoTime();
+    //                     long timeForSetupNodes = calculateTimeTaken(startTime, endTime);
+    
+    //                     setupClients(numClients, numNodes);
+    //                     connectClients();
+    
+    //                     files = test.loadCachedEnron("enron_files.txt");
+    
+    //                     startTime = System.nanoTime();
+    //                     putToRandomClient(0, TOTAL_PAIRS);
+    //                     endTime = System.nanoTime();
+    //                     long timeForPutRequests = calculateTimeTaken(startTime, endTime);
+    
+    //                     startTime = System.nanoTime();
+    //                     getFromRandomClient(0, TOTAL_PAIRS);
+    //                     endTime = System.nanoTime();
+    //                     long timeForGetRequests = calculateTimeTaken(startTime, endTime);
+    
+    //                     timeTaken(startTime, endTime, TOTAL_PAIRS, numPairsPerClient, numNodes, timeForSetupNodes, numClients, cacheStrat, cacheSize, timeForPutRequests, timeForGetRequests);
+    //                     tearDown();
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 }
-
-
-// need to have a way of creating multiple clients and connecting them to the servers in allnodes
-
-// connect each client to each server sequentially
-// randomly choose a client to put/get
