@@ -2,10 +2,10 @@ package app_kvServer;
 
 import java.util.*;
 
-public class SQLTable<T extends Comparable<T>> {
+public class SQLTable {
     public String name;
     private List<String> cols;
-    private List<Map<String, T>> rows;
+    private List<Map<String, Object>> rows;
 
     public SQLTable() {
         this.cols = new ArrayList<>();
@@ -19,7 +19,7 @@ public class SQLTable<T extends Comparable<T>> {
             sb.append(col).append("\t");
         }
         sb.append("\n");
-        for (Map<String, T> row : rows) {
+        for (Map<String, Object> row : rows) {
             for (String col : cols) {
                 sb.append(row.get(col)).append("\t");
             }
@@ -30,19 +30,19 @@ public class SQLTable<T extends Comparable<T>> {
 
     public void addCol(String colName) {
         cols.add(colName);
-        for (Map<String, T> row : rows) {
+        for (Map<String, Object> row : rows) {
             row.put(colName, null);
         }
     }
 
     public void removeCol(String colName) {
         cols.remove(colName);
-        for (Map<String, T> row : rows) {
+        for (Map<String, Object> row : rows) {
             row.remove(colName);
         }
     }
 
-    public void addRow(Map<String, T> row) {
+    public void addRow(Map<String, Object> row) {
         for (String col : cols) {
             if (!row.containsKey(col)) {
                 row.put(col, null);
@@ -63,24 +63,24 @@ public class SQLTable<T extends Comparable<T>> {
         EQUALS
     }
 
-    public static class Condition<T extends Comparable<T>> {
+    public static class Condition {
         public String col;
-        public T value;
+        public Object value;
         public Comparison operator;
-    
-        public Condition(String col, T value, Comparison operator) {
+
+        public Condition(String col, Object value, Comparison operator) {
             this.col = col;
             this.value = value;
             this.operator = operator;
         }
     }
 
-    public SQLTable<T> select(List<Condition<T>> conditions) {
-        List<Map<String, T>> result = new ArrayList<>();
-        for (Map<String, T> row : rows) {
+    public SQLTable select(List<Condition> conditions) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
             boolean match = true;
-            for (Condition<T> condition : conditions) {
-                T value = row.get(condition.col);
+            for (Condition condition : conditions) {
+                Object value = row.get(condition.col);
                 if (value == null || !compare(value, condition.value, condition.operator)) {
                     match = false;
                     break;
@@ -90,19 +90,27 @@ public class SQLTable<T extends Comparable<T>> {
                 result.add(row);
             }
         }
-    
-        SQLTable<T> derivedTable = new SQLTable<>();
+
+        SQLTable derivedTable = new SQLTable();
         derivedTable.cols = new ArrayList<>(this.cols);
-    
-        for (Map<String, T> row : result) {
+
+        for (Map<String, Object> row : result) {
             derivedTable.addRow(new HashMap<>(row));
         }
-    
+
         return derivedTable;
     }
     
-    private <T extends Comparable<T>> boolean compare(T value1, T value2, Comparison operator) {
-        int comparison = value1.compareTo(value2);
+    private boolean compare(Object value1, Object value2, Comparison operator) {
+        int comparison;
+        if (value1 instanceof String && value2 instanceof String) {
+            comparison = ((String) value1).compareTo((String) value2);
+        } else if (value1 instanceof Integer && value2 instanceof Integer) {
+            comparison = ((Integer) value1).compareTo((Integer) value2);
+        } else {
+            throw new IllegalArgumentException("Incompatible types for comparison");
+        }
+    
         switch (operator) {
             case GREATER_THAN:
                 return comparison > 0;
@@ -116,22 +124,25 @@ public class SQLTable<T extends Comparable<T>> {
     }
 
     public static void main(String[] args) {
-        SQLTable<Integer> table = new SQLTable<>();
+        SQLTable table = new SQLTable();
     
         table.addCol("col1");
         table.addCol("col2");
         table.addCol("col3");
+        table.addCol("col4"); // Added column for strings
     
-        Map<String, Integer> row1 = new HashMap<>();
+        Map<String, Object> row1 = new HashMap<>();
         row1.put("col1", 1);
         row1.put("col2", 2);
         row1.put("col3", 3);
+        row1.put("col4", "a"); // Added string value
         table.addRow(row1);
     
-        Map<String, Integer> row2 = new HashMap<>();
+        Map<String, Object> row2 = new HashMap<>();
         row2.put("col1", 4);
         row2.put("col2", 5);
         row2.put("col3", 6);
+        row2.put("col4", "b"); // Added string value
         table.addRow(row2);
     
         System.out.println(table);
@@ -139,10 +150,10 @@ public class SQLTable<T extends Comparable<T>> {
         table.removeCol("col2");
         System.out.println(table);
     
-        List<Condition<Integer>> conditions = new ArrayList<>();
-        conditions.add(new Condition<>("col1", 0, Comparison.GREATER_THAN));
-        conditions.add(new Condition<>("col3", 3, Comparison.EQUALS));
-        SQLTable<Integer> selectedTable = table.select(conditions);
+        List<SQLTable.Condition> conditions = new ArrayList<>();
+        conditions.add(new SQLTable.Condition("col1", 0, SQLTable.Comparison.GREATER_THAN));
+        conditions.add(new SQLTable.Condition("col3", 3, SQLTable.Comparison.EQUALS));
+        SQLTable selectedTable = table.select(conditions);
         System.out.println(selectedTable);
     }
 }
