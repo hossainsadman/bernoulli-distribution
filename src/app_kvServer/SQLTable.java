@@ -2,10 +2,10 @@ package app_kvServer;
 
 import java.util.*;
 
-public class SQLTable {
+public class SQLTable<T extends Comparable<T>> {
     public String name;
     private List<String> cols;
-    private List<Map<String, Integer>> rows;
+    private List<Map<String, T>> rows;
 
     public SQLTable() {
         this.cols = new ArrayList<>();
@@ -19,7 +19,7 @@ public class SQLTable {
             sb.append(col).append("\t");
         }
         sb.append("\n");
-        for (Map<String, Integer> row : rows) {
+        for (Map<String, T> row : rows) {
             for (String col : cols) {
                 sb.append(row.get(col)).append("\t");
             }
@@ -30,19 +30,19 @@ public class SQLTable {
 
     public void addCol(String colName) {
         cols.add(colName);
-        for (Map<String, Integer> row : rows) {
+        for (Map<String, T> row : rows) {
             row.put(colName, null);
         }
     }
 
     public void removeCol(String colName) {
         cols.remove(colName);
-        for (Map<String, Integer> row : rows) {
+        for (Map<String, T> row : rows) {
             row.remove(colName);
         }
     }
 
-    public void addRow(Map<String, Integer> row) {
+    public void addRow(Map<String, T> row) {
         for (String col : cols) {
             if (!row.containsKey(col)) {
                 row.put(col, null);
@@ -57,71 +57,92 @@ public class SQLTable {
         }
     }
 
-    public List<Integer> select(String col, String conditionCol, int conditionValue) {
-        List<Integer> result = new ArrayList<>();
-        for (Map<String, Integer> row : rows) {
-            if (row.get(conditionCol) > conditionValue) {
-                result.add(row.get(col));
-            }
-        }
-        return result;
+    public enum Comparison {
+        GREATER_THAN,
+        LESS_THAN,
+        EQUALS
     }
-    public SQLTable selectCols(List<String> selectedCols) {
-        SQLTable derivedTable = new SQLTable();
-        for (String col : selectedCols) {
-            if (cols.contains(col)) {
-                derivedTable.addCol(col);
+
+    public static class Condition<T extends Comparable<T>> {
+        public String col;
+        public T value;
+        public Comparison operator;
+    
+        public Condition(String col, T value, Comparison operator) {
+            this.col = col;
+            this.value = value;
+            this.operator = operator;
+        }
+    }
+
+    public SQLTable<T> select(List<Condition<T>> conditions) {
+        List<Map<String, T>> result = new ArrayList<>();
+        for (Map<String, T> row : rows) {
+            boolean match = true;
+            for (Condition<T> condition : conditions) {
+                T value = row.get(condition.col);
+                if (value == null || !compare(value, condition.value, condition.operator)) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                result.add(row);
             }
         }
-        for (Map<String, Integer> row : rows) {
-            Map<String, Integer> derivedRow = new HashMap<>();
-            for (String col : selectedCols) {
-                derivedRow.put(col, row.get(col));
-            }
-            derivedTable.addRow(derivedRow);
+    
+        SQLTable<T> derivedTable = new SQLTable<>();
+        derivedTable.cols = new ArrayList<>(this.cols);
+    
+        for (Map<String, T> row : result) {
+            derivedTable.addRow(new HashMap<>(row));
         }
+    
         return derivedTable;
+    }
+    
+    private <T extends Comparable<T>> boolean compare(T value1, T value2, Comparison operator) {
+        int comparison = value1.compareTo(value2);
+        switch (operator) {
+            case GREATER_THAN:
+                return comparison > 0;
+            case LESS_THAN:
+                return comparison < 0;
+            case EQUALS:
+                return comparison == 0;
+            default:
+                return false;
+        }
     }
 
     public static void main(String[] args) {
-        // Create a new SQLTable
-        SQLTable table = new SQLTable();
-
-        // Add columns
+        SQLTable<Integer> table = new SQLTable<>();
+    
         table.addCol("col1");
         table.addCol("col2");
         table.addCol("col3");
-
-        // Add rows
+    
         Map<String, Integer> row1 = new HashMap<>();
         row1.put("col1", 1);
         row1.put("col2", 2);
         row1.put("col3", 3);
         table.addRow(row1);
-
+    
         Map<String, Integer> row2 = new HashMap<>();
         row2.put("col1", 4);
         row2.put("col2", 5);
         row2.put("col3", 6);
         table.addRow(row2);
-
-        // print table
+    
         System.out.println(table);
-
-        // Remove a column
+    
         table.removeCol("col2");
         System.out.println(table);
-        
-        // Select columns
-        List<String> selectedCols = Arrays.asList("col1", "col3");
-        SQLTable derivedTable = table.selectCols(selectedCols);
-        System.out.println(derivedTable);
-
-        // Select rows based on a condition
-        List<Integer> selectedRows = table.select("col1", "col3", 2);
-
-        // Remove a row
-        table.removeRow(0);
-        System.out.println(table);
+    
+        List<Condition<Integer>> conditions = new ArrayList<>();
+        conditions.add(new Condition<>("col1", 0, Comparison.GREATER_THAN));
+        conditions.add(new Condition<>("col3", 3, Comparison.EQUALS));
+        SQLTable<Integer> selectedTable = table.select(conditions);
+        System.out.println(selectedTable);
     }
 }
