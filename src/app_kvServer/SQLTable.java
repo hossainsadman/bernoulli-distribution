@@ -4,30 +4,31 @@ import java.util.*;
 
 public class SQLTable {
     public String name;
+    private String primaryKey;
     private List<String> cols;
     private Map<String, Class<?>> colTypes;
     private Map<Object, Map<String, Object>> rows;
 
-    public SQLTable() {
+    public SQLTable(String primaryKey) {
+        this.primaryKey = primaryKey;
         this.cols = new ArrayList<>();
         this.colTypes = new HashMap<>();
         this.rows = new HashMap<>();
     }
 
     @Override
-    public String toString() {
+        public String toString() {
         StringBuilder sb = new StringBuilder();
         for (String col : cols) {
             sb.append(col).append("\t");
         }
-        sb.append("ID\n");
+        sb.append("\n");
         for (Map.Entry<Object, Map<String, Object>> entry : rows.entrySet()) {
-            Object id = entry.getKey();
             Map<String, Object> row = entry.getValue();
             for (String col : cols) {
                 sb.append(row.get(col)).append("\t");
             }
-            sb.append(id).append("\n");
+            sb.append("\n");
         }
         return sb.toString();
     }
@@ -54,12 +55,13 @@ public class SQLTable {
         }
     }
 
-    public void addRow(Object rowId, Map<String, Object> row) {
-        if (!(rowId instanceof Integer || rowId instanceof String)) {
+    public void addRow(Map<String, Object> row) {
+        Object key = row.get(primaryKey);
+        if (!(key instanceof Integer || key instanceof String)) {
             throw new IllegalArgumentException("Row ID must be an integer or a string");
         }
-        if (rows.containsKey(rowId)) {
-            throw new IllegalArgumentException("Row ID must be unique");
+        if (rows.containsKey(key)) {
+            throw new IllegalArgumentException("A row with the same primary key already exists");
         }
         for (String col : cols) {
             if (!row.containsKey(col)) {
@@ -71,11 +73,11 @@ public class SQLTable {
                 }
             }
         }
-        rows.put(rowId, row);
+        rows.put(key, row);
     }
 
-    public void removeRow(Object rowId) {
-        rows.remove(rowId);
+    public void removeRow(Object primaryKey) {
+        rows.remove(primaryKey);
     }
 
     public enum Comparison {
@@ -104,7 +106,7 @@ public class SQLTable {
     }
 
     public SQLTable select(List<String> cols) {
-        SQLTable derivedTable = new SQLTable();
+        SQLTable derivedTable = new SQLTable(this.primaryKey);
         derivedTable.cols = new ArrayList<>(cols);
         for (String col : cols) {
             derivedTable.colTypes.put(col, this.colTypes.get(col));
@@ -116,15 +118,14 @@ public class SQLTable {
             for (String col : cols) {
                 newRow.put(col, row.get(col));
             }
-            derivedTable.addRow(id, newRow);
+            derivedTable.addRow(newRow);
         }
         return derivedTable;
     }
 
     public SQLTable where(List<Condition> conditions) {
-        List<Map.Entry<Object, Map<String, Object>>> result = new ArrayList<>();
+        List<Map<String, Object>> result = new ArrayList<>();
         for (Map.Entry<Object, Map<String, Object>> entry : this.rows.entrySet()) {
-            Object id = entry.getKey();
             Map<String, Object> row = entry.getValue();
             boolean match = true;
             for (Condition condition : conditions) {
@@ -138,16 +139,16 @@ public class SQLTable {
                 }
             }
             if (match) {
-                result.add(new AbstractMap.SimpleEntry<>(id, new HashMap<>(row)));
+                result.add(new HashMap<>(row));
             }
         }
     
-        SQLTable derivedTable = new SQLTable();
+        SQLTable derivedTable = new SQLTable(this.primaryKey);
         derivedTable.cols = new ArrayList<>(this.cols);
         derivedTable.colTypes = new HashMap<>(this.colTypes);
     
-        for (Map.Entry<Object, Map<String, Object>> entry : result) {
-            derivedTable.addRow(entry.getKey(), entry.getValue());
+        for (Map<String, Object> row : result) {
+            derivedTable.addRow(row);
         }
     
         return derivedTable;
@@ -176,26 +177,26 @@ public class SQLTable {
     }
 
     public static void main(String[] args) {
-        SQLTable table = new SQLTable();
-    
+        SQLTable table = new SQLTable("col1");
+
         table.addCol("col1", Integer.class);
         table.addCol("col2", Integer.class);
         table.addCol("col3", Integer.class);
         table.addCol("col4", String.class);
-    
+
         Map<String, Object> row1 = new HashMap<>();
         row1.put("col1", 1);
         row1.put("col2", 2);
         row1.put("col3", 3);
         row1.put("col4", "a");
-        table.addRow(1, row1);
-    
+        table.addRow(row1);
+
         Map<String, Object> row2 = new HashMap<>();
         row2.put("col1", 4);
         row2.put("col2", 5);
         row2.put("col3", 6);
         row2.put("col4", "b");
-        table.addRow(2, row2);
+        table.addRow(row2);
     
         System.out.println(table);
     
