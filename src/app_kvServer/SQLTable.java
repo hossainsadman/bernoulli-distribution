@@ -69,7 +69,8 @@ public class SQLTable {
     public enum Comparison {
         GREATER_THAN,
         LESS_THAN,
-        EQUALS
+        EQUALS,
+        NONE
     }
 
     public static class Condition {
@@ -82,13 +83,38 @@ public class SQLTable {
             this.value = value;
             this.operator = operator;
         }
+
+        public Condition(String col) {
+            this.col = col;
+            this.value = null;
+            this.operator = Comparison.NONE;
+        }
     }
 
-    public SQLTable select(List<Condition> conditions) {
+    public SQLTable select(List<String> cols) {
+        SQLTable derivedTable = new SQLTable();
+        derivedTable.cols = new ArrayList<>(cols);
+        for (String col : cols) {
+            derivedTable.colTypes.put(col, this.colTypes.get(col));
+        }
+        for (Map<String, Object> row : this.rows) {
+            Map<String, Object> newRow = new HashMap<>();
+            for (String col : cols) {
+                newRow.put(col, row.get(col));
+            }
+            derivedTable.addRow(newRow);
+        }
+        return derivedTable;
+    }
+
+    public SQLTable where(List<Condition> conditions) {
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map<String, Object> row : rows) {
             boolean match = true;
             for (Condition condition : conditions) {
+                if (condition.operator == Comparison.NONE) {
+                    continue;
+                }
                 Object value = row.get(condition.col);
                 if (value == null || !compare(value, condition.value, condition.operator)) {
                     match = false;
@@ -96,18 +122,18 @@ public class SQLTable {
                 }
             }
             if (match) {
-                result.add(row);
+                result.add(new HashMap<>(row));
             }
         }
-
+    
         SQLTable derivedTable = new SQLTable();
         derivedTable.cols = new ArrayList<>(this.cols);
         derivedTable.colTypes = new HashMap<>(this.colTypes);
-
+    
         for (Map<String, Object> row : result) {
             derivedTable.addRow(row);
         }
-
+    
         return derivedTable;
     }
     
@@ -165,12 +191,17 @@ public class SQLTable {
         conditions.add(new SQLTable.Condition("col3", 3, SQLTable.Comparison.EQUALS));
         conditions.add(new SQLTable.Condition("col4", "a", SQLTable.Comparison.EQUALS));
 
-        /* invalid type comparison for select */
+        /* invalid type comparison for where */
 
         // conditions.add(new SQLTable.Condition("col1", "a", SQLTable.Comparison.EQUALS));
         // conditions.add(new SQLTable.Condition("col4", 1, SQLTable.Comparison.EQUALS));
 
-        SQLTable selectedTable = table.select(conditions);
+        SQLTable selectedTable = table.where(conditions);
         System.out.println(selectedTable);
+
+        List<String> cols = new ArrayList<>();
+        cols.add("col1");
+        table = table.select(cols);
+        System.out.println(table);
     }
 }
