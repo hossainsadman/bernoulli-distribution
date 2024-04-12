@@ -1,6 +1,10 @@
 package app_kvServer;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 
 public class SQLTable {
     public String name;
@@ -76,8 +80,47 @@ public class SQLTable {
         rows.put(key, row);
     }
 
-    public void removeRow(Object primaryKey) {
+    public void deleteRow(Object primaryKey) {
         rows.remove(primaryKey);
+    }
+
+    public void deleteRows(List<Condition> conditions) {
+        Iterator<Map.Entry<Object, Map<String, Object>>> iterator = rows.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Object, Map<String, Object>> entry = iterator.next();
+            Map<String, Object> row = entry.getValue();
+            boolean match = true;
+            for (Condition condition : conditions) {
+                if (condition.operator == Comparison.NONE) {
+                    continue;
+                }
+                Object value = row.get(condition.col);
+                if (value == null || !compare(value, condition.value, condition.operator)) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                iterator.remove();
+            }
+        }
+    }
+
+    public void updateRow(Object primaryKey, Map<String, Object> newRow) {
+        Map<String, Object> row = rows.get(primaryKey);
+        if (row == null) {
+            throw new IllegalArgumentException("No row with the given primary key exists");
+        }
+        for (String col : cols) {
+            if (newRow.containsKey(col)) {
+                Class<?> colType = colTypes.get(col);
+                Object newValue = newRow.get(col);
+                if (!colType.isInstance(newValue)) {
+                    throw new IllegalArgumentException("Incompatible type for column " + col);
+                }
+                row.put(col, newValue);
+            }
+        }
     }
 
     public enum Comparison {
@@ -176,44 +219,59 @@ public class SQLTable {
         }
     }
 
-    public static void main(String[] args) {
-        SQLTable table = new SQLTable("col1");
+    // public static void main(String[] args) {
+    //     SQLTable table = new SQLTable("col1");
 
-        table.addCol("col1", Integer.class);
-        table.addCol("col2", Integer.class);
-        table.addCol("col3", Integer.class);
-        table.addCol("col4", String.class);
+    //     table.addCol("col1", Integer.class);
+    //     table.addCol("col2", Integer.class);
+    //     table.addCol("col3", Integer.class);
+    //     table.addCol("col4", String.class);
 
-        Map<String, Object> row1 = new HashMap<>();
-        row1.put("col1", 1);
-        row1.put("col2", 2);
-        row1.put("col3", 3);
-        row1.put("col4", "a");
-        table.addRow(row1);
+    //     Map<String, Object> row1 = new HashMap<>();
+    //     row1.put("col1", 1);
+    //     row1.put("col2", 2);
+    //     row1.put("col3", 3);
+    //     row1.put("col4", "a");
+    //     table.addRow(row1);
 
-        Map<String, Object> row2 = new HashMap<>();
-        row2.put("col1", 4);
-        row2.put("col2", 5);
-        row2.put("col3", 6);
-        row2.put("col4", "b");
-        table.addRow(row2);
+    //     Map<String, Object> row2 = new HashMap<>();
+    //     row2.put("col1", 4);
+    //     row2.put("col2", 5);
+    //     row2.put("col3", 6);
+    //     row2.put("col4", "b");
+    //     table.addRow(row2);
     
-        System.out.println(table);
+    //     System.out.println(table);
     
-        table.removeCol("col2");
-        System.out.println(table);
+    //     table.removeCol("col2");
+    //     System.out.println(table);
     
-        List<SQLTable.Condition> conditions = new ArrayList<>();
-        conditions.add(new SQLTable.Condition("col1", 0, SQLTable.Comparison.GREATER_THAN));
-        conditions.add(new SQLTable.Condition("col3", 3, SQLTable.Comparison.EQUALS));
-        conditions.add(new SQLTable.Condition("col4", "a", SQLTable.Comparison.EQUALS));
+    //     List<SQLTable.Condition> conditions = new ArrayList<>();
+    //     conditions.add(new SQLTable.Condition("col1", 0, SQLTable.Comparison.GREATER_THAN));
+    //     conditions.add(new SQLTable.Condition("col3", 3, SQLTable.Comparison.EQUALS));
+    //     conditions.add(new SQLTable.Condition("col4", "a", SQLTable.Comparison.EQUALS));
     
-        SQLTable selectedTable = table.selectRows(conditions);
-        System.out.println(selectedTable);
+    //     SQLTable selectedTable = table.selectRows(conditions);
+    //     System.out.println(selectedTable);
     
-        List<String> cols = new ArrayList<>();
-        cols.add("col1");
-        table = table.selectCols(cols);
-        System.out.println(table);
-    }
+    //     List<String> cols = new ArrayList<>();
+    //     cols.add("col1");
+    //     selectedTable = selectedTable.selectCols(cols);
+    //     System.out.println(selectedTable);
+
+    //     System.out.println("TEST: updateRow");
+    //     Map<String, Object> updatedRow = new HashMap<>();
+    //     updatedRow.put("col1", 1);
+    //     updatedRow.put("col2", 20);
+    //     updatedRow.put("col3", 30);
+    //     updatedRow.put("col4", "updated");
+    //     table.updateRow(1, updatedRow);
+    //     System.out.println(table);
+        
+    //     System.out.println("TEST: deleteRows");
+    //     List<SQLTable.Condition> deleteConditions = new ArrayList<>();
+    //     deleteConditions.add(new SQLTable.Condition("col1", 0, SQLTable.Comparison.GREATER_THAN));
+    //     table.deleteRows(deleteConditions);
+    //     System.out.println(table);
+    // }
 }
