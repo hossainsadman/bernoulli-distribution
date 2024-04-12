@@ -6,12 +6,12 @@ public class SQLTable {
     public String name;
     private List<String> cols;
     private Map<String, Class<?>> colTypes;
-    private List<Map<String, Object>> rows;
+    private Map<Object, Map<String, Object>> rows;
 
     public SQLTable() {
         this.cols = new ArrayList<>();
         this.colTypes = new HashMap<>();
-        this.rows = new ArrayList<>();
+        this.rows = new HashMap<>();
     }
 
     @Override
@@ -20,33 +20,47 @@ public class SQLTable {
         for (String col : cols) {
             sb.append(col).append("\t");
         }
-        sb.append("\n");
-        for (Map<String, Object> row : rows) {
+        sb.append("ID\n");
+        for (Map.Entry<Object, Map<String, Object>> entry : rows.entrySet()) {
+            Object id = entry.getKey();
+            Map<String, Object> row = entry.getValue();
             for (String col : cols) {
                 sb.append(row.get(col)).append("\t");
             }
-            sb.append("\n");
+            sb.append(id).append("\n");
         }
         return sb.toString();
     }
 
     public void addCol(String colName, Class<?> colType) {
+        if (cols.contains(colName)) {
+            throw new IllegalArgumentException("Column " + colName + " already exists.");
+        }
         cols.add(colName);
         colTypes.put(colName, colType);
-        for (Map<String, Object> row : rows) {
+        for (Map<String, Object> row : rows.values()) {
             row.put(colName, null);
         }
     }
-
+    
     public void removeCol(String colName) {
+        if (!cols.contains(colName)) {
+            throw new IllegalArgumentException("Column " + colName + " does not exist.");
+        }
         cols.remove(colName);
         colTypes.remove(colName);
-        for (Map<String, Object> row : rows) {
+        for (Map<String, Object> row : rows.values()) {
             row.remove(colName);
         }
     }
 
-    public void addRow(Map<String, Object> row) {
+    public void addRow(Object rowId, Map<String, Object> row) {
+        if (!(rowId instanceof Integer || rowId instanceof String)) {
+            throw new IllegalArgumentException("Row ID must be an integer or a string");
+        }
+        if (rows.containsKey(rowId)) {
+            throw new IllegalArgumentException("Row ID must be unique");
+        }
         for (String col : cols) {
             if (!row.containsKey(col)) {
                 row.put(col, null);
@@ -57,13 +71,11 @@ public class SQLTable {
                 }
             }
         }
-        rows.add(row);
+        rows.put(rowId, row);
     }
 
-    public void removeRow(int rowIndex) {
-        if (rowIndex >= 0 && rowIndex < rows.size()) {
-            rows.remove(rowIndex);
-        }
+    public void removeRow(Object rowId) {
+        rows.remove(rowId);
     }
 
     public enum Comparison {
@@ -97,19 +109,23 @@ public class SQLTable {
         for (String col : cols) {
             derivedTable.colTypes.put(col, this.colTypes.get(col));
         }
-        for (Map<String, Object> row : this.rows) {
+        for (Map.Entry<Object, Map<String, Object>> entry : this.rows.entrySet()) {
+            Object id = entry.getKey();
+            Map<String, Object> row = entry.getValue();
             Map<String, Object> newRow = new HashMap<>();
             for (String col : cols) {
                 newRow.put(col, row.get(col));
             }
-            derivedTable.addRow(newRow);
+            derivedTable.addRow(id, newRow);
         }
         return derivedTable;
     }
 
     public SQLTable where(List<Condition> conditions) {
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Map<String, Object> row : rows) {
+        List<Map.Entry<Object, Map<String, Object>>> result = new ArrayList<>();
+        for (Map.Entry<Object, Map<String, Object>> entry : this.rows.entrySet()) {
+            Object id = entry.getKey();
+            Map<String, Object> row = entry.getValue();
             boolean match = true;
             for (Condition condition : conditions) {
                 if (condition.operator == Comparison.NONE) {
@@ -122,7 +138,7 @@ public class SQLTable {
                 }
             }
             if (match) {
-                result.add(new HashMap<>(row));
+                result.add(new AbstractMap.SimpleEntry<>(id, new HashMap<>(row)));
             }
         }
     
@@ -130,8 +146,8 @@ public class SQLTable {
         derivedTable.cols = new ArrayList<>(this.cols);
         derivedTable.colTypes = new HashMap<>(this.colTypes);
     
-        for (Map<String, Object> row : result) {
-            derivedTable.addRow(row);
+        for (Map.Entry<Object, Map<String, Object>> entry : result) {
+            derivedTable.addRow(entry.getKey(), entry.getValue());
         }
     
         return derivedTable;
@@ -172,14 +188,14 @@ public class SQLTable {
         row1.put("col2", 2);
         row1.put("col3", 3);
         row1.put("col4", "a");
-        table.addRow(row1);
+        table.addRow(1, row1);
     
         Map<String, Object> row2 = new HashMap<>();
         row2.put("col1", 4);
         row2.put("col2", 5);
         row2.put("col3", 6);
         row2.put("col4", "b");
-        table.addRow(row2);
+        table.addRow(2, row2);
     
         System.out.println(table);
     
@@ -190,15 +206,10 @@ public class SQLTable {
         conditions.add(new SQLTable.Condition("col1", 0, SQLTable.Comparison.GREATER_THAN));
         conditions.add(new SQLTable.Condition("col3", 3, SQLTable.Comparison.EQUALS));
         conditions.add(new SQLTable.Condition("col4", "a", SQLTable.Comparison.EQUALS));
-
-        /* invalid type comparison for where */
-
-        // conditions.add(new SQLTable.Condition("col1", "a", SQLTable.Comparison.EQUALS));
-        // conditions.add(new SQLTable.Condition("col4", 1, SQLTable.Comparison.EQUALS));
-
+    
         SQLTable selectedTable = table.where(conditions);
         System.out.println(selectedTable);
-
+    
         List<String> cols = new ArrayList<>();
         cols.add("col1");
         table = table.select(cols);
