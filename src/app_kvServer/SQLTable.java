@@ -105,7 +105,7 @@ public class SQLTable {
         }
     }
 
-    public SQLTable select(List<String> cols) {
+    public SQLTable selectCols(List<String> cols) {
         SQLTable derivedTable = new SQLTable(this.primaryKey);
         derivedTable.cols = new ArrayList<>(cols);
         for (String col : cols) {
@@ -123,7 +123,7 @@ public class SQLTable {
         return derivedTable;
     }
 
-    public SQLTable where(List<Condition> conditions) {
+    public SQLTable selectRows(List<Condition> conditions) {
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map.Entry<Object, Map<String, Object>> entry : this.rows.entrySet()) {
             Map<String, Object> row = entry.getValue();
@@ -208,12 +208,12 @@ public class SQLTable {
         conditions.add(new SQLTable.Condition("col3", 3, SQLTable.Comparison.EQUALS));
         conditions.add(new SQLTable.Condition("col4", "a", SQLTable.Comparison.EQUALS));
     
-        SQLTable selectedTable = table.where(conditions);
+        SQLTable selectedTable = table.selectRows(conditions);
         System.out.println(selectedTable);
     
         List<String> cols = new ArrayList<>();
         cols.add("col1");
-        table = table.select(cols);
+        table = table.selectCols(cols);
         System.out.println(table);
     }
 }
