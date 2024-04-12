@@ -302,13 +302,13 @@ public class ECSClient implements IECSClient {
             cmd = parser.parse(options, args);
         } catch (Exception e) {
             System.out.println(e.getMessage());
-            formatter.printHelp("m3-ecs.jar", options);
+            formatter.printHelp("m4-ecs.jar", options);
             System.exit(1);
             return;
         }
 
         if (cmd.hasOption("help")) {
-            formatter.printHelp("m3-ecs.jar", options);
+            formatter.printHelp("m4-ecs.jar", options);
             System.exit(0);
         }
 
