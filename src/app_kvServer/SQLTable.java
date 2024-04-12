@@ -21,8 +21,10 @@ public class SQLTable {
     }
 
     @Override
-        public String toString() {
+    public String toString() {
         StringBuilder sb = new StringBuilder();
+        sb.append("TABLE: ").append(name).append(" | ");
+        sb.append("PRIMARY KEY: ").append(primaryKey).append("\n");
         for (String col : cols) {
             sb.append(col).append("\t");
         }
@@ -274,4 +276,5 @@ public class SQLTable {
     //     table.deleteRows(deleteConditions);
     //     System.out.println(table);
     // }
+
 }

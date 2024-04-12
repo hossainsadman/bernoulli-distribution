@@ -170,4 +170,14 @@ public class KVStore implements KVCommInterface {
 	public ECSHashRing getMetaData() {
 		return this.metaData;
 	}
+
+    public BasicKVMessage sqlcreate(String key, String value) throws Exception {
+        BasicKVMessage invalidParametersError = this.validateKeyValuePair(key, value);
+        if (invalidParametersError != null)
+            return invalidParametersError;
+            
+        BasicKVMessage message = new BasicKVMessage(StatusType.SQLCREATE, key, value);
+
+        return this.sendMessageToServer(message);
+    }
 }

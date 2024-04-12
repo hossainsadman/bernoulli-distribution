@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.UnknownHostException;
 
+import java.util.Map;
+import java.util.HashMap;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -17,7 +20,7 @@ import shared.messages.KVMessage;
 
 public class KVClient implements IKVClient {
     private static Logger logger = Logger.getRootLogger();
-    private static final String PROMPT = "M3-Client> ";
+    private static final String PROMPT = "M4-Client> ";
 
     private static final int MAX_KEY_LEN = 20;
     private static final int MAX_KEY_VAL = 120 * 1024; // 120KB
@@ -64,6 +67,9 @@ public class KVClient implements IKVClient {
 
         sb.append(PROMPT).append("keyrange_read");
         sb.append("\t\t\t retrieve key ranges of the KV Servers including replicas \n");
+
+        sb.append(PROMPT).append("sql <query>");
+        sb.append("\t\t\t run sql commands (create table, update, add/remove rows) \n");
 
         sb.append(PROMPT).append("logLevel");
         sb.append("\t\t\t changes the logLevel \n");
@@ -197,6 +203,63 @@ public class KVClient implements IKVClient {
                 }
             } else {
                 printError("Not connected to server!");
+            }
+        } else if (tokens[0].equals("sqlcreate")) {
+            if (tokens.length >= 3) {
+                if (kvStore != null) {
+                    String tableName = tokens[1];
+                    StringBuilder colPairs = new StringBuilder();
+                    colPairs.setLength(0);
+
+                    for (int i = 2; i < tokens.length; i++) {
+                        colPairs.append(tokens[i]);
+                        if (i != tokens.length - 1) {
+                            colPairs.append(" ");
+                        }
+                    }
+
+                    try {
+                        boolean validSqlCreate = true;
+                        String[] pairs = colPairs.toString().split(",");
+                        Map<String, String> cols = new HashMap<>();
+                        for (String pair : pairs) {
+                            String[] parts = pair.split(":");
+                            if (parts.length != 2) {
+                                System.out.println(PROMPT + "Invalid column pair: " + pair);
+                                validSqlCreate = false;
+                            }
+                            String name = parts[0];
+                            String type = parts[1];
+                            if (!type.equals("int") && !type.equals("text")) {
+                                System.out.println(PROMPT + "Invalid type for column " + name + ": " + type);
+                                validSqlCreate = false;
+                            }
+                            if (cols.containsKey(name)) {
+                                System.out.println(PROMPT + "Column name " + name + " is repeated");
+                                validSqlCreate = false;
+                            }
+                            cols.put(name, type);
+                        }
+
+                        if (validSqlCreate) {
+                            KVMessage msg = kvStore.sqlcreate(tableName, colPairs.toString());
+                            if (msg != null) {
+                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                            } else {
+                                System.out.println(PROMPT + "SQL CREATE ERROR: null msg!");
+                            }
+                        } else {
+                            printError("Invalid sqlcreate!");
+                            logger.error("Invalid sqlcreate!");
+                        }
+                    } catch (Exception e) {
+                        logger.error("sqlcreate to server failed!", e);
+                    }
+                } else {
+                    printError("Not connected to server!");
+                }
+            } else {
+                printError("No sqlcreate values provided!");
             }
         } else if (tokens[0].equals("connect")) {
             if (tokens.length == 3) {

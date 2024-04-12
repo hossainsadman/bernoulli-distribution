@@ -33,6 +33,10 @@ public interface KVMessage {
         KEYRANGE_READ_SUCCESS,
 
         GET_ALL_KEYS,
+
+        SQLCREATE,
+        SQLCREATE_SUCCESS,
+        SQLCREATE_ERROR,
     }
 
     /**

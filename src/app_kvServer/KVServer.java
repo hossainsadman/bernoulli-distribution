@@ -14,7 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.net.ServerSocket;
 import java.net.Socket;
 import logger.LogSetup;
-import org.apache.log4j.Logger; // import Logger
+import org.apache.log4j.Logger; // import logger
 import org.apache.commons.cli.*;
 
 import shared.messages.KVMessage;
@@ -72,6 +72,8 @@ public class KVServer implements IKVServer {
 
     private Replicator replicator;
 
+    private Map<String, SQLTable> sqlTables;
+
     public KVServer(int port, int cacheSize, String strategy, Boolean connectEcs) {
         if (port < 1024 || port > 65535)
             throw new IllegalArgumentException("port is out of range.");
@@ -85,7 +87,8 @@ public class KVServer implements IKVServer {
         this.ecsPort = ECS.getDefaultECSPort();
         this.connectEcs = connectEcs;
         this.replicator = new Replicator(this);
-
+        this.sqlTables = new HashMap<>();
+        
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
             this.cache = null;
@@ -142,6 +145,7 @@ public class KVServer implements IKVServer {
         this.status = KVMessage.StatusType.SERVER_ACTIVE;
         this.connectEcs = connectEcs;
         this.replicator = new Replicator(this);
+        this.sqlTables = new HashMap<>();
 
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
@@ -200,6 +204,7 @@ public class KVServer implements IKVServer {
         this.ecsHost = ecsHost;
         this.ecsPort = ecsPort;
         this.replicator = new Replicator(this);
+        this.sqlTables = new HashMap<>();
 
         if (strategy == null) {
             this.strategy = CacheStrategy.None;
@@ -244,6 +249,24 @@ public class KVServer implements IKVServer {
         });
 
         serverThread.start(); // Start the thread
+    }
+
+    public SQLTable createSQLTable(String tableName, String primaryKey, Map<String, String> cols) {
+        SQLTable newTable = new SQLTable(primaryKey);
+        for (Map.Entry<String, String> entry : cols.entrySet()) {
+            String colName = entry.getKey();
+            String colType = entry.getValue();
+            Class<?> typeClass;
+            if (colType.equals("int")) {
+                typeClass = Integer.class;
+            } else if (colType.equals("text")) {
+                typeClass = String.class;
+            } else {
+                throw new IllegalArgumentException("Invalid type for column " + colName + ": " + colType);
+            }
+            newTable.addCol(colName, typeClass);
+        }
+        return newTable;
     }
 
     public void removeKeys(){
@@ -540,6 +563,93 @@ public class KVServer implements IKVServer {
         return StatusType.PUT_SUCCESS;
     }
 
+    public synchronized StatusType sqlCreate(String key, String value) throws Exception {
+        if (write_lock) {
+            return StatusType.SERVER_WRITE_LOCK;
+        }
+
+        if (value.equals(""))
+            throw new Exception("empty sql create value");
+
+        // if (value.equals("null")) {
+        //     File fileToDel = new File(dirPath, escape(key));
+        //     if (!fileToDel.exists() || fileToDel.isDirectory() || !fileToDel.delete())
+        //         throw new Exception("unable to delete tuple");
+
+        //     cache.remove(escape(key));
+
+        //     return StatusType.DELETE_SUCCESS;
+        // }
+
+        // if (inStorage(escape(key))) { // Key is already in storage (i.e. UPDATE)
+        //     try (FileWriter writer = new FileWriter(file, false)) { // overwrite
+        //         writer.write(value);
+        //         if (this.cache != null)
+        //             cache.put(escape(key), value);
+        //     }
+
+        //     return StatusType.PUT_UPDATE;
+        // }
+
+        // // Key is not in storage (i.e. PUT)
+        // try (FileWriter writer = new FileWriter(file)) {
+        //     writer.write(value);
+        //     if (this.cache != null)
+        //         cache.put(escape(key), value);
+        // }
+        // return StatusType.PUT_SUCCESS;
+
+        if (sqlTables.containsKey(key)) {
+            throw new Exception("A table with the same name already exists");
+        }
+
+        boolean validSqlCreate = true;
+        String[] colPairs = value.split(",");
+        Map<String, String> cols = new HashMap<>();
+        for (String pair : colPairs) {
+            String[] parts = pair.split(":");
+            if (parts.length != 2) {
+                this.logger.error("Invalid column pair: " + pair);
+                validSqlCreate = false;
+                break;
+            }
+            String name = parts[0];
+            String type = parts[1];
+            if (!type.equals("int") && !type.equals("text")) {
+                this.logger.error("Invalid type for column " + name + ": " + type);
+                validSqlCreate = false;
+                break;
+            }
+            if (cols.containsKey(name)) {
+                this.logger.error("Column name " + name + " is repeated");
+                validSqlCreate = false;
+                break;
+            }
+            cols.put(name, type);
+        }
+
+        if (!validSqlCreate) {
+            return StatusType.SQLCREATE_ERROR;
+        }
+
+        if (validSqlCreate) {
+            for (Map.Entry<String, String> entry : cols.entrySet()) {
+                String name = entry.getKey();
+                String type = entry.getValue();
+                logger.info("Column name: " + name + ", Type: " + type);
+            }
+        }
+
+        String primaryKey = cols.keySet().iterator().next();
+        SQLTable table = createSQLTable(key, primaryKey, cols);
+        sqlTables.put(key, table);
+
+        // Print out the table
+        this.logger.info(table.toString());
+
+        return StatusType.SQLCREATE_SUCCESS;
+    }
+
     /*
      * Helper Function to Monitor the State of Current KVs in Storage and Cache
      */
@@ -611,14 +721,14 @@ public class KVServer implements IKVServer {
                     System.out.println(hashRing.toString());
 
 
-                    if(metadata != null) logger.info("Old hashrange: " + metadata.toString());
+                    if(metadata != null) this.logger.info("Old hashrange: " + metadata.toString());
                     setMetadata(hashRing.getNodeForIdentifier(getHostaddress() + ":" + String.valueOf(this.getPort())));
-                    if(metadata != null) logger.info("Up to date hashrange: " + metadata.toString());
+                    if(metadata != null) this.logger.info("Up to date hashrange: " + metadata.toString());
                     break;
                 }
 
                 case TRANSFER_FROM:{
-                    logger.info("Received TRANSFER_FROM command from ECS");
+                    this.logger.info("Received TRANSFER_FROM command from ECS");
                     ECSNode toNode = (ECSNode) message.getParameter("TO_NODE");
                     // get keys to transfer
                     
@@ -636,7 +746,7 @@ public class KVServer implements IKVServer {
                 }
                 
                 case RECEIVE:{
-                    logger.info("Received RECIEVE command from ECS");
+                    this.logger.info("Received RECIEVE command from ECS");
                     ECSNode fromNode = (ECSNode) message.getParameter("FROM_NODE");
                     
                     this.write_lock = true;
@@ -666,7 +776,7 @@ public class KVServer implements IKVServer {
                 }
 
                 case TRANSFER_COMPLETE:{
-                    logger.info("Received TRANSFER_COMPLETE command from ECS");
+                    this.logger.info("Received TRANSFER_COMPLETE command from ECS");
                     for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
                         try {
                             putKV(entry.getKey(), "null");
@@ -691,10 +801,9 @@ public class KVServer implements IKVServer {
 
     public void connectECS() {
         if (ecsHost != null && ecsPort > -1) {
-            System.out.println("Here");
             try {
                 ecsSocket = new Socket(ecsHost, ecsPort);
-                logger.info("Connected to ECS at " + ecsHost + ":" + ecsPort + " via "
+                this.logger.info("Connected to ECS at " + ecsHost + ":" + ecsPort + " via "
                         + ecsSocket.getInetAddress().getHostAddress()
                         + ":" + ecsSocket.getLocalPort());
 
@@ -731,15 +840,15 @@ public class KVServer implements IKVServer {
         try {
             serverSocket = new ServerSocket(port);
             if (ecsHost != null && ecsPort >= 0)
-                logger.info("Started server listening at: " + "(" + serverSocket.getInetAddress().getHostName() + ") "
+                this.logger.info("Started server listening at: " + "(" + serverSocket.getInetAddress().getHostName() + ") "
                         + serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getLocalPort()
                         + "; cache size: "
                         + cacheSize + "; cache strategy: " + strategy + "; ECS set to: " + ecsHost + ":" + ecsPort);
 
         } catch (IOException e) {
-            logger.error("Server Socket cannot be opened: ");
+            this.logger.error("Server Socket cannot be opened: ");
             if (e instanceof BindException)
-                logger.error("Port " + port + " is already bound.");
+                this.logger.error("Port " + port + " is already bound.");
             return;
         }
 
@@ -758,14 +867,14 @@ public class KVServer implements IKVServer {
                     ClientConnection connection = new ClientConnection(this, clientSocket);
                     connections.add(connection);
                     new Thread(connection).start();
-                    logger.info("Connected to " + "(" + clientSocket.getInetAddress().getHostName() + ") "
+                    this.logger.info("Connected to " + "(" + clientSocket.getInetAddress().getHostName() + ") "
                             + clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort());
                 } catch (IOException e) {
-                    logger.error("Unable to establish connection.\n", e);
+                    this.logger.error("Unable to establish connection.\n", e);
                 }
             }
         }
-        logger.info("Server is stopped.");
+        this.logger.info("Server is stopped.");
         close();
     }
 
@@ -775,7 +884,7 @@ public class KVServer implements IKVServer {
         try {
             serverSocket.close();
         } catch (IOException e) {
-            logger.error("Unable to close socket on port: " + port, e);
+            this.logger.error("Unable to close socket on port: " + port, e);
         }
 
     }
@@ -833,7 +942,7 @@ public class KVServer implements IKVServer {
                 }
             }
         }
-        logger.info("KVPairs not responsible for: " + kvPairs.toString());
+        this.logger.info("KVPairs not responsible for: " + kvPairs.toString());
         return kvPairs;
     }
 
@@ -860,7 +969,7 @@ public class KVServer implements IKVServer {
                 kvPairs.put(unescape(key), getKV(unescape(key)));
             }
         }
-        logger.info("KVPairs responsible for: " + kvPairs.toString());
+        this.logger.info("KVPairs responsible for: " + kvPairs.toString());
         return kvPairs;
     }
 
@@ -917,7 +1026,7 @@ public class KVServer implements IKVServer {
         }
 
         if (cmd.hasOption("help")) {
-            formatter.printHelp("m3-server.jar", options);
+            formatter.printHelp("m4-server.jar", options);
             System.exit(0);
         }
 

@@ -181,6 +181,41 @@ public class ClientConnection implements Runnable {
             }
 
         } 
+        else if (recvStatus == StatusType.SQLCREATE && recvKey != null && recvVal != null) {
+            if(this.server.isCoordinator(KVServer.escape(recvKey))){
+                /*
+                * tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS
+                * <key> <value>
+                * tuple successfully updated, send acknowledgement to client: PUT_UPDATE <key>
+                * <value>
+                * unable to insert tuple, send error message to client: PUT_ERROR <key> <value>
+                */
+
+                try {
+                    StatusType sqlCreateStatus;
+                    sqlCreateStatus = server.sqlCreate(recvKey, recvVal);
+                    res = new BasicKVMessage(sqlCreateStatus, recvKey, recvVal);
+
+                    // if (sqlCreateStatus != StatusType.SERVER_WRITE_LOCK){
+                    //     if (this.server.replicate(recvKey, recvVal)){
+                    //         this.logger.info("Replication success");
+                    //     } else {
+                    //         this.logger.info("Replication failure");
+                    //     }
+                    // }
+
+                } catch (Exception e) {
+                    res = new BasicKVMessage(StatusType.SQLCREATE_ERROR, recvKey, recvVal);
+                }
+            } else {
+                if(recvLocolProtocol){
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
+                } else{
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, null, null);
+                }
+            }
+
+        }
         else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { 
             // message size exceeded
             res = new BasicKVMessage(StatusType.FAILED, recvKey, null);
