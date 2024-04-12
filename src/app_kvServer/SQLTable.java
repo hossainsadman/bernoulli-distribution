@@ -5,10 +5,12 @@ import java.util.*;
 public class SQLTable {
     public String name;
     private List<String> cols;
+    private Map<String, Class<?>> colTypes;
     private List<Map<String, Object>> rows;
 
     public SQLTable() {
         this.cols = new ArrayList<>();
+        this.colTypes = new HashMap<>();
         this.rows = new ArrayList<>();
     }
 
@@ -28,8 +30,9 @@ public class SQLTable {
         return sb.toString();
     }
 
-    public void addCol(String colName) {
+    public void addCol(String colName, Class<?> colType) {
         cols.add(colName);
+        colTypes.put(colName, colType);
         for (Map<String, Object> row : rows) {
             row.put(colName, null);
         }
@@ -37,6 +40,7 @@ public class SQLTable {
 
     public void removeCol(String colName) {
         cols.remove(colName);
+        colTypes.remove(colName);
         for (Map<String, Object> row : rows) {
             row.remove(colName);
         }
@@ -46,6 +50,11 @@ public class SQLTable {
         for (String col : cols) {
             if (!row.containsKey(col)) {
                 row.put(col, null);
+            } else {
+                Class<?> colType = colTypes.get(col);
+                if (!colType.isInstance(row.get(col))) {
+                    throw new IllegalArgumentException("Incompatible type for column " + col);
+                }
             }
         }
         rows.add(row);
@@ -93,9 +102,10 @@ public class SQLTable {
 
         SQLTable derivedTable = new SQLTable();
         derivedTable.cols = new ArrayList<>(this.cols);
+        derivedTable.colTypes = new HashMap<>(this.colTypes);
 
         for (Map<String, Object> row : result) {
-            derivedTable.addRow(new HashMap<>(row));
+            derivedTable.addRow(row);
         }
 
         return derivedTable;
@@ -126,23 +136,23 @@ public class SQLTable {
     public static void main(String[] args) {
         SQLTable table = new SQLTable();
     
-        table.addCol("col1");
-        table.addCol("col2");
-        table.addCol("col3");
-        table.addCol("col4"); // Added column for strings
+        table.addCol("col1", Integer.class);
+        table.addCol("col2", Integer.class);
+        table.addCol("col3", Integer.class);
+        table.addCol("col4", String.class);
     
         Map<String, Object> row1 = new HashMap<>();
         row1.put("col1", 1);
         row1.put("col2", 2);
         row1.put("col3", 3);
-        row1.put("col4", "a"); // Added string value
+        row1.put("col4", "a");
         table.addRow(row1);
     
         Map<String, Object> row2 = new HashMap<>();
         row2.put("col1", 4);
         row2.put("col2", 5);
         row2.put("col3", 6);
-        row2.put("col4", "b"); // Added string value
+        row2.put("col4", "b");
         table.addRow(row2);
     
         System.out.println(table);
@@ -153,6 +163,13 @@ public class SQLTable {
         List<SQLTable.Condition> conditions = new ArrayList<>();
         conditions.add(new SQLTable.Condition("col1", 0, SQLTable.Comparison.GREATER_THAN));
         conditions.add(new SQLTable.Condition("col3", 3, SQLTable.Comparison.EQUALS));
+        conditions.add(new SQLTable.Condition("col4", "a", SQLTable.Comparison.EQUALS));
+
+        /* invalid type comparison for select */
+
+        // conditions.add(new SQLTable.Condition("col1", "a", SQLTable.Comparison.EQUALS));
+        // conditions.add(new SQLTable.Condition("col4", 1, SQLTable.Comparison.EQUALS));
+
         SQLTable selectedTable = table.select(conditions);
         System.out.println(selectedTable);
     }
