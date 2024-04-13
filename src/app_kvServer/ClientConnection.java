@@ -259,6 +259,42 @@ public class ClientConnection implements Runnable {
                 }
             }
 
+        } 
+        else if (recvStatus == StatusType.SQLINSERT && recvKey != null && recvVal != null) {
+            if(this.server.isCoordinator(KVServer.escape(recvKey))){
+                /*
+                * tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS
+                * <key> <value>
+                * tuple successfully updated, send acknowledgement to client: PUT_UPDATE <key>
+                * <value>
+                * unable to insert tuple, send error message to client: PUT_ERROR <key> <value>
+                */
+
+                try {
+                    StatusType sqlInsertStatus;
+                    sqlInsertStatus = server.sqlInsert(recvKey, recvVal);
+                    res = new BasicKVMessage(sqlInsertStatus, recvKey, recvVal);
+
+                    // if (sqlInsertStatus != StatusType.SERVER_WRITE_LOCK){
+                    //     if (this.server.replicate(recvKey, recvVal)){
+                    //         this.logger.info("Replication success");
+                    //     } else {
+                    //         this.logger.info("Replication failure");
+                    //     }
+                    // }
+
+                } catch (Exception e) {
+                    res = new BasicKVMessage(StatusType.SQLINSERT_ERROR, recvKey, recvVal);
+                    this.logger.error("Error occurred during SQLINSERT: " + e.getMessage());
+                }
+            } else {
+                if(recvLocolProtocol){
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
+                } else{
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, null, null);
+                }
+            }
+
         }
         else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { 
             // message size exceeded

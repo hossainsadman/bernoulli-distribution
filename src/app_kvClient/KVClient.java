@@ -154,7 +154,7 @@ public class KVClient implements IKVClient {
         return true;
     }
 
-    public boolean checkValidJson(String str) {
+    public static boolean checkValidJson(String str) {
         try {
             jsonParser.parse(str);
             return true;
@@ -332,44 +332,48 @@ public class KVClient implements IKVClient {
                 printError("No sqldrop values provided!");
             }
         } else if (tokens[0].equals("sqlinsert")) {
-            if (tokens.length == 3) {
-                // if (kvStore != null) {
+            if (tokens.length >= 3) {
+                if (kvStore != null) {
                     String tableName = tokens[1];
-                    String row = tokens[2];
-                    boolean valid = true;
+                    StringBuilder row = new StringBuilder();
+                    for (int i = 2; i < tokens.length; i++) {
+                        row.append(tokens[i]);
+                        if (i != tokens.length - 1) {
+                            row.append(" ");
+                        }
+                    }
                     
                     try {
+                        boolean valid = true;
                         if (!checkValidKey(tableName)) {
                             printError("Invalid sqlinsert table name!");
                             logger.error("Invalid sqlinsert table name!");
                             valid = false;
                         }
-                        if (!checkValidJson(row)) {
+                        if (!checkValidJson(row.toString())) {
                             printError("Invalid sqlinsert table row!");
                             logger.error("Invalid sqlinsert table row!");
                             valid = false;
                         }
 
                         if (valid) {
-                            JsonElement jsonElement = jsonParser.parse(row);
-                            if (jsonElement.isJsonObject()) {
-                                JsonObject jsonObject = jsonElement.getAsJsonObject();
-                                for (String key : jsonObject.keySet()) {
-                                    JsonElement value = jsonObject.get(key);
-                                    System.out.println(key + ": " + value);
-                                }
+                            KVMessage msg = kvStore.sqlinsert(tableName, row.toString());
+                            if (msg != null) {
+                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
                             } else {
-                                printError("Invalid JSON format!");
-                                logger.error("Invalid JSON format!");
+                                System.out.println(PROMPT + "sqlinsert ERROR: null msg!");
                             }
+                        } else {
+                            printError("Invalid sqlinsert!");
+                            logger.error("Invalid sqlinsert!");
                         }
 
                     } catch (Exception e) {
                         logger.error("sqlinsert to server failed!", e);
                     }
-                // } else {
-                //     printError("Not connected to server!");
-                // }
+                } else {
+                    printError("Not connected to server!");
+                }
             } else {
                 printError("No sqlinsert values provided!");
             }

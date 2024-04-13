@@ -45,6 +45,10 @@ public interface KVMessage {
         SQLDROP,
         SQLDROP_SUCCESS,
         SQLDROP_ERROR,
+
+        SQLINSERT,
+        SQLINSERT_SUCCESS,
+        SQLINSERT_ERROR,
     }
 
     /**

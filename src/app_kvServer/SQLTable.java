@@ -9,8 +9,8 @@ import java.util.Iterator;
 public class SQLTable {
     public String name;
     private String primaryKey;
-    private List<String> cols;
-    private Map<String, Class<?>> colTypes;
+    public List<String> cols;
+    public Map<String, Class<?>> colTypes;
     private Map<Object, Map<String, Object>> rows;
 
     public SQLTable(String name, String primaryKey) {
@@ -74,10 +74,10 @@ public class SQLTable {
             if (!row.containsKey(col)) {
                 row.put(col, null);
             } else {
-                Class<?> colType = colTypes.get(col);
-                if (!colType.isInstance(row.get(col))) {
-                    throw new IllegalArgumentException("Incompatible type for column " + col);
-                }
+                // Class<?> colType = colTypes.get(col);
+                // if (!colType.isInstance(row.get(col))) {
+                //     throw new IllegalArgumentException("Incompatible type for column " + col);
+                // }
             }
         }
         rows.put(key, row);

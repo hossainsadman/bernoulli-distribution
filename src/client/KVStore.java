@@ -200,4 +200,14 @@ public class KVStore implements KVCommInterface {
 
         return this.sendMessageToServer(message);
     }
+
+    public BasicKVMessage sqlinsert(String key, String value) throws Exception {
+        BasicKVMessage invalidParametersError = this.validateKeyValuePair(key, value);
+        if (invalidParametersError != null)
+            return invalidParametersError;
+            
+        BasicKVMessage message = new BasicKVMessage(StatusType.SQLINSERT, key, value);
+
+        return this.sendMessageToServer(message);
+    }
 }
