@@ -584,34 +584,6 @@ public class KVServer implements IKVServer {
         if (value.equals(""))
             throw new Exception("empty sql create value");
 
-        // if (value.equals("null")) {
-        //     File fileToDel = new File(dirPath, escape(key));
-        //     if (!fileToDel.exists() || fileToDel.isDirectory() || !fileToDel.delete())
-        //         throw new Exception("unable to delete tuple");
-
-        //     cache.remove(escape(key));
-
-        //     return StatusType.DELETE_SUCCESS;
-        // }
-
-        // if (inStorage(escape(key))) { // Key is already in storage (i.e. UPDATE)
-        //     try (FileWriter writer = new FileWriter(file, false)) { // overwrite
-        //         writer.write(value);
-        //         if (this.cache != null)
-        //             cache.put(escape(key), value);
-        //     }
-
-        //     return StatusType.PUT_UPDATE;
-        // }
-
-        // // Key is not in storage (i.e. PUT)
-        // try (FileWriter writer = new FileWriter(file)) {
-        //     writer.write(value);
-        //     if (this.cache != null)
-        //         cache.put(escape(key), value);
-        // }
-        // return StatusType.PUT_SUCCESS;
-
         if (sqlTables.containsKey(key)) {
             throw new Exception("A table with the same name already exists");
         }
@@ -689,33 +661,76 @@ public class KVServer implements IKVServer {
         if (value.equals(""))
             throw new Exception("empty sql insert value");
 
-        // if (value.equals("null")) {
-        //     File fileToDel = new File(dirPath, escape(key));
-        //     if (!fileToDel.exists() || fileToDel.isDirectory() || !fileToDel.delete())
-        //         throw new Exception("unable to delete tuple");
+        if (!sqlTables.containsKey(key)) {
+            this.logger.error("table does not exist");
+            throw new Exception("table does not exist");
+        }
 
-        //     cache.remove(escape(key));
+        if (!checkValidJson(value)) {
+            this.logger.error("table row has invalid formatting");
+            throw new Exception("table row has invalid formatting");
+        }
 
-        //     return StatusType.DELETE_SUCCESS;
-        // }
+        SQLTable table = sqlTables.get(key);
+        Map<String, String> rowMap = new HashMap<>();
 
-        // if (inStorage(escape(key))) { // Key is already in storage (i.e. UPDATE)
-        //     try (FileWriter writer = new FileWriter(file, false)) { // overwrite
-        //         writer.write(value);
-        //         if (this.cache != null)
-        //             cache.put(escape(key), value);
-        //     }
+        JsonElement jsonElement = null;
+        try {
+            jsonElement = jsonParser.parse(value);
+        } catch (JsonParseException e) {
+            this.logger.error("Invalid JSON format: " + e.getMessage());
+        }
 
-        //     return StatusType.PUT_UPDATE;
-        // }
+        try {
+            if (jsonElement != null && jsonElement.isJsonObject()) {
+                JsonObject jsonObject = jsonElement.getAsJsonObject();
+                for (String jsonKey : jsonObject.keySet()) {
+                    try {
+                        JsonElement elem = jsonObject.get(jsonKey);
+                        if (table.cols.contains(jsonKey)) {
+                            String colValue = elem.getAsString();
+                            if (table.colTypes.get(jsonKey).equals("int")) {
+                                try {
+                                    Integer.parseInt(colValue);
+                                } catch (NumberFormatException e) {
+                                    this.logger.error("Value for column " + jsonKey + " must be an integer");
+                                    return StatusType.SQLINSERT_ERROR;
+                                }
+                            }
+                            rowMap.put(jsonKey, colValue);
+                        } else {
+                            this.logger.error(jsonKey + " is not a column in table" + key);
+                            return StatusType.SQLINSERT_ERROR;
+                        }
+                    } catch (Exception e) {
+                        this.logger.error(e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            this.logger.error("Error adding row to table: " + e.getMessage());
+            return StatusType.SQLINSERT_ERROR;
+        }
 
-        // // Key is not in storage (i.e. PUT)
-        // try (FileWriter writer = new FileWriter(file)) {
-        //     writer.write(value);
-        //     if (this.cache != null)
-        //         cache.put(escape(key), value);
-        // }
-        // return StatusType.PUT_SUCCESS;
+        try {
+            table.addRow(rowMap);
+        } catch (Exception e) {
+            this.logger.error("Error adding row to table: " + e.getMessage());
+            return StatusType.SQLINSERT_ERROR;
+        }
+
+        this.logger.info(table.toString());
+        return StatusType.SQLINSERT_SUCCESS;
+    }
+    
+    public synchronized StatusType sqlUpdate(String key, String value) throws Exception {
+        if (write_lock) {
+            return StatusType.SERVER_WRITE_LOCK;
+        }
+
+        if (value.equals(""))
+            throw new Exception("empty sql insert value");
+
 
         if (!sqlTables.containsKey(key)) {
             this.logger.error("table does not exist");
@@ -744,26 +759,19 @@ public class KVServer implements IKVServer {
                     try {
                         JsonElement elem = jsonObject.get(jsonKey);
                         if (table.cols.contains(jsonKey)) {
+                            String colValue = elem.getAsString();
                             if (table.colTypes.get(jsonKey).equals("int")) {
                                 try {
-                                    String colType = table.colTypes.get(jsonKey);
-                                    String colName = jsonKey;
-                                    String colValue = elem.getAsString();
-                                    this.logger.info("Column Type: " + colType);
-                                    this.logger.info("Column Name: " + colName);
-                                    this.logger.info("Column Value: " + colValue);
                                     Integer.parseInt(colValue);
-                                    rowMap.put(jsonKey, colValue);
                                 } catch (NumberFormatException e) {
                                     this.logger.error("Value for column " + jsonKey + " must be an integer");
-                                    return StatusType.SQLINSERT_ERROR;
+                                    return StatusType.SQLUPDATE_ERROR;
                                 }
-                            } else {
-                                rowMap.put(jsonKey, elem.getAsString());
                             }
+                            rowMap.put(jsonKey, colValue);
                         } else {
                             this.logger.error(jsonKey + " is not a column in table" + key);
-                            return StatusType.SQLINSERT_ERROR;
+                            return StatusType.SQLUPDATE_ERROR;
                         }
                     } catch (Exception e) {
                         this.logger.error(e.getMessage());
@@ -772,18 +780,18 @@ public class KVServer implements IKVServer {
             }
         } catch (Exception e) {
             this.logger.error("Error adding row to table: " + e.getMessage());
-            return StatusType.SQLINSERT_ERROR;
+            return StatusType.SQLUPDATE_ERROR;
         }
 
         try {
-            table.addRow(rowMap);
+            table.updateRow(rowMap);
         } catch (Exception e) {
             this.logger.error("Error adding row to table: " + e.getMessage());
-            return StatusType.SQLINSERT_ERROR;
+            return StatusType.SQLUPDATE_ERROR;
         }
 
         this.logger.info(table.toString());
-        return StatusType.SQLINSERT_SUCCESS;
+        return StatusType.SQLUPDATE_SUCCESS;
     }
 
     /*

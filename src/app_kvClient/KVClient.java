@@ -377,6 +377,52 @@ public class KVClient implements IKVClient {
             } else {
                 printError("No sqlinsert values provided!");
             }
+        } else if (tokens[0].equals("sqlupdate")) {
+            if (tokens.length >= 3) {
+                if (kvStore != null) {
+                    String tableName = tokens[1];
+                    StringBuilder row = new StringBuilder();
+                    for (int i = 2; i < tokens.length; i++) {
+                        row.append(tokens[i]);
+                        if (i != tokens.length - 1) {
+                            row.append(" ");
+                        }
+                    }
+                    
+                    try {
+                        boolean valid = true;
+                        if (!checkValidKey(tableName)) {
+                            printError("Invalid sqlupdate table name!");
+                            logger.error("Invalid sqlupdate table name!");
+                            valid = false;
+                        }
+                        if (!checkValidJson(row.toString())) {
+                            printError("Invalid sqlupdate table row!");
+                            logger.error("Invalid sqlupdate table row!");
+                            valid = false;
+                        }
+
+                        if (valid) {
+                            KVMessage msg = kvStore.sqlupdate(tableName, row.toString());
+                            if (msg != null) {
+                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                            } else {
+                                System.out.println(PROMPT + "sqlupdate ERROR: null msg!");
+                            }
+                        } else {
+                            printError("Invalid sqlupdate!");
+                            logger.error("Invalid sqlupdate!");
+                        }
+
+                    } catch (Exception e) {
+                        logger.error("sqlupdate to server failed!", e);
+                    }
+                } else {
+                    printError("Not connected to server!");
+                }
+            } else {
+                printError("No sqlupdate values provided!");
+            }
         } else if (tokens[0].equals("connect")) {
             if (tokens.length == 3) {
                 String serverAddress = tokens[1];

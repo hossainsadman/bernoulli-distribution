@@ -161,8 +161,9 @@ public class SQLTable {
         }
     }
 
-    public void updateRow(String primaryKey, Map<String, String> newRow) {
-        Map<String, String> row = rows.get(primaryKey);
+    public void updateRow(Map<String, String> newRow) {
+        String primaryKeyValue = newRow.get(primaryKey);
+        Map<String, String> row = rows.get(primaryKeyValue);
         if (row == null) {
             throw new IllegalArgumentException("No row with the given primary key exists");
         }
@@ -281,7 +282,7 @@ public class SQLTable {
     
     //     Map<String, String> row1 = new HashMap<>();
     //     row1.put("col1", "1");
-    //     row1.put("col2", "bbb");
+    //     row1.put("col2", "2");
     //     row1.put("col3", "3");
     //     row1.put("col4", "a");
     //     table.addRow(row1);
@@ -293,10 +294,10 @@ public class SQLTable {
     //     row2.put("col4", "b");
     //     table.addRow(row2);
     
-    //     System.out.println(table);
+    //     System.out.println(table.toStringTable());
     
     //     table.removeCol("col2");
-    //     System.out.println(table);
+    //     System.out.println(table.toStringTable());
     
     //     List<SQLTable.Condition> conditions = new ArrayList<>();
     //     conditions.add(new SQLTable.Condition("col1", "0", SQLTable.Comparison.GREATER_THAN));
@@ -317,14 +318,14 @@ public class SQLTable {
     //     updatedRow.put("col2", "20");
     //     updatedRow.put("col3", "30");
     //     updatedRow.put("col4", "updated");
-    //     table.updateRow("1", updatedRow);
-    //     System.out.println(table);
+    //     table.updateRow(updatedRow);
+    //     System.out.println(table.toStringTable());
         
     //     System.out.println("TEST: deleteRows");
     //     List<SQLTable.Condition> deleteConditions = new ArrayList<>();
-    //     deleteConditions.add(new SQLTable.Condition("col1", "0", SQLTable.Comparison.GREATER_THAN));
+    //     deleteConditions.add(new SQLTable.Condition("col1", "2", SQLTable.Comparison.GREATER_THAN));
     //     table.deleteRows(deleteConditions);
-    //     System.out.println(table);
+    //     System.out.println(table.toStringTable());
     // }
 
 }
