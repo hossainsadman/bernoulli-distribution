@@ -31,6 +31,7 @@ public class KVStore implements KVCommInterface {
 
     private static final int MAX_KEY_BYTES = 20;
     private static final int MAX_VALUE_BYTES = 120 * 1024; // 120 kB
+    private static final int MAX_SQL_BYTES = 120 * 1024; // 120 kB
 
     public int maxRetries = 10;
     public boolean testing = false;
@@ -167,12 +168,23 @@ public class KVStore implements KVCommInterface {
         return null;
     }
 
+    private BasicKVMessage validateSqlCmd(String key, String value) {
+        if (key.length() > MAX_SQL_BYTES || key.isEmpty())
+            return new BasicKVMessage(StatusType.INVALID_KEY, "Key must be non-empty and less than or equal to 20 bytes",
+                    null);
+
+        if (value != null && value.length() > MAX_SQL_BYTES)
+            return new BasicKVMessage(StatusType.INVALID_VALUE, "Value must be less than or equal to 120 kilobytes", null);
+
+        return null;
+    }
+
 	public ECSHashRing getMetaData() {
 		return this.metaData;
 	}
 
     public BasicKVMessage sqlcreate(String key, String value) throws Exception {
-        BasicKVMessage invalidParametersError = this.validateKeyValuePair(key, value);
+        BasicKVMessage invalidParametersError = this.validateSqlCmd(key, value);
         if (invalidParametersError != null)
             return invalidParametersError;
             
@@ -182,7 +194,7 @@ public class KVStore implements KVCommInterface {
     }
 
     public BasicKVMessage sqlselect(String key) throws Exception {
-        BasicKVMessage invalidParametersError = this.validateKeyValuePair(key, null);
+        BasicKVMessage invalidParametersError = this.validateSqlCmd(key, null);
         if (invalidParametersError != null)
             return invalidParametersError;
             
@@ -192,7 +204,7 @@ public class KVStore implements KVCommInterface {
     }
 
     public BasicKVMessage sqldrop(String key) throws Exception {
-        BasicKVMessage invalidParametersError = this.validateKeyValuePair(key, null);
+        BasicKVMessage invalidParametersError = this.validateSqlCmd(key, null);
         if (invalidParametersError != null)
             return invalidParametersError;
             
@@ -202,7 +214,7 @@ public class KVStore implements KVCommInterface {
     }
 
     public BasicKVMessage sqlinsert(String key, String value) throws Exception {
-        BasicKVMessage invalidParametersError = this.validateKeyValuePair(key, value);
+        BasicKVMessage invalidParametersError = this.validateSqlCmd(key, value);
         if (invalidParametersError != null)
             return invalidParametersError;
             
@@ -212,7 +224,7 @@ public class KVStore implements KVCommInterface {
     }
 
     public BasicKVMessage sqlupdate(String key, String value) throws Exception {
-        BasicKVMessage invalidParametersError = this.validateKeyValuePair(key, value);
+        BasicKVMessage invalidParametersError = this.validateSqlCmd(key, value);
         if (invalidParametersError != null)
             return invalidParametersError;
             

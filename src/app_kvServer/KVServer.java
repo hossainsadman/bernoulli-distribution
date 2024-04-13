@@ -636,12 +636,25 @@ public class KVServer implements IKVServer {
     }
 
     public String sqlSelect(String key) throws Exception {
-        if (!sqlTables.containsKey(key)) {
-            throw new Exception("table not found");
-        }
+        if (key.contains(" ")) {
+            String[] parts = key.split("\\s+from\\s+|\\s+where\\s+");
+            if (parts.length < 2 || parts.length > 3) {
+                throw new Exception("invalid sql select query");
+            }
 
-        SQLTable table = sqlTables.get(key);
-        return table.toStringTable();
+            String columnNames = parts[0];
+            String tableName = parts[1];
+            String conditions = parts.length == 3 ? parts[2] : null;
+
+            return "Column Names: " + columnNames + "\n" + "Table Name: " + tableName + "\n" + "Conditions: " + conditions;
+        } else {
+            if (!sqlTables.containsKey(key)) {
+                throw new Exception("table not found");
+            }
+
+            SQLTable table = sqlTables.get(key);
+            return table.toStringTable();
+        }
     }
 
     public String sqlDrop(String key) throws Exception {
@@ -779,14 +792,14 @@ public class KVServer implements IKVServer {
                 }
             }
         } catch (Exception e) {
-            this.logger.error("Error adding row to table: " + e.getMessage());
+            this.logger.error("Error updating row in table: " + e.getMessage());
             return StatusType.SQLUPDATE_ERROR;
         }
 
         try {
             table.updateRow(rowMap);
         } catch (Exception e) {
-            this.logger.error("Error adding row to table: " + e.getMessage());
+            this.logger.error("Error updating row in table: " + e.getMessage());
             return StatusType.SQLUPDATE_ERROR;
         }
 

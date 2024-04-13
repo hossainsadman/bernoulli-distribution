@@ -163,6 +163,11 @@ public class KVClient implements IKVClient {
         }
     }
 
+    public boolean checkValidSqlSelect(String cmd) {        
+        String regex = "(\\*|\\{[^}]*\\}) from [^ ]+( where \\{\\s*([a-zA-Z0-9 ]+\\s*[<>=]\\s*[a-zA-Z0-9 ]+\\s*(,\\s*[a-zA-Z0-9 ]+\\s*[<>=]\\s*[a-zA-Z0-9 ]+\\s*)*)?\\}\\s*)?";
+        return cmd.matches(regex);
+    }
+
     private void handleCommand(String cmdLine) {
         String[] tokens = cmdLine.split("\\s+");
 
@@ -302,6 +307,34 @@ public class KVClient implements IKVClient {
                 } else {
                     printError("Not connected to server!");
                 }
+            } else if (tokens.length > 2) {
+                // if (kvStore != null) {
+                    StringBuilder row = new StringBuilder();
+                    for (int i = 1; i < tokens.length; i++) {
+                        row.append(tokens[i]);
+                        if (i != tokens.length - 1) {
+                            row.append(" ");
+                        }
+                    }
+
+                    if (checkValidSqlSelect(row.toString())) {
+                        try {
+                            KVMessage msg = kvStore.sqlselect(row.toString());
+                            if (msg != null) {
+                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                            } else {
+                                System.out.println(PROMPT + "sqlselect ERROR: null msg!");
+                            }
+                        } catch (Exception e) {
+                            logger.error("sqlselect to server failed!", e);
+                        }
+                    } else {
+                        printError("Invalid sqlselect!");
+                        logger.error("Invalid sqlselect!");
+                    }
+                // } else {
+                    // printError("Not connected to server!");
+                // }   
             } else {
                 printError("No sqlselect values provided!");
             }
