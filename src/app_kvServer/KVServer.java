@@ -252,7 +252,7 @@ public class KVServer implements IKVServer {
     }
 
     public SQLTable createSQLTable(String tableName, String primaryKey, Map<String, String> cols) {
-        SQLTable newTable = new SQLTable(primaryKey);
+        SQLTable newTable = new SQLTable(tableName, primaryKey);
         for (Map.Entry<String, String> entry : cols.entrySet()) {
             String colName = entry.getKey();
             String colType = entry.getValue();
@@ -648,6 +648,24 @@ public class KVServer implements IKVServer {
         this.logger.info(table.toString());
 
         return StatusType.SQLCREATE_SUCCESS;
+    }
+
+    public String sqlSelect(String key) throws Exception {
+        if (!sqlTables.containsKey(key)) {
+            throw new Exception("table not found");
+        }
+
+        SQLTable table = sqlTables.get(key);
+        return table.toString();
+    }
+
+    public String sqlDrop(String key) throws Exception {
+        if (!sqlTables.containsKey(key)) {
+            throw new Exception("table not found");
+        }
+
+        sqlTables.remove(key);
+        return key + " dropped";
     }
 
     /*

@@ -246,7 +246,7 @@ public class KVClient implements IKVClient {
                             if (msg != null) {
                                 System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
                             } else {
-                                System.out.println(PROMPT + "SQL CREATE ERROR: null msg!");
+                                System.out.println(PROMPT + "sqlcreate ERROR: null msg!");
                             }
                         } else {
                             printError("Invalid sqlcreate!");
@@ -260,6 +260,58 @@ public class KVClient implements IKVClient {
                 }
             } else {
                 printError("No sqlcreate values provided!");
+            }
+        } else if (tokens[0].equals("sqlselect")) {
+            if (tokens.length == 2) {
+                if (kvStore != null) {
+                    String tableName = tokens[1];
+                    
+                    try {
+                        if (checkValidKey(tableName)) {
+                            KVMessage msg = kvStore.sqlselect(tableName);
+                            if (msg != null) {
+                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                            } else {
+                                System.out.println(PROMPT + "sqlselect ERROR: null msg!");
+                            }
+                        } else {
+                            printError("Invalid sqlselect!");
+                            logger.error("Invalid sqlselect!");
+                        }
+                    } catch (Exception e) {
+                        logger.error("sqlselect to server failed!", e);
+                    }
+                } else {
+                    printError("Not connected to server!");
+                }
+            } else {
+                printError("No sqlselect values provided!");
+            }
+        } else if (tokens[0].equals("sqldrop")) {
+            if (tokens.length == 2) {
+                if (kvStore != null) {
+                    String tableName = tokens[1];
+                    
+                    try {
+                        if (checkValidKey(tableName)) {
+                            KVMessage msg = kvStore.sqldrop(tableName);
+                            if (msg != null) {
+                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                            } else {
+                                System.out.println(PROMPT + "sqldrop ERROR: null msg!");
+                            }
+                        } else {
+                            printError("Invalid sqldrop!");
+                            logger.error("Invalid sqldrop!");
+                        }
+                    } catch (Exception e) {
+                        logger.error("sqldrop to server failed!", e);
+                    }
+                } else {
+                    printError("Not connected to server!");
+                }
+            } else {
+                printError("No sqldrop values provided!");
             }
         } else if (tokens[0].equals("connect")) {
             if (tokens.length == 3) {

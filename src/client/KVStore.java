@@ -180,4 +180,24 @@ public class KVStore implements KVCommInterface {
 
         return this.sendMessageToServer(message);
     }
+
+    public BasicKVMessage sqlselect(String key) throws Exception {
+        BasicKVMessage invalidParametersError = this.validateKeyValuePair(key, null);
+        if (invalidParametersError != null)
+            return invalidParametersError;
+            
+        BasicKVMessage message = new BasicKVMessage(StatusType.SQLSELECT, key, null);
+
+        return this.sendMessageToServer(message);
+    }
+
+    public BasicKVMessage sqldrop(String key) throws Exception {
+        BasicKVMessage invalidParametersError = this.validateKeyValuePair(key, null);
+        if (invalidParametersError != null)
+            return invalidParametersError;
+            
+        BasicKVMessage message = new BasicKVMessage(StatusType.SQLDROP, key, null);
+
+        return this.sendMessageToServer(message);
+    }
 }

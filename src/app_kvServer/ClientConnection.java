@@ -215,6 +215,50 @@ public class ClientConnection implements Runnable {
                 }
             }
 
+        } 
+        else if (recvStatus == StatusType.SQLSELECT && recvKey != null) {
+            if(this.server.isCoordinator(KVServer.escape(recvKey))){
+                try {
+                    String value = server.sqlSelect(recvKey);
+
+                    if (value == null) // table not found, send error message to client: SQLSELECT_ERROR <tablename>
+                        res = new BasicKVMessage(StatusType.SQLSELECT_ERROR, recvKey, null);
+                    else // table found: SQLSELECT_SUCCESS <tablename> <tablecontents> to client.
+                        res = new BasicKVMessage(StatusType.SQLSELECT_SUCCESS, recvKey, value);
+
+                } catch (Exception e) {
+                    res = new BasicKVMessage(StatusType.SQLSELECT_ERROR, recvKey, recvVal);
+                }
+            } else {
+                if(recvLocolProtocol){
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
+                } else{
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, null, null);
+                }
+            }
+
+        } 
+        else if (recvStatus == StatusType.SQLDROP && recvKey != null) {
+            if(this.server.isCoordinator(KVServer.escape(recvKey))){
+                try {
+                    String value = server.sqlDrop(recvKey);
+
+                    if (value == null) // table not found, send error message to client: SQLDROP_ERROR <tablename>
+                        res = new BasicKVMessage(StatusType.SQLDROP_ERROR, recvKey, null);
+                    else // table found: SQLDROP_SUCCESS <tablename> to client.
+                        res = new BasicKVMessage(StatusType.SQLDROP_SUCCESS, recvKey, value);
+
+                } catch (Exception e) {
+                    res = new BasicKVMessage(StatusType.SQLDROP_ERROR, recvKey, recvVal);
+                }
+            } else {
+                if(recvLocolProtocol){
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, this.om.writeValueAsString(this.server.getHashRing()), null);
+                } else{
+                    res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, null, null);
+                }
+            }
+
         }
         else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { 
             // message size exceeded

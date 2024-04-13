@@ -13,7 +13,8 @@ public class SQLTable {
     private Map<String, Class<?>> colTypes;
     private Map<Object, Map<String, Object>> rows;
 
-    public SQLTable(String primaryKey) {
+    public SQLTable(String name, String primaryKey) {
+        this.name = name;
         this.primaryKey = primaryKey;
         this.cols = new ArrayList<>();
         this.colTypes = new HashMap<>();
@@ -23,8 +24,8 @@ public class SQLTable {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("TABLE: ").append(name).append(" | ");
-        sb.append("PRIMARY KEY: ").append(primaryKey).append("\n");
+        sb.append("| TABLE: ").append(name).append(" | ");
+        sb.append("PRIMARY KEY: ").append(primaryKey).append(" |\n");
         for (String col : cols) {
             sb.append(col).append("\t");
         }
@@ -151,7 +152,7 @@ public class SQLTable {
     }
 
     public SQLTable selectCols(List<String> cols) {
-        SQLTable derivedTable = new SQLTable(this.primaryKey);
+        SQLTable derivedTable = new SQLTable(this.name, this.primaryKey);
         derivedTable.cols = new ArrayList<>(cols);
         for (String col : cols) {
             derivedTable.colTypes.put(col, this.colTypes.get(col));
@@ -188,7 +189,7 @@ public class SQLTable {
             }
         }
     
-        SQLTable derivedTable = new SQLTable(this.primaryKey);
+        SQLTable derivedTable = new SQLTable(this.name, this.primaryKey);
         derivedTable.cols = new ArrayList<>(this.cols);
         derivedTable.colTypes = new HashMap<>(this.colTypes);
     
@@ -222,7 +223,7 @@ public class SQLTable {
     }
 
     // public static void main(String[] args) {
-    //     SQLTable table = new SQLTable("col1");
+    //     SQLTable table = new SQLTable("table1", "col1");
 
     //     table.addCol("col1", Integer.class);
     //     table.addCol("col2", Integer.class);

@@ -37,6 +37,14 @@ public interface KVMessage {
         SQLCREATE,
         SQLCREATE_SUCCESS,
         SQLCREATE_ERROR,
+        
+        SQLSELECT,
+        SQLSELECT_SUCCESS,
+        SQLSELECT_ERROR,
+
+        SQLDROP,
+        SQLDROP_SUCCESS,
+        SQLDROP_ERROR,
     }
 
     /**
