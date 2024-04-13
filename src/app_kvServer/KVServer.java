@@ -8,6 +8,8 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.util.HashMap;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -31,9 +33,15 @@ import ecs.ECSNode;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+
+import app_kvServer.SQLTable;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class KVServer implements IKVServer {
     /**
@@ -637,6 +645,7 @@ public class KVServer implements IKVServer {
 
     public String sqlSelect(String key) throws Exception {
         if (key.contains(" ")) {
+            this.logger.info("Parsing sql select query: " + key);
             String[] parts = key.split("\\s+from\\s+|\\s+where\\s+");
             if (parts.length < 2 || parts.length > 3) {
                 throw new Exception("invalid sql select query");
@@ -644,9 +653,41 @@ public class KVServer implements IKVServer {
 
             String columnNames = parts[0];
             String tableName = parts[1];
-            String conditions = parts.length == 3 ? parts[2] : null;
+            String conds = parts.length == 3 ? parts[2] : null;
+            this.logger.info(conds);
 
-            return "Column Names: " + columnNames + "\n" + "Table Name: " + tableName + "\n" + "Conditions: " + conditions;
+            List<SQLTable.Condition> conditions = new ArrayList<>();
+            if (parts.length == 3) {
+                this.logger.info("Processing parts: " + Arrays.toString(parts));
+                String[] conditionParts = parts[2].replaceAll("[{}]", "").split(",");
+                for (String conditionPart : conditionParts) {
+                    this.logger.info("Processing condition part: " + conditionPart);
+                    Pattern pattern = Pattern.compile("(.*?)(=|<|>)(.*)");
+                    Matcher matcher = pattern.matcher(conditionPart);
+                    if (matcher.find()) {
+                        String col = matcher.group(1).trim();
+                        String operator = matcher.group(2).trim();
+                        String value = matcher.group(3).trim();
+
+                        SQLTable.Comparison comparison = SQLTable.getComparisonOperator(operator);
+
+                        SQLTable.Condition condition = new SQLTable.Condition(col, value, comparison);    
+                        conditions.add(condition);
+                    } else {
+                        this.logger.error("Failed to parse condition part: " + conditionPart);
+                    }
+                }
+            } else {
+                this.logger.info("Parts length is not 3: " + Arrays.toString(parts));
+            }
+
+            this.logger.info("Conditions: " + conditions.size());
+            for (SQLTable.Condition condition : conditions) {
+                this.logger.info("Condition: " + condition.toString());
+            }
+
+            return sqlSelect(tableName, columnNames.equals("*") ? null : List.of(columnNames.replace("{", "").replace("}", "").split(",")), conditions);
+
         } else {
             if (!sqlTables.containsKey(key)) {
                 throw new Exception("table not found");
@@ -655,6 +696,20 @@ public class KVServer implements IKVServer {
             SQLTable table = sqlTables.get(key);
             return table.toStringTable();
         }
+    }
+
+    public String sqlSelect(String tableName, List<String> columnNames, List<SQLTable.Condition> conditions) {
+        SQLTable table = sqlTables.get(tableName);
+        if (table == null) {
+            throw new IllegalArgumentException("Table " + tableName + " does not exist.");
+        }
+
+        SQLTable selectedTable = table.selectRows(conditions);
+        if (columnNames != null && !columnNames.isEmpty()) {
+            selectedTable = selectedTable.selectCols(columnNames);
+        }
+
+        return selectedTable.toString();
     }
 
     public String sqlDrop(String key) throws Exception {

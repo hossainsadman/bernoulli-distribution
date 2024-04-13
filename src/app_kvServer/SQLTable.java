@@ -26,7 +26,7 @@ public class SQLTable {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("| TABLE: ").append(name).append(" | ");
+        sb.append("\n| TABLE: ").append(name).append(" | ");
         sb.append("PRIMARY KEY: ").append(primaryKey).append(" |\n");
         for (String col : cols) {
             sb.append(col).append(" (").append(colTypes.get(col)).append(")").append("\t");
@@ -206,6 +206,15 @@ public class SQLTable {
             this.value = null;
             this.operator = Comparison.NONE;
         }
+
+        @Override
+        public String toString() {
+            return "Condition{" +
+                    "col='" + col + '\'' +
+                    ", value='" + value + '\'' +
+                    ", operator=" + operator +
+                    '}';
+        }
     }
 
     public SQLTable selectCols(List<String> cols) {
@@ -236,9 +245,21 @@ public class SQLTable {
                     continue;
                 }
                 String value = row.get(condition.col);
-                if (value == null || !compare(value, condition.value, condition.operator)) {
+                if (value == null) {
                     match = false;
                     break;
+                }
+                String colType = this.colTypes.get(condition.col);
+                if ("int".equals(colType)) {
+                    if (!compare(Integer.parseInt(value), Integer.parseInt(condition.value), condition.operator)) {
+                        match = false;
+                        break;
+                    }
+                } else {
+                    if (!compare(value, condition.value, condition.operator)) {
+                        match = false;
+                        break;
+                    }
                 }
             }
             if (match) {
@@ -269,6 +290,34 @@ public class SQLTable {
                 return comparison == 0;
             default:
                 return false;
+        }
+    }
+    
+    private boolean compare(Integer value1, Integer value2, Comparison operator) {
+        int comparison = value1.compareTo(value2);
+
+        switch (operator) {
+            case GREATER_THAN:
+                return comparison > 0;
+            case LESS_THAN:
+                return comparison < 0;
+            case EQUALS:
+                return comparison == 0;
+            default:
+                return false;
+        }
+    }
+
+    public static Comparison getComparisonOperator(String operator) {
+        switch (operator) {
+            case ">":
+                return Comparison.GREATER_THAN;
+            case "<":
+                return Comparison.LESS_THAN;
+            case "=":
+                return Comparison.EQUALS;
+            default:
+                return Comparison.NONE;
         }
     }
 
