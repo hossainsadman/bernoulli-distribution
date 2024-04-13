@@ -274,15 +274,10 @@ public class KVServer implements IKVServer {
         for (Map.Entry<String, String> entry : cols.entrySet()) {
             String colName = entry.getKey();
             String colType = entry.getValue();
-            Class<?> typeClass;
-            if (colType.equals("int")) {
-                typeClass = Integer.class;
-            } else if (colType.equals("text")) {
-                typeClass = String.class;
-            } else {
+            if (!colType.equals("int") && !colType.equals("text")) {
                 throw new IllegalArgumentException("Invalid type for column " + colName + ": " + colType);
             }
-            newTable.addCol(colName, typeClass);
+            newTable.addCol(colName, colType);
         }
         return newTable;
     }
@@ -674,7 +669,7 @@ public class KVServer implements IKVServer {
         }
 
         SQLTable table = sqlTables.get(key);
-        return table.toString();
+        return table.toStringTable();
     }
 
     public String sqlDrop(String key) throws Exception {
@@ -733,8 +728,8 @@ public class KVServer implements IKVServer {
         }
 
         SQLTable table = sqlTables.get(key);
-        Map<String, Object> rowMap = new HashMap<>();
-        
+        Map<String, String> rowMap = new HashMap<>();
+
         JsonElement jsonElement = null;
         try {
             jsonElement = jsonParser.parse(value);
@@ -749,18 +744,18 @@ public class KVServer implements IKVServer {
                     try {
                         JsonElement elem = jsonObject.get(jsonKey);
                         if (table.cols.contains(jsonKey)) {
-                            if (table.colTypes.get(jsonKey).equals(Integer.class)) {
+                            if (table.colTypes.get(jsonKey).equals("int")) {
                                 try {
-                                    String colType = table.colTypes.get(table.cols.indexOf(jsonKey)).toString();
+                                    String colType = table.colTypes.get(jsonKey);
                                     String colName = jsonKey;
                                     String colValue = elem.getAsString();
                                     this.logger.info("Column Type: " + colType);
                                     this.logger.info("Column Name: " + colName);
                                     this.logger.info("Column Value: " + colValue);
-                                    int intValue = Integer.parseInt(elem.getAsString());
-                                    rowMap.put(jsonKey, intValue);
+                                    Integer.parseInt(colValue);
+                                    rowMap.put(jsonKey, colValue);
                                 } catch (NumberFormatException e) {
-                                    this.logger.error("Error: Value for column " + jsonKey + " must be an integer");
+                                    this.logger.error("Value for column " + jsonKey + " must be an integer");
                                     return StatusType.SQLINSERT_ERROR;
                                 }
                             } else {
@@ -778,17 +773,6 @@ public class KVServer implements IKVServer {
         } catch (Exception e) {
             this.logger.error("Error adding row to table: " + e.getMessage());
             return StatusType.SQLINSERT_ERROR;
-        }
-
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
-        for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-            String columnName = entry.getKey();
-            JsonElement columnValue = entry.getValue();
-            if (columnValue.isJsonPrimitive()) {
-                rowMap.put(columnName, columnValue.getAsString());
-            } else {
-                rowMap.put(columnName, columnValue.toString());
-            }
         }
 
         try {
