@@ -18,6 +18,12 @@ import client.KVStore;
 import shared.messages.BasicKVMessage;
 import shared.messages.KVMessage;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 public class KVClient implements IKVClient {
     private static Logger logger = Logger.getRootLogger();
     private static final String PROMPT = "M4-Client> ";
@@ -29,6 +35,9 @@ public class KVClient implements IKVClient {
     private boolean stop = false;
 
     private KVStore kvStore = null;
+
+    private static Gson gson = new Gson();
+    private static JsonParser jsonParser = new JsonParser();
 
     @Override
     public void newConnection(String hostname, int port) throws Exception {
@@ -143,6 +152,15 @@ public class KVClient implements IKVClient {
             return false;
         }
         return true;
+    }
+
+    public boolean checkValidJson(String str) {
+        try {
+            jsonParser.parse(str);
+            return true;
+        } catch (JsonSyntaxException e) {
+            return false;
+        }
     }
 
     private void handleCommand(String cmdLine) {
@@ -312,6 +330,48 @@ public class KVClient implements IKVClient {
                 }
             } else {
                 printError("No sqldrop values provided!");
+            }
+        } else if (tokens[0].equals("sqlinsert")) {
+            if (tokens.length == 3) {
+                // if (kvStore != null) {
+                    String tableName = tokens[1];
+                    String row = tokens[2];
+                    boolean valid = true;
+                    
+                    try {
+                        if (!checkValidKey(tableName)) {
+                            printError("Invalid sqlinsert table name!");
+                            logger.error("Invalid sqlinsert table name!");
+                            valid = false;
+                        }
+                        if (!checkValidJson(row)) {
+                            printError("Invalid sqlinsert table row!");
+                            logger.error("Invalid sqlinsert table row!");
+                            valid = false;
+                        }
+
+                        if (valid) {
+                            JsonElement jsonElement = jsonParser.parse(row);
+                            if (jsonElement.isJsonObject()) {
+                                JsonObject jsonObject = jsonElement.getAsJsonObject();
+                                for (String key : jsonObject.keySet()) {
+                                    JsonElement value = jsonObject.get(key);
+                                    System.out.println(key + ": " + value);
+                                }
+                            } else {
+                                printError("Invalid JSON format!");
+                                logger.error("Invalid JSON format!");
+                            }
+                        }
+
+                    } catch (Exception e) {
+                        logger.error("sqlinsert to server failed!", e);
+                    }
+                // } else {
+                //     printError("Not connected to server!");
+                // }
+            } else {
+                printError("No sqlinsert values provided!");
             }
         } else if (tokens[0].equals("connect")) {
             if (tokens.length == 3) {
