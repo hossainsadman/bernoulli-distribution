@@ -63,8 +63,8 @@ public class SQLTable implements Serializable {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("\n| TABLE: ").append(name).append(" | ");
-        sb.append("PRIMARY KEY: ").append(primaryKey).append(" |\n");
+        sb.append("\n--- TABLE: ").append(name).append(" - ");
+        sb.append("PRIMARY KEY: ").append(primaryKey).append(" ---\n");
         for (String col : cols) {
             sb.append(col).append(" (").append(colTypes.get(col)).append(")").append("\t");
         }
@@ -119,8 +119,8 @@ public class SQLTable implements Serializable {
         }
 
         // Build string
-        sb.append("| TABLE: ").append(name).append(" | ");
-        sb.append("PRIMARY KEY: ").append(primaryKey).append(" |\n");
+        sb.append("\n --- TABLE: ").append(name).append(" - ");
+        sb.append("PRIMARY KEY: ").append(primaryKey).append(" ---\n");
         sb.append("| ").append(String.join(" | ", headerList)).append(" |\n");
         sb.append("| ").append(Arrays.stream(maxLengths).mapToObj(n -> "-".repeat(n)).collect(Collectors.joining(" | "))).append(" |\n");
         for (List<String> rowList : table) {
@@ -421,7 +421,7 @@ public class SQLTable implements Serializable {
     //     List<SQLTable.Condition> deleteConditions = new ArrayList<>();
     //     deleteConditions.add(new SQLTable.Condition("col1", "2", SQLTable.Comparison.GREATER_THAN));
     //     table.deleteRows(deleteConditions);
-    //     System.out.println(table.toStringTable());
+    //     System.out.println(table.toString());
     // }
 
 }
