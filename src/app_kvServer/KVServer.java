@@ -621,6 +621,7 @@ public class KVServer implements IKVServer {
         boolean validSqlCreate = true;
         String[] colPairs = value.split(",");
         Map<String, String> cols = new HashMap<>();
+        String primaryKey = null;
         for (String pair : colPairs) {
             String[] parts = pair.split(":");
             if (parts.length != 2) {
@@ -638,6 +639,9 @@ public class KVServer implements IKVServer {
                 throw new Exception("Column name " + name + " is repeated");
             }
             cols.put(name, type);
+            if (primaryKey == null) {
+                primaryKey = name;
+            }
         }
 
         for (Map.Entry<String, String> entry : cols.entrySet()) {
@@ -646,7 +650,11 @@ public class KVServer implements IKVServer {
             logger.info("Column name: " + name + ", Type: " + type);
         }
 
-        String primaryKey = cols.keySet().iterator().next();
+        if (primaryKey == null) {
+            this.logger.error("No primary key found");
+            throw new Exception("No primary key found");
+        }
+        
         SQLTable table = createSQLTable(key, primaryKey, cols);
         sqlTables.put(key, table);
 

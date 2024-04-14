@@ -119,7 +119,7 @@ public class M4Test {
     @Test
     public void testSQLCreateInvalid() {
         String tableName = "testSQLCreateInvalid";
-        String schema = "age:INVALIDTYPE,student:text";
+        String schema = "student:text,age:INVALIDTYPE";
         BasicKVMessage resCreate = null;
         BasicKVMessage resSelect = null;
         Exception ex = null;
@@ -163,7 +163,7 @@ public class M4Test {
     public void testSQLCreateValid() {
         this.logger.info("--- testSQLCreateValid() ---");
         String tableName = "testSQLCreateValid";
-        String schema = "age:int,student:text";
+        String schema = "student:text,age:int";
         BasicKVMessage resCreate = null;
         BasicKVMessage resSelect = null;
         Exception ex = null;
@@ -543,7 +543,7 @@ public class M4Test {
     public void testSQLReplicationOnInsert() {
         this.logger.info("--- testSQLReplicationOnInsert() ---");
         String tableName = "testSQLReplicationOnInsert";
-        String schema = "age:int,student:text";
+        String schema = "student:text,age:int";
         String row = "{\"age\":5,\"student\":a}"; 
         BasicKVMessage resCreate = null;
         BasicKVMessage resInsert = null;
@@ -637,7 +637,7 @@ public class M4Test {
     public void testSQLReplicationOnUpdate() {
         this.logger.info("--- testSQLReplicationOnUpdate() ---");
         String tableName = "testSQLReplicationOnUpdate";
-        String schema = "age:int,student:text";
+        String schema = "student:text,age:int";
         String initRow = "{\"age\":5,\"student\":a}"; 
         String updateRow = "{\"age\":100,\"student\":a}"; 
         BasicKVMessage resCreate = null;
