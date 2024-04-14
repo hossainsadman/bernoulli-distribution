@@ -7,13 +7,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.stream.Collectors;
+import java.io.Serializable;
 
-public class SQLTable {
+import com.google.gson.Gson;
+
+public class SQLTable implements Serializable {
     public String name;
     private String primaryKey;
     public List<String> cols;
     public Map<String, String> colTypes;
     private Map<String, Map<String, String>> rows;
+
+    private static final long serialVersionUID = 1L;
 
     public SQLTable(String name, String primaryKey) {
         this.name = name;
@@ -40,6 +45,16 @@ public class SQLTable {
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    public String toStringForTransfer() {
+        Gson gson = new Gson();
+        return gson.toJson(this);
+    }
+
+    public static SQLTable fromString(String str) {
+        Gson gson = new Gson();
+        return gson.fromJson(str, SQLTable.class);
     }
 
     public String toStringTable() {

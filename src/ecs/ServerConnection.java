@@ -8,6 +8,7 @@ import java.util.HashMap;
 
 import org.apache.log4j.*;
 
+import app_kvServer.SQLTable;
 import shared.messages.ECSMessage;
 import shared.messages.ECSMessage.ECSMessageType;
 import shared.messages.MessageService;
@@ -68,13 +69,20 @@ public class ServerConnection implements Runnable {
         ECSNode nextNode = this.ecs.removeNode(node);
         if (message != null){
             HashMap<String, String> kvPairs = (HashMap<String, String>) message.getParameter("KV_PAIRS");
-            if(!kvPairs.isEmpty() && nextNode != null){
+            HashMap<String, SQLTable> tables = (HashMap<String, SQLTable>) message.getParameter("SQL_TABLES");
+
+            if (kvPairs != null && !kvPairs.isEmpty() && nextNode != null){
                 logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + this.node.getNodeName() + " to " + nextNode.getNodeName());
                 logger.info("kvPairs: " + kvPairs.toString());
-                
-                if (node != null && nextNode != null && kvPairs != null && kvPairs.size() > 0){
-                    messageService.sendECSMessage(nextNode.getServerSocket(), nextNode.getObjectOutputStream(), ECSMessageType.RECEIVE, "FROM_NODE", null, "KV_PAIRS", kvPairs);
-                }
+            }
+
+            if (tables != null && !tables.isEmpty() && nextNode != null){
+                logger.info("Transferring " + tables.size() + " sql tables from " + this.node.getNodeName() + " to " + nextNode.getNodeName());
+                logger.info("tables: " + tables.toString());
+            }
+
+            if (node != null && nextNode != null && (kvPairs != null && kvPairs.size() > 0) || (tables != null && tables.size() > 0)){
+                messageService.sendECSMessage(nextNode.getServerSocket(), nextNode.getObjectOutputStream(), ECSMessageType.RECEIVE, "FROM_NODE", null, "KV_PAIRS", kvPairs, "SQL_TABLES", tables);
             }
         }
 
@@ -116,24 +124,30 @@ public class ServerConnection implements Runnable {
         System.out.println("TRANSFER_TO Command");
         ECSNode toNode = (ECSNode) message.getParameter("TO_NODE");
         HashMap<String, String> kvPairs = (HashMap<String, String>) message.getParameter("KV_PAIRS");
+        HashMap<String, SQLTable> tables = (HashMap<String, SQLTable>) message.getParameter("SQL_TABLES");
 
         if(kvPairs != null && kvPairs.size() > 0){
             logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + this.node.getNodeName() + " to " + this.node.getNodeName());
             logger.info("kvPairs: " + kvPairs.toString());
-            Socket toNodeSocket = this.ecs.nodes.get(toNode.getNodeName()).getServerSocket();
-            ObjectOutputStream out = this.ecs.nodes.get(toNode.getNodeName()).getObjectOutputStream();
-
-            messageService.sendECSMessage(toNodeSocket, out, ECSMessageType.RECEIVE, "FROM_NODE", node, "KV_PAIRS", kvPairs);
         }
+
+        if(tables != null && tables.size() > 0){
+            logger.info("Transferring " + tables.size() + " sql tables from " + this.node.getNodeName() + " to " + this.node.getNodeName());
+        }
+
+        Socket toNodeSocket = this.ecs.nodes.get(toNode.getNodeName()).getServerSocket();
+        ObjectOutputStream out = this.ecs.nodes.get(toNode.getNodeName()).getObjectOutputStream();
+
+        messageService.sendECSMessage(toNodeSocket, out, ECSMessageType.RECEIVE, "FROM_NODE", node, "KV_PAIRS", kvPairs, "SQL_TABLES", tables);
     }
 
     private void handleTransferComplete(ECSMessage message) throws Exception{
-        System.out.println("TRANSFER_COMPLETE Command");
+        System.out.println(message.getType().toString() + " Command");
         ECSNode pingNode = (ECSNode) message.getParameter("PING_NODE");
         Socket pingNodeSocket = this.ecs.nodes.get(pingNode.getNodeName()).getServerSocket();
         ObjectOutputStream out = this.ecs.nodes.get(pingNode.getNodeName()).getObjectOutputStream();
 
-        messageService.sendECSMessage(pingNodeSocket, out, ECSMessageType.TRANSFER_COMPLETE, "PING_NODE", pingNode);
+        messageService.sendECSMessage(pingNodeSocket, out, message.getType(), "PING_NODE", pingNode);
     }
 
     private void processMessage(ECSMessage message){

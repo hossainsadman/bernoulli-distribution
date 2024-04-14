@@ -87,7 +87,7 @@ public class KVServer implements IKVServer {
 
     private Replicator replicator;
 
-    private Map<String, SQLTable> sqlTables;
+    private HashMap<String, SQLTable> sqlTables;
     private static Gson gson = new Gson();
     private static JsonParser jsonParser = new JsonParser();
 
@@ -382,6 +382,26 @@ public class KVServer implements IKVServer {
         return false;
     }
 
+    public boolean replicateSQLCommand(String key, String value, StatusType status) throws Exception {
+        try {
+            return this.replicator.replicateSQLCommand(key, value, status);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error occured when replicating");
+        }
+        return false;
+    }
+
+    public boolean replicateSQLTable(String key, String value) {
+        try {
+            return this.replicator.replicateSQLTable(key, value);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error occured when replicating");
+        }
+        return false;
+    }
+
     public boolean isCoordinator(String key){
         return this.getMetadata().isKeyInRange(key);
     }
@@ -584,8 +604,8 @@ public class KVServer implements IKVServer {
         return StatusType.PUT_SUCCESS;
     }
 
-    public synchronized StatusType sqlCreate(String key, String value) throws Exception {
-        if (write_lock) {
+    public synchronized StatusType sqlCreate(String key, String value, boolean override) throws Exception {
+        if (write_lock & !override) {
             return StatusType.SERVER_WRITE_LOCK;
         }
 
@@ -603,34 +623,25 @@ public class KVServer implements IKVServer {
             String[] parts = pair.split(":");
             if (parts.length != 2) {
                 this.logger.error("Invalid column pair: " + pair);
-                validSqlCreate = false;
-                break;
+                throw new Exception("Invalid column pair: " + pair);
             }
             String name = parts[0];
             String type = parts[1];
             if (!type.equals("int") && !type.equals("text")) {
                 this.logger.error("Invalid type for column " + name + ": " + type);
-                validSqlCreate = false;
-                break;
+                throw new Exception("Invalid type for column " + name + ": " + type);
             }
             if (cols.containsKey(name)) {
                 this.logger.error("Column name " + name + " is repeated");
-                validSqlCreate = false;
-                break;
+                throw new Exception("Column name " + name + " is repeated");
             }
             cols.put(name, type);
         }
 
-        if (!validSqlCreate) {
-            return StatusType.SQLCREATE_ERROR;
-        }
-
-        if (validSqlCreate) {
-            for (Map.Entry<String, String> entry : cols.entrySet()) {
-                String name = entry.getKey();
-                String type = entry.getValue();
-                logger.info("Column name: " + name + ", Type: " + type);
-            }
+        for (Map.Entry<String, String> entry : cols.entrySet()) {
+            String name = entry.getKey();
+            String type = entry.getValue();
+            logger.info("Column name: " + name + ", Type: " + type);
         }
 
         String primaryKey = cols.keySet().iterator().next();
@@ -712,17 +723,28 @@ public class KVServer implements IKVServer {
         return selectedTable.toString();
     }
 
-    public String sqlDrop(String key) throws Exception {
-        if (!sqlTables.containsKey(key)) {
-            throw new Exception("table not found");
+    public synchronized StatusType sqlDrop(String key, boolean override) throws Exception {
+        if (write_lock & !override) {
+            return StatusType.SERVER_WRITE_LOCK;
         }
 
-        sqlTables.remove(key);
-        return key + " dropped";
+        if (!sqlTables.containsKey(key)) {
+            this.logger.error("table does not exist");
+            throw new Exception("table does not exist");
+        }
+
+        try {
+            sqlTables.remove(key);
+        } catch (Exception e) {
+            this.logger.error("Error dropping table: " + e.getMessage());
+            throw new Exception("Error dropping table: " + e.getMessage());
+        }
+
+        return StatusType.SQLDROP_SUCCESS;
     }
     
-    public synchronized StatusType sqlInsert(String key, String value) throws Exception {
-        if (write_lock) {
+    public synchronized StatusType sqlInsert(String key, String value, boolean override) throws Exception {
+        if (write_lock && !override) {
             return StatusType.SERVER_WRITE_LOCK;
         }
 
@@ -762,13 +784,13 @@ public class KVServer implements IKVServer {
                                     Integer.parseInt(colValue);
                                 } catch (NumberFormatException e) {
                                     this.logger.error("Value for column " + jsonKey + " must be an integer");
-                                    return StatusType.SQLINSERT_ERROR;
+                                    throw new Exception("Value for column " + jsonKey + " must be an integer");
                                 }
                             }
                             rowMap.put(jsonKey, colValue);
                         } else {
                             this.logger.error(jsonKey + " is not a column in table" + key);
-                            return StatusType.SQLINSERT_ERROR;
+                            throw new Exception(jsonKey + " is not a column in table" + key);
                         }
                     } catch (Exception e) {
                         this.logger.error(e.getMessage());
@@ -777,22 +799,22 @@ public class KVServer implements IKVServer {
             }
         } catch (Exception e) {
             this.logger.error("Error adding row to table: " + e.getMessage());
-            return StatusType.SQLINSERT_ERROR;
+            throw new Exception("Error adding row to table: " + e.getMessage());
         }
 
         try {
             table.addRow(rowMap);
         } catch (Exception e) {
             this.logger.error("Error adding row to table: " + e.getMessage());
-            return StatusType.SQLINSERT_ERROR;
+            throw new Exception("Error adding row to table: " + e.getMessage());
         }
 
         this.logger.info(table.toString());
         return StatusType.SQLINSERT_SUCCESS;
     }
     
-    public synchronized StatusType sqlUpdate(String key, String value) throws Exception {
-        if (write_lock) {
+    public synchronized StatusType sqlUpdate(String key, String value, boolean override) throws Exception {
+        if (write_lock && !override) {
             return StatusType.SERVER_WRITE_LOCK;
         }
 
@@ -833,13 +855,13 @@ public class KVServer implements IKVServer {
                                     Integer.parseInt(colValue);
                                 } catch (NumberFormatException e) {
                                     this.logger.error("Value for column " + jsonKey + " must be an integer");
-                                    return StatusType.SQLUPDATE_ERROR;
+                                    throw new Exception("Value for column " + jsonKey + " must be an integer");
                                 }
                             }
                             rowMap.put(jsonKey, colValue);
                         } else {
                             this.logger.error(jsonKey + " is not a column in table" + key);
-                            return StatusType.SQLUPDATE_ERROR;
+                            throw new Exception(jsonKey + " is not a column in table" + key);
                         }
                     } catch (Exception e) {
                         this.logger.error(e.getMessage());
@@ -848,18 +870,47 @@ public class KVServer implements IKVServer {
             }
         } catch (Exception e) {
             this.logger.error("Error updating row in table: " + e.getMessage());
-            return StatusType.SQLUPDATE_ERROR;
+            throw new Exception("Error updating row in table: " + e.getMessage());
         }
 
         try {
             table.updateRow(rowMap);
         } catch (Exception e) {
             this.logger.error("Error updating row in table: " + e.getMessage());
-            return StatusType.SQLUPDATE_ERROR;
+            throw new Exception("Error updating row in table: " + e.getMessage());
         }
 
         this.logger.info(table.toString());
         return StatusType.SQLUPDATE_SUCCESS;
+    }
+
+    public synchronized StatusType sqlReplace(String key, String value, boolean override) throws Exception {
+        if (write_lock && !override) {
+            return StatusType.SERVER_WRITE_LOCK;
+        }
+
+        if (value.equals(""))
+            throw new Exception("empty sql insert value");
+
+        if (sqlTables.containsKey(key)) {
+            sqlTables.remove(key);
+        }
+
+        try {
+            SQLTable table = SQLTable.fromString(value);
+        } catch (Exception e) {
+            this.logger.error("Error building table: " + e.getMessage());
+            throw new Exception("Error building table: " + e.getMessage());
+        }
+
+        try {
+            sqlTables.put(key, SQLTable.fromString(value));
+        } catch (Exception e) {
+            this.logger.error("Error putting table: " + e.getMessage());
+            throw new Exception("Error putting table: " + e.getMessage());
+        }
+
+        return StatusType.SQLREPLICATE_SUCCESS;
     }
 
     /*
@@ -918,6 +969,7 @@ public class KVServer implements IKVServer {
     @SuppressWarnings("unchecked")
     private void listenToEcsSocket() throws Exception{
         HashMap<String, String> kvPairs = new HashMap<>();
+        HashMap<String, SQLTable> tables = new HashMap<>();
         while (ecsSocket != null && !ecsSocket.isClosed() && running) {
             ECSMessage message = messageService.receiveECSMessage(ecsSocket, this.ecsInStream);
             if (message == null) {
@@ -932,7 +984,6 @@ public class KVServer implements IKVServer {
                     this.setHashRing((ECSHashRing) message.getParameter("HASHRING"));
                     System.out.println(hashRing.toString());
 
-
                     if(metadata != null) this.logger.info("Old hashrange: " + metadata.toString());
                     setMetadata(hashRing.getNodeForIdentifier(getHostaddress() + ":" + String.valueOf(this.getPort())));
                     if(metadata != null) this.logger.info("Up to date hashrange: " + metadata.toString());
@@ -942,18 +993,18 @@ public class KVServer implements IKVServer {
                 case TRANSFER_FROM:{
                     this.logger.info("Received TRANSFER_FROM command from ECS");
                     ECSNode toNode = (ECSNode) message.getParameter("TO_NODE");
-                    // get keys to transfer
-                    
+
+                // get keys & tables to transfer
                     try{
                         kvPairs = getKVPairsNotResponsibleFor();
+                        tables = getSQLTablesNotResponsibleFor();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    // transfer keys
-                    if (kvPairs != null && kvPairs.size() > 0){
-                        messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.TRANSFER_TO, "TO_NODE", toNode, "KV_PAIRS", kvPairs);
+                    // transfer keys & tables
+                    if ((kvPairs != null && kvPairs.size() > 0) || (tables != null && tables.size() > 0)){
+                        messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.TRANSFER_TO, "TO_NODE", toNode, "KV_PAIRS", kvPairs, "SQL_TABLES", tables);
                     }
-
                     break;
                 }
                 
@@ -965,38 +1016,75 @@ public class KVServer implements IKVServer {
                     
                     kvPairs = (HashMap<String, String>) message.getParameter("KV_PAIRS");
                     System.out.println(kvPairs);
-                    for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
-                        try {
-                            StatusType putStatus = putKV(entry.getKey(), entry.getValue(), true);
-                            if (putStatus != StatusType.SERVER_WRITE_LOCK){
-                                if (this.replicate(entry.getKey(), entry.getValue())){
-                                    this.logger.info("Replication success");
-                                } else {
-                                    this.logger.info("Replication failure");
+                    if (kvPairs != null) {
+                        for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
+                            try {
+                                StatusType putStatus = putKV(entry.getKey(), entry.getValue(), true);
+                                if (putStatus != StatusType.SERVER_WRITE_LOCK){
+                                    if (this.replicate(entry.getKey(), entry.getValue())){
+                                        this.logger.info("Replication success");
+                                    } else {
+                                        this.logger.info("Replication failure");
+                                    }
                                 }
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
                         }
                     }
+
+                    tables = (HashMap<String, SQLTable>) message.getParameter("SQL_TABLES");
+                    System.out.println("tables");
+                    if (tables != null) {
+                        for (Map.Entry<String, SQLTable> entry : tables.entrySet()) {
+                            SQLTable table = entry.getValue();
+                            System.out.println(table.toStringTable());
+                        }
+
+                        for (Map.Entry<String, SQLTable> entry : tables.entrySet()) {
+                            try {
+                                StatusType sqlReplaceStatus = sqlReplace(entry.getKey(), entry.getValue().toStringForTransfer(), true);
+                                if (sqlReplaceStatus != StatusType.SERVER_WRITE_LOCK){
+                                    if (this.replicateSQLTable(entry.getKey(), entry.getValue().toStringForTransfer())){
+                                        this.logger.info("SQLREPLICATE_SUCCESS Replication success");
+                                    } else {
+                                        this.logger.info("SQLREPLICATE_FAILURE Replication failure");
+                                    }
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
                     
                     this.write_lock = false;
                     if(fromNode != null)
                         messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.TRANSFER_COMPLETE, "PING_NODE", fromNode);
-
-                    break;
+                        break;
                 }
 
                 case TRANSFER_COMPLETE:{
                     this.logger.info("Received TRANSFER_COMPLETE command from ECS");
-                    for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
-                        try {
-                            putKV(entry.getKey(), "null");
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                    if (kvPairs != null) {
+                        for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
+                            try {
+                                putKV(entry.getKey(), "null");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
-                    break;
+                    if (tables != null) {
+                        for (Map.Entry<String, SQLTable> entry : tables.entrySet()) {
+                            try {
+                                sqlTables.remove(entry.getKey());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        break;
+                    }
                 }
 
                 case SHUTDOWN_SERVER: {
@@ -1113,23 +1201,27 @@ public class KVServer implements IKVServer {
 
     public void shutdownHook(){
         HashMap<String, String> kvPairs = null;
+        HashMap<String, SQLTable> tables = null;
         System.out.println("Running shutdown hook");
         try {
             kvPairs = getAllKVPairs();
+            tables = sqlTables;
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         try {
             if(this.hashRing != null && this.hashRing.getHashring().size() > 1 && this.ecsSocket != null){
-                messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.SHUTDOWN, "KV_PAIRS", kvPairs);
+                messageService.sendECSMessage(ecsSocket, this.ecsOutStream, ECSMessageType.SHUTDOWN, "KV_PAIRS", kvPairs, "SQL_TABLES", tables);
                 for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
                     putKV(entry.getKey(), "null");
                 }
                 File index = new File(dirPath);
                 index.delete();
+
+                sqlTables.clear();
             } else {
-                System.out.println("Last server, not transferring KV Pairs");
+                System.out.println("Last server, not transferring KV Pairs and SQL Tables");
             }
         } catch (Exception e) {
             System.out.println("GOT AN ERRROR");
@@ -1158,6 +1250,18 @@ public class KVServer implements IKVServer {
         return kvPairs;
     }
 
+    public HashMap<String, SQLTable> getSQLTablesNotResponsibleFor() throws Exception {
+        HashMap<String, SQLTable> sqlTablesNotResponsibleFor = new HashMap<>();
+        for (Map.Entry<String, SQLTable> entry : sqlTables.entrySet()) {
+            String key = entry.getKey();
+            if (!metadata.isKeyInRange(key)) {
+                sqlTablesNotResponsibleFor.put(key, entry.getValue());
+            }
+        }
+        this.logger.info("SQLTables not responsible for: " + sqlTablesNotResponsibleFor.toString());
+        return sqlTablesNotResponsibleFor;
+    }
+
     public HashMap<String, String> getAllKvPairsResponsibleFor() throws Exception {
         HashMap<String, String> kvPairs = new HashMap<>();
         File dir = new File(dirPath);
@@ -1170,6 +1274,17 @@ public class KVServer implements IKVServer {
             }
         }
         return kvPairs;
+    }
+
+    public HashMap<String, SQLTable> getAllSQLTablesResponsibleFor() throws Exception {
+        HashMap<String, SQLTable> sqlTablesResponsibleFor = new HashMap<>();
+        for (Map.Entry<String, SQLTable> entry : sqlTables.entrySet()) {
+            String key = entry.getKey();
+            if (metadata.isKeyInRange(key)) {
+                sqlTablesResponsibleFor.put(key, entry.getValue());
+            }
+        }
+        return sqlTablesResponsibleFor;
     }
 
     public HashMap<String, String> getAllKVPairs() throws Exception { 

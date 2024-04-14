@@ -38,10 +38,10 @@ public class ECSMessage implements Serializable {
         INIT(List.of("SERVER_NAME")),
         HASHRING(List.of("HASHRING")),
         TRANSFER_FROM(List.of("TO_NODE")),
-        TRANSFER_TO(List.of("TO_NODE", "KV_PAIRS")),
-        RECEIVE(List.of("FROM_NODE", "KV_PAIRS")),
+        TRANSFER_TO(List.of("TO_NODE", "KV_PAIRS", "SQL_TABLES")),
+        RECEIVE(List.of("FROM_NODE", "KV_PAIRS", "SQL_TABLES")),
         TRANSFER_COMPLETE(List.of("PING_NODE")),
-        SHUTDOWN(List.of("KV_PAIRS")),
+        SHUTDOWN(List.of("KV_PAIRS", "SQL_TABLES")),
         SHUTDOWN_SERVER(List.of());
         
         private final List<String> requiredParameters;

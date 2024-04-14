@@ -56,6 +56,56 @@ public class Replicator {
         return true;
     }
 
+    public boolean replicateSQLTable(String key, String value) throws Exception{
+        BasicKVMessage replicateMessage = new BasicKVMessage(StatusType.SQLREPLICATE, key, value);
+
+        if (this.firstReplicaConn != null){
+            this.firstReplicaConn.sendMessage(replicateMessage);
+
+            BasicKVMessage response = this.firstReplicaConn.receiveMessage();
+            if (response.getStatus() != StatusType.SQLREPLICATE_SUCCESS){
+                System.out.println("Received " + response.getStatus() + " instead of SQLREPLICATE_SUCCESS from first replica");
+                return false;
+            }
+        }
+
+        if (this.secondReplicaConn != null){
+            this.secondReplicaConn.sendMessage(replicateMessage);
+
+            BasicKVMessage response = this.secondReplicaConn.receiveMessage();
+            if (response.getStatus() != StatusType.SQLREPLICATE_SUCCESS){
+                System.out.println("Received " + response.getStatus() + " instead of SQLREPLICATE_SUCCESS from second replica");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public boolean replicateSQLCommand(String key, String value, StatusType status) throws Exception{
+        BasicKVMessage replicateMessage = new BasicKVMessage(status, key, value);
+
+        if (this.firstReplicaConn != null){
+            this.firstReplicaConn.sendMessage(replicateMessage);
+
+            BasicKVMessage response = this.firstReplicaConn.receiveMessage();
+            if (response.getStatus() != null){
+                System.out.println("Received " + response.getStatus());
+            }
+        }
+
+        if (this.secondReplicaConn != null){
+            this.secondReplicaConn.sendMessage(replicateMessage);
+
+            BasicKVMessage response = this.secondReplicaConn.receiveMessage();
+            if (response.getStatus() != null){
+                System.out.println("Received " + response.getStatus());
+            }
+        }
+
+        return true;
+    }
+
     public void connect(ECSHashRing hashRing) {
         if (hashRing == null) return;
 

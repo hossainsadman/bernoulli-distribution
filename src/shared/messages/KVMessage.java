@@ -53,6 +53,10 @@ public interface KVMessage {
         SQLUPDATE,
         SQLUPDATE_SUCCESS,
         SQLUPDATE_ERROR,
+
+        SQLREPLICATE,
+        SQLREPLICATE_SUCCESS,
+        SQLREPLICATE_ERROR,
     }
 
     /**

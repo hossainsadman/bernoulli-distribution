@@ -193,16 +193,16 @@ public class ClientConnection implements Runnable {
 
                 try {
                     StatusType sqlCreateStatus;
-                    sqlCreateStatus = server.sqlCreate(recvKey, recvVal);
+                    sqlCreateStatus = server.sqlCreate(recvKey, recvVal, false);
                     res = new BasicKVMessage(sqlCreateStatus, recvKey, recvVal);
 
-                    // if (sqlCreateStatus != StatusType.SERVER_WRITE_LOCK){
-                    //     if (this.server.replicate(recvKey, recvVal)){
-                    //         this.logger.info("Replication success");
-                    //     } else {
-                    //         this.logger.info("Replication failure");
-                    //     }
-                    // }
+                    if (sqlCreateStatus != StatusType.SERVER_WRITE_LOCK){
+                        if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLCREATE)){
+                            this.logger.info("SQLCREATE Replication success");
+                        } else {
+                            this.logger.info("SQLCREATE Replication failure");
+                        }
+                    }
 
                 } catch (Exception e) {
                     res = new BasicKVMessage(StatusType.SQLCREATE_ERROR, recvKey, recvVal);
@@ -241,15 +241,20 @@ public class ClientConnection implements Runnable {
         else if (recvStatus == StatusType.SQLDROP && recvKey != null) {
             if(this.server.isCoordinator(KVServer.escape(recvKey))){
                 try {
-                    String value = server.sqlDrop(recvKey);
+                    StatusType sqlDropStatus;
+                    sqlDropStatus = server.sqlDrop(recvKey, false);
+                    res = new BasicKVMessage(sqlDropStatus, recvKey, null);
 
-                    if (value == null) // table not found, send error message to client: SQLDROP_ERROR <tablename>
-                        res = new BasicKVMessage(StatusType.SQLDROP_ERROR, recvKey, null);
-                    else // table found: SQLDROP_SUCCESS <tablename> to client.
-                        res = new BasicKVMessage(StatusType.SQLDROP_SUCCESS, recvKey, value);
+                    if (sqlDropStatus != StatusType.SERVER_WRITE_LOCK){
+                        if (this.server.replicateSQLCommand(recvKey, null, StatusType.SQLDROP)){
+                            this.logger.info("SQLDROP Replication success");
+                        } else {
+                            this.logger.info("SQLDROP Replication failure");
+                        }
+                    }
 
                 } catch (Exception e) {
-                    res = new BasicKVMessage(StatusType.SQLDROP_ERROR, recvKey, recvVal);
+                    res = new BasicKVMessage(StatusType.SQLDROP_ERROR, recvKey, null);
                 }
             } else {
                 if(recvLocolProtocol){
@@ -272,16 +277,16 @@ public class ClientConnection implements Runnable {
 
                 try {
                     StatusType sqlInsertStatus;
-                    sqlInsertStatus = server.sqlInsert(recvKey, recvVal);
+                    sqlInsertStatus = server.sqlInsert(recvKey, recvVal, false);
                     res = new BasicKVMessage(sqlInsertStatus, recvKey, recvVal);
 
-                    // if (sqlInsertStatus != StatusType.SERVER_WRITE_LOCK){
-                    //     if (this.server.replicate(recvKey, recvVal)){
-                    //         this.logger.info("Replication success");
-                    //     } else {
-                    //         this.logger.info("Replication failure");
-                    //     }
-                    // }
+                    if (sqlInsertStatus != StatusType.SERVER_WRITE_LOCK){
+                        if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLINSERT)){
+                            this.logger.info("SQLINSERT Replication success");
+                        } else {
+                            this.logger.info("SQLINSERT Replication failure");
+                        }
+                    }
 
                 } catch (Exception e) {
                     res = new BasicKVMessage(StatusType.SQLINSERT_ERROR, recvKey, recvVal);
@@ -308,20 +313,20 @@ public class ClientConnection implements Runnable {
 
                 try {
                     StatusType sqlUpdateStatus;
-                    sqlUpdateStatus = server.sqlUpdate(recvKey, recvVal);
+                    sqlUpdateStatus = server.sqlUpdate(recvKey, recvVal, false);
                     res = new BasicKVMessage(sqlUpdateStatus, recvKey, recvVal);
 
-                    // if (sqlUpdateStatus != StatusType.SERVER_WRITE_LOCK){
-                    //     if (this.server.replicate(recvKey, recvVal)){
-                    //         this.logger.info("Replication success");
-                    //     } else {
-                    //         this.logger.info("Replication failure");
-                    //     }
-                    // }
+                    if (sqlUpdateStatus != StatusType.SERVER_WRITE_LOCK){
+                        if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLUPDATE)){
+                            this.logger.info("SQLUPDATE Replication success");
+                        } else {
+                            this.logger.info("SQLUPDATE Replication failure");
+                        }
+                    }
 
                 } catch (Exception e) {
                     res = new BasicKVMessage(StatusType.SQLUPDATE_ERROR, recvKey, recvVal);
-                    this.logger.error("Error occurred during SQLINSERT: " + e.getMessage());
+                    this.logger.error("Error occurred during SQLUPDATE: " + e.getMessage());
                 }
             } else {
                 if(recvLocolProtocol){
