@@ -169,6 +169,9 @@ public class KVClient implements IKVClient {
     }
 
     private void handleCommand(String cmdLine) {
+        if (cmdLine.trim().isEmpty()) {
+            return;
+        }
         String[] tokens = cmdLine.split("\\s+");
 
         if (tokens[0].equals("clear")){

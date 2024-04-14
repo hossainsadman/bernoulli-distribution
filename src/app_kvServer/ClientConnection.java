@@ -197,10 +197,10 @@ public class ClientConnection implements Runnable {
                     res = new BasicKVMessage(sqlCreateStatus, recvKey, recvVal);
 
                     if (sqlCreateStatus != StatusType.SERVER_WRITE_LOCK){
-                        if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLCREATE)){
-                            this.logger.info("SQLCREATE Replication success");
+                        if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLCREATE_REPLICATE)){
+                            this.logger.info("SQLCREATE_REPLICATE Replication success");
                         } else {
-                            this.logger.info("SQLCREATE Replication failure");
+                            this.logger.info("SQLCREATE_REPLICATE Replication failure");
                         }
                     }
 
@@ -246,10 +246,10 @@ public class ClientConnection implements Runnable {
                     res = new BasicKVMessage(sqlDropStatus, recvKey, null);
 
                     if (sqlDropStatus != StatusType.SERVER_WRITE_LOCK){
-                        if (this.server.replicateSQLCommand(recvKey, null, StatusType.SQLDROP)){
-                            this.logger.info("SQLDROP Replication success");
+                        if (this.server.replicateSQLCommand(recvKey, null, StatusType.SQLDROP_REPLICATE)){
+                            this.logger.info("SQLDROP_REPLICATE Replication success");
                         } else {
-                            this.logger.info("SQLDROP Replication failure");
+                            this.logger.info("SQLDROP_REPLICATE Replication failure");
                         }
                     }
 
@@ -263,7 +263,6 @@ public class ClientConnection implements Runnable {
                     res = new BasicKVMessage(StatusType.SERVER_NOT_RESPONSIBLE, null, null);
                 }
             }
-
         } 
         else if (recvStatus == StatusType.SQLINSERT && recvKey != null && recvVal != null) {
             if(this.server.isCoordinator(KVServer.escape(recvKey))){
@@ -281,10 +280,10 @@ public class ClientConnection implements Runnable {
                     res = new BasicKVMessage(sqlInsertStatus, recvKey, recvVal);
 
                     if (sqlInsertStatus != StatusType.SERVER_WRITE_LOCK){
-                        if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLINSERT)){
-                            this.logger.info("SQLINSERT Replication success");
+                        if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLINSERT_REPLICATE)){
+                            this.logger.info("SQLINSERT_REPLICATE Replication success");
                         } else {
-                            this.logger.info("SQLINSERT Replication failure");
+                            this.logger.info("SQLINSERT_REPLICATE Replication failure");
                         }
                     }
 
@@ -317,7 +316,7 @@ public class ClientConnection implements Runnable {
                     res = new BasicKVMessage(sqlUpdateStatus, recvKey, recvVal);
 
                     if (sqlUpdateStatus != StatusType.SERVER_WRITE_LOCK){
-                        if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLUPDATE)){
+                        if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLUPDATE_REPLICATE)){
                             this.logger.info("SQLUPDATE Replication success");
                         } else {
                             this.logger.info("SQLUPDATE Replication failure");
@@ -336,6 +335,58 @@ public class ClientConnection implements Runnable {
                 }
             }
 
+        } 
+        else if (recvStatus == StatusType.SQLCREATE_REPLICATE && recvKey != null && recvVal != null) {
+            System.out.println("[KVServer] Received SQLCREATE_REPLICATE command (" + recvKey + "," + recvVal + ")");
+
+            try {
+                StatusType sqlCreateStatus;
+                sqlCreateStatus = server.sqlCreate(recvKey, recvVal, false);
+                res = new BasicKVMessage(sqlCreateStatus, recvKey, recvVal);
+            } catch (Exception e) {
+                res = new BasicKVMessage(StatusType.SQLCREATE_REPLICATE_ERROR, recvKey, recvVal);
+                this.logger.error("Error occurred during SQLCREATE_REPLICATE_ERROR: " + e.getMessage());
+            }
+
+        } 
+        else if (recvStatus == StatusType.SQLDROP_REPLICATE && recvKey != null) {
+            System.out.println("[KVServer] Received SQLDROP_REPLICATE command (" + recvKey + ")");
+
+            try {
+                StatusType sqlDropStatus;
+                sqlDropStatus = server.sqlDrop(recvKey, false);
+                res = new BasicKVMessage(sqlDropStatus, recvKey, null);
+            } catch (Exception e) {
+                res = new BasicKVMessage(StatusType.SQLDROP_REPLICATE_ERROR, recvKey, null);
+                this.logger.error("Error occurred during SQLDROP_REPLICATE_ERROR: " + e.getMessage());
+            }
+
+        } 
+        else if (recvStatus == StatusType.SQLINSERT_REPLICATE && recvKey != null && recvVal != null) {
+            System.out.println("[KVServer] Received SQLINSERT_REPLICATE command (" + recvKey + "," + recvVal + ")");
+
+            try {
+                StatusType sqlInsertStatus;
+                sqlInsertStatus = server.sqlInsert(recvKey, recvVal, false);
+                res = new BasicKVMessage(sqlInsertStatus, recvKey, recvVal);
+            } catch (Exception e) {
+                res = new BasicKVMessage(StatusType.SQLINSERT_REPLICATE_ERROR, recvKey, recvVal);
+                this.logger.error("Error occurred during SQLINSERT_REPLICATE: " + e.getMessage());
+            }
+            
+        } 
+        else if (recvStatus == StatusType.SQLUPDATE_REPLICATE && recvKey != null && recvVal != null) {
+            System.out.println("[KVServer] Received SQLUPDATE_REPLICATE command (" + recvKey + "," + recvVal + ")");
+
+            try {
+                StatusType sqlUpdateStatus;
+                sqlUpdateStatus = server.sqlUpdate(recvKey, recvVal, false);
+                res = new BasicKVMessage(sqlUpdateStatus, recvKey, recvVal);
+            } catch (Exception e) {
+                res = new BasicKVMessage(StatusType.SQLUPDATE_REPLICATE_ERROR, recvKey, recvVal);
+                this.logger.error("Error occurred during SQLUPDATE_REPLICATE: " + e.getMessage());
+            }
+            
         }
         else if (recvStatus == StatusType.INVALID_KEY || recvStatus == StatusType.INVALID_VALUE) { 
             // message size exceeded
