@@ -43,12 +43,10 @@ public class M4Test {
             secondServer = ecsClient.addNode("FIFO", 10, 5002);
             thirdServer = ecsClient.addNode("FIFO", 10, 5003);
             fourthServer = ecsClient.addNode("FIFO", 10, 5001);
-            // fifthServer = ecsClient.addNode("FIFO", 10, 5005);
             allNodes.add(firstServer);
             allNodes.add(secondServer);
             allNodes.add(thirdServer);
             allNodes.add(fourthServer);
-            // allNodes.add(fifthServer);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -155,8 +153,10 @@ public class M4Test {
             this.logger.info("resSelect is null");
         }
 
-        assertTrue(resCreate.getStatus() == StatusType.SQLCREATE_ERROR
-                && resSelect.getStatus() == StatusType.SQLSELECT_ERROR);
+        assertTrue(resCreate.getStatus() == StatusType.SQLCREATE_ERROR);
+        this.logger.info("SUCCESS --- assertTrue(resCreate.getStatus() == StatusType.SQLCREATE_ERROR);");
+        assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_ERROR);
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_ERROR);");
     }
 
     @Test 
@@ -206,16 +206,27 @@ public class M4Test {
         System.out.println(table.toStringTable());
 
         assertTrue(ex == null) ;
+        this.logger.info("SUCCESS --- assertTrue(ex == null) ;");
         assertTrue(resCreate.getStatus() == StatusType.SQLCREATE_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resCreate.getStatus() == StatusType.SQLCREATE_SUCCESS);");
         assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
         assertTrue(resSelect.getKey().equals(tableName));
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
         assertTrue(table.getSize() == 0);
+        this.logger.info("SUCCESS --- assertTrue(table.getSize() == 0);");
         assertTrue(table.getCols().size() == 2);
+        this.logger.info("SUCCESS --- assertTrue(table.getCols().size() == 2);");
         assertTrue(table.getCols().contains("age"));
+        this.logger.info("SUCCESS --- assertTrue(table.getCols().contains(\"age\"));");
         assertTrue(table.getCols().contains("student"));
+        this.logger.info("SUCCESS --- assertTrue(table.getCols().contains(\"student\"));");
         assertTrue(table.getColTypes().size() == 2);
+        this.logger.info("SUCCESS --- assertTrue(table.getColTypes().size() == 2);");
         assertTrue(table.getColTypes().containsValue("int"));
+        this.logger.info("SUCCESS --- assertTrue(table.getColTypes().containsValue(\"int\"));");
         assertTrue(table.getColTypes().containsValue("text"));
+        this.logger.info("SUCCESS --- assertTrue(table.getColTypes().containsValue(\"text\"));");
     }
 
     @Test
@@ -265,10 +276,15 @@ public class M4Test {
         System.out.println(table.toStringTable());
 
         assertTrue(ex == null) ;
+        this.logger.info("SUCCESS --- assertTrue(ex == null) ;");
         assertTrue(resInsert.getStatus() == StatusType.SQLINSERT_ERROR);
+        this.logger.info("SUCCESS --- assertTrue(resInsert.getStatus() == StatusType.SQLINSERT_ERROR);");
         assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
         assertTrue(resSelect.getKey().equals(tableName));
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
         assertTrue(table.getSize() == 0);
+        this.logger.info("SUCCESS --- assertTrue(table.getSize() == 0);");
     }
 
     @Test
@@ -318,12 +334,19 @@ public class M4Test {
         System.out.println(table.toStringTable());
 
         assertTrue(ex == null) ;
+        this.logger.info("SUCCESS --- assertTrue(ex == null) ;");
         assertTrue(resInsert.getStatus() == StatusType.SQLINSERT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resInsert.getStatus() == StatusType.SQLINSERT_SUCCESS);");
         assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
         assertTrue(resSelect.getKey().equals(tableName));
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
         assertTrue(table.getSize() == 1);
+        this.logger.info("SUCCESS --- assertTrue(table.getSize() == 1);");
         assertTrue(table.getRow("ValidStudent").get("student").equals("ValidStudent"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"ValidStudent\").get(\"student\").equals(\"ValidStudent\"));");
         assertTrue(table.getRow("ValidStudent").get("age").equals("10"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"ValidStudent\").get(\"age\").equals(\"10\"));");
     }
 
     @Test
@@ -374,12 +397,19 @@ public class M4Test {
         System.out.println(table.toStringTable());
 
         assertTrue(ex == null) ;
+        this.logger.info("SUCCESS --- assertTrue(ex == null) ;");
         assertTrue(resUpdate.getStatus() == StatusType.SQLUPDATE_ERROR);
+        this.logger.info("SUCCESS --- assertTrue(resUpdate.getStatus() == StatusType.SQLUPDATE_ERROR);");
         assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
         assertTrue(resSelect.getKey().equals(tableName));
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
         assertTrue(table.getSize() == 1);
+        this.logger.info("SUCCESS --- assertTrue(table.getSize() == 1);");
         assertTrue(table.getRow("ValidStudent").get("student").equals("ValidStudent"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"ValidStudent\").get(\"student\").equals(\"ValidStudent\"));");
         assertTrue(table.getRow("ValidStudent").get("age").equals("10"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"ValidStudent\").get(\"age\").equals(\"10\"));");
     }
 
     @Test
@@ -430,12 +460,19 @@ public class M4Test {
         System.out.println(table.toStringTable());
 
         assertTrue(ex == null) ;
+        this.logger.info("SUCCESS --- assertTrue(ex == null) ;");
         assertTrue(resUpdate.getStatus() == StatusType.SQLUPDATE_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resUpdate.getStatus() == StatusType.SQLUPDATE_SUCCESS);");
         assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
         assertTrue(resSelect.getKey().equals(tableName));
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
         assertTrue(table.getSize() == 1);
+        this.logger.info("SUCCESS --- assertTrue(table.getSize() == 1);");
         assertTrue(table.getRow("ValidStudent").get("student").equals("ValidStudent"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"ValidStudent\").get(\"student\").equals(\"ValidStudent\"));");
         assertTrue(table.getRow("ValidStudent").get("age").equals("888"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"ValidStudent\").get(\"age\").equals(\"888\"));");
     }
 
     @Test
@@ -483,9 +520,13 @@ public class M4Test {
         }
 
         assertTrue(ex == null) ;
+        this.logger.info("SUCCESS --- assertTrue(ex == null) ;");
         assertTrue(resDrop.getStatus() == StatusType.SQLDROP_ERROR);
+        this.logger.info("SUCCESS --- assertTrue(resDrop.getStatus() == StatusType.SQLDROP_ERROR);");
         assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
         assertTrue(resSelect.getKey().equals(validTableName));
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(validTableName));");
     }
 
     @Test
@@ -534,9 +575,13 @@ public class M4Test {
         }
 
         assertTrue(ex == null) ;
+        this.logger.info("SUCCESS --- assertTrue(ex == null) ;");
         assertTrue(resDrop.getStatus() == StatusType.SQLDROP_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resDrop.getStatus() == StatusType.SQLDROP_SUCCESS);");
         assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_ERROR);
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_ERROR);");
         assertTrue(resSelect.getKey().equals(tableName));
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
     } 
 
     @Test
@@ -573,12 +618,19 @@ public class M4Test {
 
         SQLTable table = SQLTable.fromString(resSelect.getValue());
         assertTrue(resCreate.getStatus() == StatusType.SQLCREATE_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resCreate.getStatus() == StatusType.SQLCREATE_SUCCESS);");
         assertTrue(resInsert.getStatus() == StatusType.SQLINSERT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resInsert.getStatus() == StatusType.SQLINSERT_SUCCESS);");
         assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
         assertTrue(resSelect.getKey().equals(tableName));
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
         assertTrue(table.getSize() == 1);
+        this.logger.info("SUCCESS --- assertTrue(table.getSize() == 1);");
         assertTrue(table.getRow("a").get("student").equals("a"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"student\").equals(\"a\"));");
         assertTrue(table.getRow("a").get("age").equals("5"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"age\").equals(\"5\"));");
 
         try {
             kvClient.reconnect(replicas[0].getNodeHost(), replicas[0].getNodePort());
@@ -600,10 +652,15 @@ public class M4Test {
         if (resSelect != null) {
             table = SQLTable.fromString(resSelect.getValue());
             assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+            this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
             assertTrue(resSelect.getKey().equals(tableName));
+            this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
             assertTrue(table.getSize() == 1);
+            this.logger.info("SUCCESS --- assertTrue(table.getSize() == 1);");
             assertTrue(table.getRow("a").get("student").equals("a"));
+            this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"student\").equals(\"a\"));");
             assertTrue(table.getRow("a").get("age").equals("5"));
+            this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"age\").equals(\"5\"));");
         }
 
         try {
@@ -626,10 +683,15 @@ public class M4Test {
         if (resSelect != null) {
             table = SQLTable.fromString(resSelect.getValue());
             assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+            this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
             assertTrue(resSelect.getKey().equals(tableName));
+            this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
             assertTrue(table.getSize() == 1);
+            this.logger.info("SUCCESS --- assertTrue(table.getSize() == 1);");
             assertTrue(table.getRow("a").get("student").equals("a"));
+            this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"student\").equals(\"a\"));");
             assertTrue(table.getRow("a").get("age").equals("5"));
+            this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"age\").equals(\"5\"));");
         }
     }
 
@@ -668,12 +730,19 @@ public class M4Test {
 
         SQLTable table = SQLTable.fromString(resSelect.getValue());
         assertTrue(resCreate.getStatus() == StatusType.SQLCREATE_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resCreate.getStatus() == StatusType.SQLCREATE_SUCCESS);");
         assertTrue(resInsert.getStatus() == StatusType.SQLINSERT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resInsert.getStatus() == StatusType.SQLINSERT_SUCCESS);");
         assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
         assertTrue(resSelect.getKey().equals(tableName));
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
         assertTrue(table.getSize() == 1);
+        this.logger.info("SUCCESS --- assertTrue(table.getSize() == 1);");
         assertTrue(table.getRow("a").get("student").equals("a"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"student\").equals(\"a\"));");
         assertTrue(table.getRow("a").get("age").equals("5"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"age\").equals(\"5\"));");
 
         try {
             resUpdate = kvClient.sqlupdate(tableName, updateRow);
@@ -685,11 +754,17 @@ public class M4Test {
 
         table = SQLTable.fromString(resSelect.getValue());
         assertTrue(resUpdate.getStatus() == StatusType.SQLUPDATE_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resUpdate.getStatus() == StatusType.SQLUPDATE_SUCCESS);");
         assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
         assertTrue(resSelect.getKey().equals(tableName));
+        this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
         assertTrue(table.getSize() == 1);
+        this.logger.info("SUCCESS --- assertTrue(table.getSize() == 1);");
         assertTrue(table.getRow("a").get("student").equals("a"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"student\").equals(\"a\"));");
         assertTrue(table.getRow("a").get("age").equals("100"));
+        this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"age\").equals(\"100\"));");
 
         try {
             kvClient.reconnect(replicas[0].getNodeHost(), replicas[0].getNodePort());
@@ -711,10 +786,15 @@ public class M4Test {
         if (resSelect != null) {
             table = SQLTable.fromString(resSelect.getValue());
             assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+            this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
             assertTrue(resSelect.getKey().equals(tableName));
+            this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
             assertTrue(table.getSize() == 1);
+            this.logger.info("SUCCESS --- assertTrue(table.getSize() == 1);");
             assertTrue(table.getRow("a").get("student").equals("a"));
+            this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"student\").equals(\"a\"));");
             assertTrue(table.getRow("a").get("age").equals("100"));
+            this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"age\").equals(\"100\"));");
         }
 
         try {
@@ -737,10 +817,15 @@ public class M4Test {
         if (resSelect != null) {
             table = SQLTable.fromString(resSelect.getValue());
             assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+            this.logger.info("SUCCESS --- assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);");
             assertTrue(resSelect.getKey().equals(tableName));
+            this.logger.info("SUCCESS --- assertTrue(resSelect.getKey().equals(tableName));");
             assertTrue(table.getSize() == 1);
+            this.logger.info("SUCCESS --- assertTrue(table.getSize() == 1);");
             assertTrue(table.getRow("a").get("student").equals("a"));
+            this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"student\").equals(\"a\"));");
             assertTrue(table.getRow("a").get("age").equals("100"));
+            this.logger.info("SUCCESS --- assertTrue(table.getRow(\"a\").get(\"age\").equals(\"100\"));");
         }
     }
 
