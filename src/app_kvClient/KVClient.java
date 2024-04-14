@@ -294,7 +294,7 @@ public class KVClient implements IKVClient {
                     
                     try {
                         if (checkValidKey(tableName)) {
-                            KVMessage msg = kvStore.sqlselect(tableName);
+                            KVMessage msg = kvStore.sqlselect(tableName, false);
                             if (msg != null) {
                                 System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
                             } else {
@@ -322,7 +322,7 @@ public class KVClient implements IKVClient {
 
                     if (checkValidSqlSelect(row.toString())) {
                         try {
-                            KVMessage msg = kvStore.sqlselect(row.toString());
+                            KVMessage msg = kvStore.sqlselect(row.toString(), false);
                             if (msg != null) {
                                 System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
                             } else {

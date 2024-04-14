@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 
+import java.util.ArrayList;
 import shared.messages.BasicKVMessage;
 import shared.messages.KVMessage;
 import shared.messages.KVMessage.StatusType;
@@ -79,6 +80,13 @@ public class KVStore implements KVCommInterface {
 
     public ECSNode getResponsibleNode(String key) {
         return this.metaData.getNodeForKey(key);
+    }
+
+    public ArrayList<Object> getServerInfo() {
+        ArrayList<Object> serverInfo = new ArrayList<>();
+        serverInfo.add(serverAddress);
+        serverInfo.add(serverPort);
+        return serverInfo;
     }
 
     private BasicKVMessage sendMessageToServer(BasicKVMessage message) throws Exception {
@@ -197,8 +205,23 @@ public class KVStore implements KVCommInterface {
         BasicKVMessage invalidParametersError = this.validateSqlCmd(key, null);
         if (invalidParametersError != null)
             return invalidParametersError;
-            
+
         BasicKVMessage message = new BasicKVMessage(StatusType.SQLSELECT, key, null);
+
+        return this.sendMessageToServer(message);
+    }
+
+    public BasicKVMessage sqlselect(String key, boolean testing) throws Exception {
+        BasicKVMessage invalidParametersError = this.validateSqlCmd(key, null);
+        if (invalidParametersError != null)
+            return invalidParametersError;
+
+        BasicKVMessage message;
+        if (testing) {
+            message = new BasicKVMessage(StatusType.SQLSELECT, key, "testing");
+        } else {
+            message = new BasicKVMessage(StatusType.SQLSELECT, key, null);
+        }
 
         return this.sendMessageToServer(message);
     }

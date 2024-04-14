@@ -277,6 +277,8 @@ public class KVServer implements IKVServer {
         }
     }
 
+
+
     public SQLTable createSQLTable(String tableName, String primaryKey, Map<String, String> cols) {
         SQLTable newTable = new SQLTable(tableName, primaryKey);
         for (Map.Entry<String, String> entry : cols.entrySet()) {
@@ -654,7 +656,8 @@ public class KVServer implements IKVServer {
         return StatusType.SQLCREATE_SUCCESS;
     }
 
-    public String sqlSelect(String key) throws Exception {
+    public String sqlSelect(String key, boolean testing) throws Exception {
+        SQLTable table = null;
         if (key.contains(" ")) {
             this.logger.info("Parsing sql select query: " + key);
             String[] parts = key.split("\\s+from\\s+|\\s+where\\s+");
@@ -697,19 +700,24 @@ public class KVServer implements IKVServer {
                 this.logger.info("Condition: " + condition.toString());
             }
 
-            return sqlSelect(tableName, columnNames.equals("*") ? null : List.of(columnNames.replace("{", "").replace("}", "").split(",")), conditions);
+            table = sqlSelect(tableName, columnNames.equals("*") ? null : List.of(columnNames.replace("{", "").replace("}", "").split(",")), conditions);
 
         } else {
             if (!sqlTables.containsKey(key)) {
                 throw new Exception("table not found");
             }
 
-            SQLTable table = sqlTables.get(key);
+            table = sqlTables.get(key);
+        }
+
+        if (testing) {
+            return table.toStringForTransfer();
+        } else {
             return table.toStringTable();
         }
     }
 
-    public String sqlSelect(String tableName, List<String> columnNames, List<SQLTable.Condition> conditions) {
+    public SQLTable sqlSelect(String tableName, List<String> columnNames, List<SQLTable.Condition> conditions) {
         SQLTable table = sqlTables.get(tableName);
         if (table == null) {
             throw new IllegalArgumentException("Table " + tableName + " does not exist.");
@@ -720,7 +728,7 @@ public class KVServer implements IKVServer {
             selectedTable = selectedTable.selectCols(columnNames);
         }
 
-        return selectedTable.toString();
+        return selectedTable;
     }
 
     public synchronized StatusType sqlDrop(String key, boolean override) throws Exception {

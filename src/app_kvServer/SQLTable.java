@@ -28,6 +28,38 @@ public class SQLTable implements Serializable {
         this.rows = new HashMap<>();
     }
 
+    public int getSize() {
+        return rows.size();
+    }
+
+    public Map<String, String> getRow(String key) {
+        return rows.get(key);
+    }
+
+    public List<Map<String, String>> getRows() {
+        return new ArrayList<>(rows.values());
+    }
+
+    public List<String> getCols() {
+        return new ArrayList<>(cols);
+    }
+
+    public String getPrimaryKey() {
+        return primaryKey;
+    }
+
+    public boolean containsCol(String col) {
+        return cols.contains(col);
+    }
+
+    public boolean containsRow(String key) {
+        return rows.containsKey(key);
+    }
+
+    public Map<String, String> getColTypes() {
+        return new HashMap<>(colTypes);
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

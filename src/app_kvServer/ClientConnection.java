@@ -219,7 +219,11 @@ public class ClientConnection implements Runnable {
         else if (recvStatus == StatusType.SQLSELECT && recvKey != null) {
             if(this.server.isCoordinator(KVServer.escape(recvKey))){
                 try {
-                    String value = server.sqlSelect(recvKey);
+                    boolean testing = false;
+                    if (recvVal != null) {
+                        testing = true;
+                    }
+                    String value = server.sqlSelect(recvKey, testing);
 
                     if (value == null) // table not found, send error message to client: SQLSELECT_ERROR <tablename>
                         res = new BasicKVMessage(StatusType.SQLSELECT_ERROR, recvKey, null);
@@ -317,9 +321,9 @@ public class ClientConnection implements Runnable {
 
                     if (sqlUpdateStatus != StatusType.SERVER_WRITE_LOCK){
                         if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLUPDATE_REPLICATE)){
-                            this.logger.info("SQLUPDATE Replication success");
+                            this.logger.info("SQLUPDATE_REPLICATE Replication success");
                         } else {
-                            this.logger.info("SQLUPDATE Replication failure");
+                            this.logger.info("SQLUPDATE_REPLICATE Replication failure");
                         }
                     }
 
