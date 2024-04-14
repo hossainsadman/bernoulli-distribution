@@ -17,6 +17,7 @@ import client.KVCommInterface;
 import client.KVStore;
 import shared.messages.BasicKVMessage;
 import shared.messages.KVMessage;
+import shared.ConsoleColors;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
@@ -26,7 +27,7 @@ import com.google.gson.JsonObject;
 
 public class KVClient implements IKVClient {
     private static Logger logger = Logger.getRootLogger();
-    private static final String PROMPT = "M4-Client> ";
+    private static final String PROMPT = ConsoleColors.BLUE_BOLD_UNDERLINED + "M4-Client>" + ConsoleColors.RESET + " ";
 
     private static final int MAX_KEY_LEN = 20;
     private static final int MAX_KEY_VAL = 120 * 1024; // 120KB
@@ -52,43 +53,43 @@ public class KVClient implements IKVClient {
 
     private void printHelp() {
         StringBuilder sb = new StringBuilder();
-        sb.append(PROMPT).append("M2 CLIENT HELP (Usage):\n");
+        sb.append(PROMPT).append(ConsoleColors.BLUE_BOLD + "M2 CLIENT HELP (Usage):\n");
         sb.append(PROMPT);
-        sb.append("::::::::::::::::::::::::::::::::");
-        sb.append("::::::::::::::::::::::::::::::::\n");
+        sb.append(ConsoleColors.BLUE_BOLD + "::::::::::::::::::::::::::::::::");
+        sb.append(ConsoleColors.BLUE_BOLD + "::::::::::::::::::::::::::::::::\n");
 
-        sb.append(PROMPT).append("help");
-        sb.append("\t\t\t\t display client cli commands and usage\n");
+        sb.append(PROMPT).append(ConsoleColors.BLACK_BACKGROUND + "help");
+        sb.append(ConsoleColors.WHITE + "\t\t\t\t display client cli commands and usage\n");
 
-        sb.append(PROMPT).append("connect <address> <port>");
-        sb.append("\t establish connection to server\n");
+        sb.append(PROMPT).append(ConsoleColors.BLACK_BACKGROUND + "connect <address> <port>");
+        sb.append(ConsoleColors.WHITE + "\t establish connection to server\n");
 
-        sb.append(PROMPT).append("put <key> <value>");
-        sb.append("\t\t - insert a key-value pair into the server \n");
-        sb.append(PROMPT).append("\t\t\t\t - update (overwrite) current value if server already contains key \n");
-        sb.append(PROMPT).append("\t\t\t\t - delete entry for the given key if <value> = null \n");
+        sb.append(PROMPT).append(ConsoleColors.BLUE_BOLD_BACKGROUND + "put <key> <value>");
+        sb.append(ConsoleColors.BLUE + "\t\t - insert a key-value pair into the server \n");
+        sb.append(PROMPT).append(ConsoleColors.BLUE + "\t\t\t\t - update (overwrite) current value if server already contains key \n");
+        sb.append(PROMPT).append(ConsoleColors.BLUE + "\t\t\t\t - delete entry for the given key if <value> = null \n");
 
-        sb.append(PROMPT).append("get <key>");
-        sb.append("\t\t\t retrieve the value for the given key from the server \n");
+        sb.append(PROMPT).append(ConsoleColors.BLUE_BOLD_BACKGROUND + "get <key>");
+        sb.append(ConsoleColors.BLUE + "\t\t\t retrieve the value for the given key from the server \n");
 
-        sb.append(PROMPT).append("keyrange");
-        sb.append("\t\t\t retrieve keyranges for all servers \n");
+        sb.append(PROMPT).append(ConsoleColors.BLUE_BOLD_BACKGROUND + "keyrange");
+        sb.append(ConsoleColors.BLUE + "\t\t\t retrieve keyranges for all servers \n");
 
-        sb.append(PROMPT).append("keyrange_read");
-        sb.append("\t\t\t retrieve key ranges of the KV Servers including replicas \n");
+        sb.append(PROMPT).append(ConsoleColors.BLUE_BOLD_BACKGROUND + "keyrange_read");
+        sb.append(ConsoleColors.BLUE + "\t\t retrieve key ranges of the KV Servers including replicas \n");
 
-        sb.append(PROMPT).append("sql <query>");
-        sb.append("\t\t\t run sql commands (create table, update, add/remove rows) \n");
+        sb.append(PROMPT).append(ConsoleColors.YELLOW_BOLD_BACKGROUND + "sql <query>");
+        sb.append(ConsoleColors.YELLOW + "\t\t\t run sql commands (create table, update, add/remove rows) \n");
 
-        sb.append(PROMPT).append("logLevel");
-        sb.append("\t\t\t changes the logLevel \n");
-        sb.append(PROMPT).append("\t\t\t\t " + LogSetup.getPossibleLogLevels() + "\n");
+        sb.append(PROMPT).append(ConsoleColors.BLACK_BACKGROUND + "logLevel");
+        sb.append(ConsoleColors.WHITE + "\t\t\t changes the logLevel \n");
+        sb.append(PROMPT).append(ConsoleColors.WHITE + "\t\t\t\t " + LogSetup.getPossibleLogLevels() + "\n");
 
-        sb.append(PROMPT).append("disconnect");
-        sb.append("\t\t\t disconnect from the server \n");
+        sb.append(PROMPT).append(ConsoleColors.BLACK_BACKGROUND + "disconnect");
+        sb.append(ConsoleColors.WHITE + "\t\t\t disconnect from the server \n");
 
-        sb.append(PROMPT).append("quit");
-        sb.append("\t\t\t\t stop the program");
+        sb.append(PROMPT).append(ConsoleColors.BLACK_BACKGROUND + "quit");
+        sb.append(ConsoleColors.WHITE + "\t\t\t\t stop the program");
         System.out.println(sb.toString());
     }
 
@@ -126,11 +127,11 @@ public class KVClient implements IKVClient {
     }
 
     private void printError(String error) {
-        System.out.println(PROMPT + "Error! " + error);
+        System.out.println(PROMPT + ConsoleColors.RED + "Error! " + error + ConsoleColors.RESET);
     }
 
     public void quit() {
-        logger.info("Disconnecting from server and shutting down client...");
+        logger.info(ConsoleColors.RED_BOLD_UNDERLINED + "Disconnecting from server and shutting down client...");
         if (kvStore != null) {
             kvStore.disconnect();
             kvStore = null;
@@ -183,7 +184,7 @@ public class KVClient implements IKVClient {
         } else if (tokens[0].equals("quit")) {
             stop = true;
             quit();
-            System.out.println(PROMPT + "Application stop!");
+            System.out.println(PROMPT + ConsoleColors.RED + "Application stop!");
 
         } else if (tokens[0].equals("keyrange")) {
             if (kvStore != null) {
