@@ -217,7 +217,7 @@ public class ClientConnection implements Runnable {
 
         } 
         else if (recvStatus == StatusType.SQLSELECT && recvKey != null) {
-            if(this.server.isCoordinator(KVServer.escape(recvKey))){
+            if(this.server.isCoordinatorOrReplicator(KVServer.escape(recvKey))){
                 try {
                     boolean testing = false;
                     if (recvVal != null) {

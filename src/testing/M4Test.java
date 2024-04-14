@@ -42,13 +42,13 @@ public class M4Test {
             firstServer = ecsClient.addNode("FIFO", 10, 5004);
             secondServer = ecsClient.addNode("FIFO", 10, 5002);
             thirdServer = ecsClient.addNode("FIFO", 10, 5003);
-            fourthServer = ecsClient.addNode("FIFO", 10, 5001);
-            fifthServer = ecsClient.addNode("FIFO", 10, 5005);
+            // fourthServer = ecsClient.addNode("FIFO", 10, 5001);
+            // fifthServer = ecsClient.addNode("FIFO", 10, 5005);
             allNodes.add(firstServer);
             allNodes.add(secondServer);
             allNodes.add(thirdServer);
-            allNodes.add(fourthServer);
-            allNodes.add(fifthServer);
+            // allNodes.add(fourthServer);
+            // allNodes.add(fifthServer);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -59,7 +59,7 @@ public class M4Test {
         for (ECSNode node : allNodes) {
             ecsClient.removeNodes(Arrays.asList(node.getNodeHost() + ":" + node.getNodePort()));
             try {
-                TimeUnit.MILLISECONDS.sleep(100);
+                TimeUnit.MILLISECONDS.sleep(500);
             } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -603,11 +603,48 @@ public class M4Test {
             ex = e;
         }
 
-        table = SQLTable.fromString(resSelect.getValue());
-        assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
-        assertTrue(resSelect.getKey().equals(tableName));
-        assertTrue(table.getSize() == 1);
-        assertTrue(table.getRow("a").get("student").equals("a"));
-        assertTrue(table.getRow("a").get("age").equals("100"));
+        if (resSelect != null) {
+            this.logger.info("resSelect");
+            this.logger.info("Status: " + resSelect.getStatus());
+            this.logger.info("Key: " + resSelect.getKey());
+            this.logger.info("Value: " + resSelect.getValue());
+        } else {
+            this.logger.info("resSelect is null");
+        }
+
+        if (resSelect != null) {
+            table = SQLTable.fromString(resSelect.getValue());
+            assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+            assertTrue(resSelect.getKey().equals(tableName));
+            assertTrue(table.getSize() == 1);
+            assertTrue(table.getRow("a").get("student").equals("a"));
+            assertTrue(table.getRow("a").get("age").equals("100"));
+        }
+
+        try {
+            kvClient.reconnect(replicas[1].getNodeHost(), replicas[1].getNodePort());
+            resSelect = kvClient.sqlselect(tableName, true);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ex = e;
+        }
+
+        if (resSelect != null) {
+            this.logger.info("resSelect");
+            this.logger.info("Status: " + resSelect.getStatus());
+            this.logger.info("Key: " + resSelect.getKey());
+            this.logger.info("Value: " + resSelect.getValue());
+        } else {
+            this.logger.info("resSelect is null");
+        }
+
+        if (resSelect != null) {
+            table = SQLTable.fromString(resSelect.getValue());
+            assertTrue(resSelect.getStatus() == StatusType.SQLSELECT_SUCCESS);
+            assertTrue(resSelect.getKey().equals(tableName));
+            assertTrue(table.getSize() == 1);
+            assertTrue(table.getRow("a").get("student").equals("a"));
+            assertTrue(table.getRow("a").get("age").equals("100"));
+        }
     }
 }

@@ -311,7 +311,7 @@ public class KVClient implements IKVClient {
                     printError("Not connected to server!");
                 }
             } else if (tokens.length > 2) {
-                // if (kvStore != null) {
+                if (kvStore != null) {
                     StringBuilder row = new StringBuilder();
                     for (int i = 1; i < tokens.length; i++) {
                         row.append(tokens[i]);
@@ -335,9 +335,9 @@ public class KVClient implements IKVClient {
                         printError("Invalid sqlselect!");
                         logger.error("Invalid sqlselect!");
                     }
-                // } else {
-                    // printError("Not connected to server!");
-                // }   
+                } else {
+                    printError("Not connected to server!");
+                }   
             } else {
                 printError("No sqlselect values provided!");
             }
