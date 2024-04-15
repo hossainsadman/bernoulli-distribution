@@ -293,8 +293,6 @@ public class KVServer implements IKVServer {
         }
     }
 
-
-
     public SQLTable createSQLTable(String tableName, String primaryKey, Map<String, String> cols) {
         SQLTable newTable = new SQLTable(tableName, primaryKey);
         for (Map.Entry<String, String> entry : cols.entrySet()) {

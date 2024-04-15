@@ -184,13 +184,6 @@ public class ClientConnection implements Runnable {
         } 
         else if (recvStatus == StatusType.SQLCREATE && recvKey != null && recvVal != null) {
             if(this.server.isCoordinator(KVServer.escape(recvKey))){
-                /*
-                * tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS
-                * <key> <value>
-                * tuple successfully updated, send acknowledgement to client: PUT_UPDATE <key>
-                * <value>
-                * unable to insert tuple, send error message to client: PUT_ERROR <key> <value>
-                */
 
                 try {
                     StatusType sqlCreateStatus;
@@ -271,13 +264,6 @@ public class ClientConnection implements Runnable {
         } 
         else if (recvStatus == StatusType.SQLINSERT && recvKey != null && recvVal != null) {
             if(this.server.isCoordinator(KVServer.escape(recvKey))){
-                /*
-                * tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS
-                * <key> <value>
-                * tuple successfully updated, send acknowledgement to client: PUT_UPDATE <key>
-                * <value>
-                * unable to insert tuple, send error message to client: PUT_ERROR <key> <value>
-                */
 
                 try {
                     StatusType sqlInsertStatus;
@@ -307,13 +293,6 @@ public class ClientConnection implements Runnable {
         } 
         else if (recvStatus == StatusType.SQLUPDATE && recvKey != null && recvVal != null) {
             if(this.server.isCoordinator(KVServer.escape(recvKey))){
-                /*
-                * tuple successfully inserted, send acknowledgement to client: PUT_SUCCESS
-                * <key> <value>
-                * tuple successfully updated, send acknowledgement to client: PUT_UPDATE <key>
-                * <value>
-                * unable to insert tuple, send error message to client: PUT_ERROR <key> <value>
-                */
 
                 try {
                     StatusType sqlUpdateStatus;
