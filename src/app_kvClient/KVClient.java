@@ -94,8 +94,7 @@ public class KVClient implements IKVClient {
     }
 
     private void printPossibleLogLevels() {
-        System.out.println(PROMPT
-                + "Possible log levels are:");
+        System.out.println(PROMPT + "Possible log levels are:");
         System.out.println("\t\t" + LogSetup.getPossibleLogLevels());
     }
 
@@ -127,7 +126,7 @@ public class KVClient implements IKVClient {
     }
 
     private void printError(String error) {
-        System.out.println(PROMPT + ConsoleColors.RED + "Error! " + error + ConsoleColors.RESET);
+        System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + ConsoleColors.RED_UNDERLINED + "Error! " + error + ConsoleColors.RESET + ConsoleColors.RESET);
     }
 
     public void quit() {
@@ -184,19 +183,23 @@ public class KVClient implements IKVClient {
         } else if (tokens[0].equals("quit")) {
             stop = true;
             quit();
-            System.out.println(PROMPT + ConsoleColors.RED + "Application stop!");
+            System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + ConsoleColors.RED + "Application stop!" + ConsoleColors.RESET);
 
         } else if (tokens[0].equals("keyrange")) {
             if (kvStore != null) {
                 try {
                     KVMessage msg = kvStore.keyrange();
                     if (msg != null) {
-                        System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey());
+                        if (msg.getStatus().toString().contains("ERROR")) {
+                            System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                        } else {
+                            System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                        }
                     } else {
-                        System.out.println(PROMPT + "KEYRANGE ERROR: null msg!");
+                        System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "KEYRANGE ERROR: null msg!" + ConsoleColors.RESET);
                     }
                 } catch (Exception e) {
-                    logger.error("Put to server failed!", e);
+                    logger.error(ConsoleColors.RED_UNDERLINED + "Put to server failed!" + ConsoleColors.RESET, e);
                 }
             } else {
                 printError("Not connected to server!");
@@ -206,12 +209,16 @@ public class KVClient implements IKVClient {
                 try {
                     KVMessage msg = kvStore.keyrangeRead();
                     if (msg != null) {
-                        System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey());
+                        if (msg.getStatus().toString().contains("ERROR")) {
+                            System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                        } else {
+                            System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                        }
                     } else {
-                        System.out.println(PROMPT + "KEYRANGE_READ ERROR: null msg!");
+                        System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "KEYRANGE_READ ERROR: null msg!" + ConsoleColors.RESET);
                     }
                 } catch (Exception e) {
-                    logger.error("Put to server failed!", e);
+                    logger.error(ConsoleColors.RED_UNDERLINED + "Put to server failed!" + ConsoleColors.RESET, e);
                 }
             } else {
                 printError("Not connected to server!");
@@ -221,12 +228,16 @@ public class KVClient implements IKVClient {
                 try {
                     KVMessage msg = kvStore.getAllKeys();
                     if (msg != null) {
-                        System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey());
+                        if (msg.getStatus().toString().contains("ERROR")) {
+                            System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                        } else {
+                            System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                        }
                     } else {
-                        System.out.println(PROMPT + "GET_ALL_KEYS ERROR: null msg!");
+                        System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "GET_ALL_KEYS ERROR: null msg!" + ConsoleColors.RESET);
                     }
                 } catch (Exception e) {
-                    logger.error("Put to server failed!", e);
+                    logger.error(ConsoleColors.RED_UNDERLINED + "Put to server failed!" + ConsoleColors.RESET, e);
                 }
             } else {
                 printError("Not connected to server!");
@@ -252,17 +263,17 @@ public class KVClient implements IKVClient {
                         for (String pair : pairs) {
                             String[] parts = pair.split(":");
                             if (parts.length != 2) {
-                                System.out.println(PROMPT + "Invalid column pair: " + pair);
+                                System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "Invalid column pair: " + pair + ConsoleColors.RESET);
                                 validSqlCreate = false;
                             }
                             String name = parts[0];
                             String type = parts[1];
                             if (!type.equals("int") && !type.equals("text")) {
-                                System.out.println(PROMPT + "Invalid type for column " + name + ": " + type);
+                                System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "Invalid type for column " + name + ": " + type + ConsoleColors.RESET);
                                 validSqlCreate = false;
                             }
                             if (cols.containsKey(name)) {
-                                System.out.println(PROMPT + "Column name " + name + " is repeated");
+                                System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "Column name " + name + " is repeated" + ConsoleColors.RESET);
                                 validSqlCreate = false;
                             }
                             cols.put(name, type);
@@ -271,16 +282,20 @@ public class KVClient implements IKVClient {
                         if (validSqlCreate) {
                             KVMessage msg = kvStore.sqlcreate(tableName, colPairs.toString());
                             if (msg != null) {
-                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                                if (msg.getStatus().toString().contains("ERROR")) {
+                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                } else {
+                                    System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                }
                             } else {
-                                System.out.println(PROMPT + "sqlcreate ERROR: null msg!");
+                                System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "sqlcreate ERROR: null msg!" + ConsoleColors.RESET);
                             }
                         } else {
                             printError("Invalid sqlcreate!");
-                            logger.error("Invalid sqlcreate!");
+                            logger.error(ConsoleColors.RED_UNDERLINED + "Invalid sqlcreate!" + ConsoleColors.RESET);
                         }
                     } catch (Exception e) {
-                        logger.error("sqlcreate to server failed!", e);
+                        logger.error(ConsoleColors.RED_UNDERLINED + "sqlcreate to server failed!" + ConsoleColors.RESET, e);
                     }
                 } else {
                     printError("Not connected to server!");
@@ -297,16 +312,20 @@ public class KVClient implements IKVClient {
                         if (checkValidKey(tableName)) {
                             KVMessage msg = kvStore.sqlselect(tableName, false);
                             if (msg != null) {
-                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                                if (msg.getStatus().toString().contains("ERROR")) {
+                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                } else {
+                                    System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                }
                             } else {
-                                System.out.println(PROMPT + "sqlselect ERROR: null msg!");
+                                System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "sqlselect ERROR: null msg!" + ConsoleColors.RESET);
                             }
                         } else {
                             printError("Invalid sqlselect!");
-                            logger.error("Invalid sqlselect!");
+                            logger.error(ConsoleColors.RED_UNDERLINED + "Invalid sqlselect!" + ConsoleColors.RESET);
                         }
                     } catch (Exception e) {
-                        logger.error("sqlselect to server failed!", e);
+                        logger.error(ConsoleColors.RED_UNDERLINED + "sqlselect to server failed!" + ConsoleColors.RESET, e);
                     }
                 } else {
                     printError("Not connected to server!");
@@ -325,16 +344,20 @@ public class KVClient implements IKVClient {
                         try {
                             KVMessage msg = kvStore.sqlselect(row.toString(), false);
                             if (msg != null) {
-                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                                if (msg.getStatus().toString().contains("ERROR")) {
+                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                } else {
+                                    System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                }
                             } else {
-                                System.out.println(PROMPT + "sqlselect ERROR: null msg!");
+                                System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "sqlselect ERROR: null msg!" + ConsoleColors.RESET);
                             }
                         } catch (Exception e) {
-                            logger.error("sqlselect to server failed!", e);
+                            logger.error(ConsoleColors.RED_UNDERLINED + "sqlselect to server failed!" + ConsoleColors.RESET, e);
                         }
                     } else {
                         printError("Invalid sqlselect!");
-                        logger.error("Invalid sqlselect!");
+                        logger.error(ConsoleColors.RED_UNDERLINED + "Invalid sqlselect!" + ConsoleColors.RESET);
                     }
                 } else {
                     printError("Not connected to server!");
@@ -351,16 +374,20 @@ public class KVClient implements IKVClient {
                         if (checkValidKey(tableName)) {
                             KVMessage msg = kvStore.sqldrop(tableName);
                             if (msg != null) {
-                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                                if (msg.getStatus().toString().contains("ERROR")) {
+                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                } else {
+                                    System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                }
                             } else {
-                                System.out.println(PROMPT + "sqldrop ERROR: null msg!");
+                                System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "sqldrop ERROR: null msg!" + ConsoleColors.RESET);
                             }
                         } else {
                             printError("Invalid sqldrop!");
-                            logger.error("Invalid sqldrop!");
+                            logger.error(ConsoleColors.RED_UNDERLINED + "Invalid sqldrop!" + ConsoleColors.RESET);
                         }
                     } catch (Exception e) {
-                        logger.error("sqldrop to server failed!", e);
+                        logger.error(ConsoleColors.RED_UNDERLINED + "sqldrop to server failed!" + ConsoleColors.RESET, e);
                     }
                 } else {
                     printError("Not connected to server!");
@@ -384,29 +411,33 @@ public class KVClient implements IKVClient {
                         boolean valid = true;
                         if (!checkValidKey(tableName)) {
                             printError("Invalid sqlinsert table name!");
-                            logger.error("Invalid sqlinsert table name!");
+                            logger.error(ConsoleColors.RED_UNDERLINED + "Invalid sqlinsert table name!" + ConsoleColors.RESET);
                             valid = false;
                         }
                         if (!checkValidJson(row.toString())) {
                             printError("Invalid sqlinsert table row!");
-                            logger.error("Invalid sqlinsert table row!");
+                            logger.error(ConsoleColors.RED_UNDERLINED + "Invalid sqlinsert table row!" + ConsoleColors.RESET);
                             valid = false;
                         }
 
                         if (valid) {
                             KVMessage msg = kvStore.sqlinsert(tableName, row.toString());
                             if (msg != null) {
-                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                                if (msg.getStatus().toString().contains("ERROR")) {
+                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                } else {
+                                    System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                }
                             } else {
-                                System.out.println(PROMPT + "sqlinsert ERROR: null msg!");
+                                System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "sqlinsert ERROR: null msg!" + ConsoleColors.RESET);
                             }
                         } else {
                             printError("Invalid sqlinsert!");
-                            logger.error("Invalid sqlinsert!");
+                            logger.error(ConsoleColors.RED_UNDERLINED + "Invalid sqlinsert!" + ConsoleColors.RESET);
                         }
 
                     } catch (Exception e) {
-                        logger.error("sqlinsert to server failed!", e);
+                        logger.error(ConsoleColors.RED_UNDERLINED + "sqlinsert to server failed!" + ConsoleColors.RESET, e);
                     }
                 } else {
                     printError("Not connected to server!");
@@ -430,29 +461,33 @@ public class KVClient implements IKVClient {
                         boolean valid = true;
                         if (!checkValidKey(tableName)) {
                             printError("Invalid sqlupdate table name!");
-                            logger.error("Invalid sqlupdate table name!");
+                            logger.error(ConsoleColors.RED_UNDERLINED + "Invalid sqlupdate table name!" + ConsoleColors.RESET);
                             valid = false;
                         }
                         if (!checkValidJson(row.toString())) {
                             printError("Invalid sqlupdate table row!");
-                            logger.error("Invalid sqlupdate table row!");
+                            logger.error(ConsoleColors.RED_UNDERLINED + "Invalid sqlupdate table row!" + ConsoleColors.RESET);
                             valid = false;
                         }
 
                         if (valid) {
                             KVMessage msg = kvStore.sqlupdate(tableName, row.toString());
                             if (msg != null) {
-                                System.out.println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                                if (msg.getStatus().toString().contains("ERROR")) {
+                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                } else {
+                                    System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                }
                             } else {
-                                System.out.println(PROMPT + "sqlupdate ERROR: null msg!");
+                                System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "sqlupdate ERROR: null msg!" + ConsoleColors.RESET);
                             }
                         } else {
                             printError("Invalid sqlupdate!");
-                            logger.error("Invalid sqlupdate!");
+                            logger.error(ConsoleColors.RED_UNDERLINED + "Invalid sqlupdate!" + ConsoleColors.RESET);
                         }
 
                     } catch (Exception e) {
-                        logger.error("sqlupdate to server failed!", e);
+                        logger.error(ConsoleColors.RED_UNDERLINED + "sqlupdate to server failed!" + ConsoleColors.RESET, e);
                     }
                 } else {
                     printError("Not connected to server!");
@@ -494,17 +529,20 @@ public class KVClient implements IKVClient {
                         if (checkValidKey(tokens[1], value.toString())) {
                             KVMessage msg = kvStore.put(tokens[1], value.toString());
                             if (msg != null) {
-                                System.out
-                                        .println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                                if (msg.getStatus().toString().contains("ERROR")) {
+                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                } else {
+                                    System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                }
                             } else {
-                                System.out.println(PROMPT + "PUT ERROR: null msg!");
+                                System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "PUT ERROR: null msg!" + ConsoleColors.RESET);
                             }
                         } else {
                             printError("Invalid key-value pair!");
-                            logger.error("Invalid key-value pair!");
+                            logger.error(ConsoleColors.RED_UNDERLINED + "Invalid key-value pair!" + ConsoleColors.RESET);
                         }
                     } catch (Exception e) {
-                        logger.error("Put to server failed!", e);
+                        logger.error(ConsoleColors.RED_UNDERLINED + "Put to server failed!" + ConsoleColors.RESET, e);
                     }
                 } else {
                     printError("Not connected to server!");
@@ -520,17 +558,20 @@ public class KVClient implements IKVClient {
                         if (checkValidKey(tokens[1])) {
                             BasicKVMessage msg = kvStore.get(tokens[1]);
                             if (msg != null) {
-                                System.out
-                                        .println(PROMPT + msg.getStatus() + " " + msg.getKey() + " " + msg.getValue());
+                                if (msg.getStatus().toString().contains("ERROR")) {
+                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                } else {
+                                    System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                }
                             } else {
-                                System.out.println(PROMPT + "PUT ERROR: null msg!");
+                                System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "PUT ERROR: null msg!" + ConsoleColors.RESET);
                             }
                         } else {
                             printError("Invalid key!");
-                            logger.error("Invalid key!");
+                            logger.error(ConsoleColors.RED_UNDERLINED + "Invalid key!" + ConsoleColors.RESET);
                         }
                     } catch (Exception e) {
-                        logger.error("Get from server failed!", e);
+                        logger.error(ConsoleColors.RED_UNDERLINED + "Get from server failed!" + ConsoleColors.RESET, e);
                     }
                 } else {
                     printError("Not connected!");
@@ -550,7 +591,7 @@ public class KVClient implements IKVClient {
                         printError("No valid log level!");
                         printPossibleLogLevels();
                     } else {
-                        System.out.println(PROMPT + "Set log level: " + level);
+                        System.out.println(PROMPT + ConsoleColors.BLACK_BOLD_BACKGROUND + "Set log level: " + level + ConsoleColors.RESET);
                     }
                 } else {
                     printError("Invalid log level!");
@@ -565,12 +606,12 @@ public class KVClient implements IKVClient {
                 if (kvStore != null) {
                     kvStore.disconnect();
                     kvStore = null;
-                    System.out.println(PROMPT + "Disconnected from server!");
+                    System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "Disconnected from server!" + ConsoleColors.RESET);
                 } else {
                     printError("Not connected to server!");
                 }
             } catch (Exception e) {
-                logger.error("Disconnect from server failed!", e);
+                logger.error(ConsoleColors.RED_UNDERLINED + "Disconnect from server failed!" + ConsoleColors.RESET, e);
             }
 
         } else if (tokens[0].length() == 0) {
@@ -592,7 +633,7 @@ public class KVClient implements IKVClient {
                 this.handleCommand(cmdLine);
             } catch (IOException e) {
                 stop = true;
-                logger.error("I/O Error: " + e.getMessage());
+                logger.error(ConsoleColors.RED_UNDERLINED + "I/O Error: " + e.getMessage() + ConsoleColors.RESET);
                 printError(e.getMessage());
                 e.printStackTrace();
                 System.exit(1);

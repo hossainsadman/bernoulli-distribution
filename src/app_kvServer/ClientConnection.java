@@ -10,6 +10,7 @@ import shared.messages.KVMessage.StatusType;
 import shared.CommunicationService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import shared.ConsoleColors;
 
 /**
  * Represents a connection end point for a particular client that is
@@ -51,7 +52,7 @@ public class ClientConnection implements Runnable {
             } catch (IOException ioe) {
                 isOpen = false;
             } catch (Exception e) {
-                logger.error("Error! while processing message", e);
+                logger.error(ConsoleColors.RED_UNDERLINED + "Error! while processing message" + ConsoleColors.RESET, e);
             }
         }
         close();
@@ -67,9 +68,9 @@ public class ClientConnection implements Runnable {
             if (comm != null)
                 comm.disconnect();
 
-            logger.info("Connection closed for " + clientSocket.getInetAddress().getHostName());
+            logger.info(ConsoleColors.GREEN_UNDERLINED + "Connection closed for " + clientSocket.getInetAddress().getHostName() + ConsoleColors.RESET);
         } catch (IOException e) {
-            logger.error("Error! closing connection", e);
+            logger.error(ConsoleColors.RED_UNDERLINED + "Error! closing connection" + ConsoleColors.RESET, e);
         }
     }
 
@@ -97,7 +98,7 @@ public class ClientConnection implements Runnable {
             res = new BasicKVMessage(StatusType.KEYRANGE_SUCCESS, this.server.getHashRing().toString(), null);
         } 
         else if (recvStatus == StatusType.REPLICATE){
-            System.out.println("[KVServer] Received REPLICATE command (" + recvKey + "," + recvVal + ")");
+            System.out.println(ConsoleColors.GREEN_UNDERLINED + "[KVServer] Received REPLICATE command (" + recvKey + "," + recvVal + ")");
 
             try {
                 server.putKV(recvKey, recvVal);
@@ -127,9 +128,9 @@ public class ClientConnection implements Runnable {
 
                     if (putStatus != StatusType.SERVER_WRITE_LOCK){
                         if (this.server.replicate(recvKey, recvVal)){
-                            this.logger.info("Replication success");
+                            this.logger.info(ConsoleColors.GREEN_UNDERLINED + "Replication success" + ConsoleColors.RESET);
                         } else {
-                            this.logger.info("Replication failure");
+                            this.logger.info(ConsoleColors.GREEN_UNDERLINED + "Replication failure" + ConsoleColors.RESET);
                         }
                     }
 
@@ -198,9 +199,9 @@ public class ClientConnection implements Runnable {
 
                     if (sqlCreateStatus != StatusType.SERVER_WRITE_LOCK){
                         if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLCREATE_REPLICATE)){
-                            this.logger.info("SQLCREATE_REPLICATE Replication success");
+                            this.logger.info(ConsoleColors.GREEN_UNDERLINED + "SQLCREATE_REPLICATE Replication success" + ConsoleColors.RESET);
                         } else {
-                            this.logger.info("SQLCREATE_REPLICATE Replication failure");
+                            this.logger.info(ConsoleColors.GREEN_UNDERLINED + "SQLCREATE_REPLICATE Replication failure" + ConsoleColors.RESET);
                         }
                     }
 
@@ -251,9 +252,9 @@ public class ClientConnection implements Runnable {
 
                     if (sqlDropStatus != StatusType.SERVER_WRITE_LOCK){
                         if (this.server.replicateSQLCommand(recvKey, null, StatusType.SQLDROP_REPLICATE)){
-                            this.logger.info("SQLDROP_REPLICATE Replication success");
+                            this.logger.info(ConsoleColors.GREEN_UNDERLINED + "SQLDROP_REPLICATE Replication success" + ConsoleColors.RESET);
                         } else {
-                            this.logger.info("SQLDROP_REPLICATE Replication failure");
+                            this.logger.info(ConsoleColors.GREEN_UNDERLINED + "SQLDROP_REPLICATE Replication failure" + ConsoleColors.RESET);
                         }
                     }
 
@@ -285,15 +286,15 @@ public class ClientConnection implements Runnable {
 
                     if (sqlInsertStatus != StatusType.SERVER_WRITE_LOCK){
                         if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLINSERT_REPLICATE)){
-                            this.logger.info("SQLINSERT_REPLICATE Replication success");
+                            this.logger.info(ConsoleColors.GREEN_UNDERLINED + "SQLINSERT_REPLICATE Replication success" + ConsoleColors.RESET);
                         } else {
-                            this.logger.info("SQLINSERT_REPLICATE Replication failure");
+                            this.logger.info(ConsoleColors.GREEN_UNDERLINED + "SQLINSERT_REPLICATE Replication failure" + ConsoleColors.RESET);
                         }
                     }
 
                 } catch (Exception e) {
                     res = new BasicKVMessage(StatusType.SQLINSERT_ERROR, recvKey, recvVal);
-                    this.logger.error("Error occurred during SQLINSERT: " + e.getMessage());
+                    this.logger.error(ConsoleColors.RED_UNDERLINED + "Error occurred during SQLINSERT: " + e.getMessage() + ConsoleColors.RESET);
                 }
             } else {
                 if(recvLocolProtocol){
@@ -321,15 +322,15 @@ public class ClientConnection implements Runnable {
 
                     if (sqlUpdateStatus != StatusType.SERVER_WRITE_LOCK){
                         if (this.server.replicateSQLCommand(recvKey, recvVal, StatusType.SQLUPDATE_REPLICATE)){
-                            this.logger.info("SQLUPDATE_REPLICATE Replication success");
+                            this.logger.info(ConsoleColors.GREEN_UNDERLINED + "SQLUPDATE_REPLICATE Replication success" + ConsoleColors.RESET);
                         } else {
-                            this.logger.info("SQLUPDATE_REPLICATE Replication failure");
+                            this.logger.info(ConsoleColors.GREEN_UNDERLINED + "SQLUPDATE_REPLICATE Replication failure" + ConsoleColors.RESET);
                         }
                     }
 
                 } catch (Exception e) {
                     res = new BasicKVMessage(StatusType.SQLUPDATE_ERROR, recvKey, recvVal);
-                    this.logger.error("Error occurred during SQLUPDATE: " + e.getMessage());
+                    this.logger.error(ConsoleColors.RED_UNDERLINED + "Error occurred during SQLUPDATE: " + e.getMessage() + ConsoleColors.RESET);
                 }
             } else {
                 if(recvLocolProtocol){
@@ -341,7 +342,7 @@ public class ClientConnection implements Runnable {
 
         } 
         else if (recvStatus == StatusType.SQLCREATE_REPLICATE && recvKey != null && recvVal != null) {
-            System.out.println("[KVServer] Received SQLCREATE_REPLICATE command (" + recvKey + "," + recvVal + ")");
+            System.out.println(ConsoleColors.GREEN_UNDERLINED + "[KVServer] Received SQLCREATE_REPLICATE command (" + recvKey + "," + recvVal + ")");
 
             try {
                 StatusType sqlCreateStatus;
@@ -349,12 +350,12 @@ public class ClientConnection implements Runnable {
                 res = new BasicKVMessage(sqlCreateStatus, recvKey, recvVal);
             } catch (Exception e) {
                 res = new BasicKVMessage(StatusType.SQLCREATE_REPLICATE_ERROR, recvKey, recvVal);
-                this.logger.error("Error occurred during SQLCREATE_REPLICATE_ERROR: " + e.getMessage());
+                this.logger.error(ConsoleColors.RED_UNDERLINED + "Error occurred during SQLCREATE_REPLICATE_ERROR: " + e.getMessage() + ConsoleColors.RESET);
             }
 
         } 
         else if (recvStatus == StatusType.SQLDROP_REPLICATE && recvKey != null) {
-            System.out.println("[KVServer] Received SQLDROP_REPLICATE command (" + recvKey + ")");
+            System.out.println(ConsoleColors.GREEN_UNDERLINED + "[KVServer] Received SQLDROP_REPLICATE command (" + recvKey + ")");
 
             try {
                 StatusType sqlDropStatus;
@@ -362,12 +363,12 @@ public class ClientConnection implements Runnable {
                 res = new BasicKVMessage(sqlDropStatus, recvKey, null);
             } catch (Exception e) {
                 res = new BasicKVMessage(StatusType.SQLDROP_REPLICATE_ERROR, recvKey, null);
-                this.logger.error("Error occurred during SQLDROP_REPLICATE_ERROR: " + e.getMessage());
+                this.logger.error(ConsoleColors.RED_UNDERLINED + "Error occurred during SQLDROP_REPLICATE_ERROR: " + e.getMessage() + ConsoleColors.RESET);
             }
 
         } 
         else if (recvStatus == StatusType.SQLINSERT_REPLICATE && recvKey != null && recvVal != null) {
-            System.out.println("[KVServer] Received SQLINSERT_REPLICATE command (" + recvKey + "," + recvVal + ")");
+            System.out.println(ConsoleColors.GREEN_UNDERLINED + "[KVServer] Received SQLINSERT_REPLICATE command (" + recvKey + "," + recvVal + ")");
 
             try {
                 StatusType sqlInsertStatus;
@@ -375,12 +376,12 @@ public class ClientConnection implements Runnable {
                 res = new BasicKVMessage(sqlInsertStatus, recvKey, recvVal);
             } catch (Exception e) {
                 res = new BasicKVMessage(StatusType.SQLINSERT_REPLICATE_ERROR, recvKey, recvVal);
-                this.logger.error("Error occurred during SQLINSERT_REPLICATE: " + e.getMessage());
+                this.logger.error(ConsoleColors.RED_UNDERLINED + "Error occurred during SQLINSERT_REPLICATE: " + e.getMessage() + ConsoleColors.RESET);
             }
             
         } 
         else if (recvStatus == StatusType.SQLUPDATE_REPLICATE && recvKey != null && recvVal != null) {
-            System.out.println("[KVServer] Received SQLUPDATE_REPLICATE command (" + recvKey + "," + recvVal + ")");
+            System.out.println(ConsoleColors.GREEN_UNDERLINED + "[KVServer] Received SQLUPDATE_REPLICATE command (" + recvKey + "," + recvVal + ")");
 
             try {
                 StatusType sqlUpdateStatus;
@@ -388,7 +389,7 @@ public class ClientConnection implements Runnable {
                 res = new BasicKVMessage(sqlUpdateStatus, recvKey, recvVal);
             } catch (Exception e) {
                 res = new BasicKVMessage(StatusType.SQLUPDATE_REPLICATE_ERROR, recvKey, recvVal);
-                this.logger.error("Error occurred during SQLUPDATE_REPLICATE: " + e.getMessage());
+                this.logger.error(ConsoleColors.RED_UNDERLINED + "Error occurred during SQLUPDATE_REPLICATE: " + e.getMessage() + ConsoleColors.RESET);
             }
             
         }

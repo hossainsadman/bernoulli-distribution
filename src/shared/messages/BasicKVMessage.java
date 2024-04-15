@@ -4,6 +4,7 @@ import java.io.ObjectInputFilter.Status;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import org.apache.log4j.*;
+import shared.ConsoleColors;
 
 public class BasicKVMessage implements KVMessage {
   private static final int STATUS_SIZE = 25;
@@ -83,7 +84,7 @@ public class BasicKVMessage implements KVMessage {
   }
 
   private void parseLocalProtocol(byte[] bytes) {
-    this.logger.info("Internal Message");
+    this.logger.info(ConsoleColors.BLACK_BACKGROUND + "Internal Message" + ConsoleColors.RESET);
     this.localProtocol = true;
     try {
       ByteBuffer buffer = ByteBuffer.wrap(bytes);
@@ -118,7 +119,7 @@ public class BasicKVMessage implements KVMessage {
   }
   
   private void parseExternalProtocol(byte bytes[]) {
-    this.logger.info("External Message");
+    this.logger.info(ConsoleColors.BLACK_BACKGROUND + "External Message" + ConsoleColors.RESET);
     this.localProtocol = false;
     String receivedMsg = new String(bytes).trim(); 
     String[] components = receivedMsg.split("\\s+");
@@ -151,13 +152,13 @@ public class BasicKVMessage implements KVMessage {
       this.value = rawValue.toString();
     }
 
-    this.logger.info("Status: " + status);
-    this.logger.info("Key: " + key);
-    this.logger.info("Value: " + value);
+    this.logger.info(ConsoleColors.BLACK_BACKGROUND + "Status: " + status + ConsoleColors.RESET);
+    this.logger.info(ConsoleColors.BLACK_BACKGROUND + "Key: " + key + ConsoleColors.RESET);
+    this.logger.info(ConsoleColors.BLACK_BACKGROUND + "Value: " + value + ConsoleColors.RESET);
   }
 
   private void parseBytes(byte[] bytes) {
-    this.logger.info("Messaged received, now parsing");
+    this.logger.info(ConsoleColors.BLACK_BACKGROUND + "Messaged received, now parsing" + ConsoleColors.RESET);
     int secretLength = SECRET.length();
     byte[] checkSecret = new byte[secretLength];
 

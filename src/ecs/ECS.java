@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import shared.ConsoleColors;
 
 /* 
     ECSClient should initialize ECS. 
@@ -75,7 +76,7 @@ public class ECS {
 
         this.init_config("./ecs_config.json");
 
-        logger.info("ECS initialized at " + this.address + ":" + this.port);
+        logger.info(ConsoleColors.PURPLE_BOLD_UNDERLINED + "ECS initialized at " + this.address + ":" + this.port + ConsoleColors.RESET);
     }
 
     public ECS(Logger logger) throws Exception{
@@ -86,7 +87,7 @@ public class ECS {
         this.logger = logger;
         this.hashRing = new ECSHashRing();
 
-        logger.info("ECS initialized at " + this.address + ":" + this.port);
+        logger.info(ConsoleColors.PURPLE_BOLD_UNDERLINED + "ECS initialized at " + this.address + ":" + this.port + ConsoleColors.RESET);
     }
 
     private void init_config(String configPath){
@@ -111,7 +112,7 @@ public class ECS {
     public boolean start() {
         try {
             ecsSocket = new ServerSocket(port, 10, InetAddress.getByName(address));
-            logger.info("ECS is listening at " + address + ":" + port);
+            logger.info(ConsoleColors.PURPLE_BOLD_UNDERLINED + "ECS is listening at " + address + ":" + port + ConsoleColors.RESET);
 
             Thread serverConnThread = new Thread(new Runnable() {
                 @Override
@@ -124,10 +125,10 @@ public class ECS {
 
             return true;
         } catch (IOException e) {
-            logger.error("ECS Socket cannot be opened: ");
+            logger.error(ConsoleColors.RED_UNDERLINED + "ECS Socket cannot be opened: " + ConsoleColors.RESET);
             // Could be a connection binding issue from server side
             if (e instanceof BindException)
-                logger.error("Port " + port + " at address " + address + " is already bound.");
+                logger.error(ConsoleColors.RED_UNDERLINED + "Port " + port + " at address " + address + " is already bound." + ConsoleColors.RESET);
             return false;
         }
     }
@@ -151,11 +152,11 @@ public class ECS {
                 new Thread(connection).start();
             } catch (SocketException se) {
                 if (ecsSocket.isClosed()) {
-                    logger.info("ServerSocket is closed.");
+                    logger.info(ConsoleColors.PURPLE_BOLD_UNDERLINED + "ServerSocket is closed." + ConsoleColors.RESET);
                     break;
                 }
             } catch (IOException e) {
-                logger.error("Unable to establish connection.\n", e);
+                logger.error(ConsoleColors.RED_UNDERLINED + "Unable to establish connection.\n" + ConsoleColors.RESET, e);
             }
         }
     }
@@ -164,7 +165,7 @@ public class ECS {
         try {
             for (ECSNode node : hashRing.getHashring().values()) {
                 if (!this.testing){
-                    System.out.println("\n\nSending to " + node.getNodeName() + " \n\nFrom ECS: " + hashRing.toString() + "\n");
+                    System.out.println(ConsoleColors.PURPLE_UNDERLINED + "\n\nSending to " + node.getNodeName() + " \n\nFrom ECS: " + hashRing.toString() + "\n" + ConsoleColors.RESET);
                 }
                 messageService.sendECSMessage(node.getServerSocket(), node.getObjectOutputStream(), ECSMessageType.HASHRING, "HASHRING", hashRing);
             }
@@ -177,7 +178,7 @@ public class ECS {
         try {
             ecsSocket.close();
         } catch (IOException e) {
-            logger.error("Unable to close socket at " + address + ":" + port, e);
+            logger.error(ConsoleColors.RED_UNDERLINED + "Unable to close socket at " + address + ":" + port + ConsoleColors.RESET, e);
         }
     }
 
@@ -189,7 +190,7 @@ public class ECS {
                 node.closeConnection();
             }
         } catch (Exception e) {
-            logger.error("Error closing connection", e);
+            logger.error(ConsoleColors.RED_UNDERLINED + "Error closing connection" + ConsoleColors.RESET, e);
         }
 
         this.shutdown();
@@ -238,7 +239,7 @@ public class ECS {
             }
             builder.start();
         } catch (Exception e) {
-            this.logger.error(e);
+            this.logger.error(ConsoleColors.RED_UNDERLINED + e + ConsoleColors.RESET);
             e.printStackTrace();
         }
 
@@ -267,9 +268,9 @@ public class ECS {
 
     public ECSNode addNode(String cacheStrategy, int cacheSize, int port) {
         int newCount = connections.size() + 1;
-        System.out.println("Adding node " + newCount + " to ECS");
+        System.out.println(ConsoleColors.PURPLE_UNDERLINED + "Adding node " + newCount + " to ECS" + ConsoleColors.RESET);
         int serverPort = this.startKVServer(cacheStrategy, cacheSize, port);
-        System.out.println("Started server on port " + serverPort);
+        System.out.println(ConsoleColors.PURPLE_UNDERLINED + "Started server on port " + serverPort + ConsoleColors.RESET);
         try {
             this.awaitNodes(newCount, TIMEOUT_AWAIT_NODES);
         } catch (Exception e) {
@@ -280,9 +281,9 @@ public class ECS {
 
     public ECSNode addNode(String cacheStrategy, int cacheSize) {
         int newCount = connections.size() + 1;
-        System.out.println("Adding node " + newCount + " to ECS");
+        System.out.println(ConsoleColors.PURPLE_UNDERLINED + "Adding node " + newCount + " to ECS" + ConsoleColors.RESET);
         int serverPort = this.startKVServer(cacheStrategy, cacheSize, -1);
-        System.out.println("Started server on port " + serverPort);
+        System.out.println(ConsoleColors.PURPLE_UNDERLINED + "Started server on port " + serverPort + ConsoleColors.RESET);
         try {
             this.awaitNodes(newCount, TIMEOUT_AWAIT_NODES);
         } catch (Exception e) {
@@ -292,15 +293,15 @@ public class ECS {
     }
 
     public ECSNode addNode(ECSNode node){
-        logger.info("ECS connected to KVServer at " + node.getNodeHost() + ":" + node.getNodePort());
+        logger.info(ConsoleColors.PURPLE_BOLD_UNDERLINED + "ECS connected to KVServer at " + node.getNodeHost() + ":" + node.getNodePort() + ConsoleColors.RESET);
         availablePorts.remove(node.getNodePort());
 
         this.nodes.put(node.getNodeName(), node); // append to the table
         this.setNodeAvailability(node, true); // set the node available
 
         ECSNode oldNode = this.hashRing.addNode(node);
-        logger.info("Added " + node.getNodeName() + " to the hashring.");
-        logger.info("KEYRANGE: " + this.hashRing.toString());
+        logger.info(ConsoleColors.PURPLE_BOLD_UNDERLINED + "Added " + node.getNodeName() + " to the hashring." + ConsoleColors.RESET);
+        logger.info(ConsoleColors.PURPLE_BOLD_UNDERLINED + "KEYRANGE: " + this.hashRing.toString() + ConsoleColors.RESET);
 
         this.sendMetadataToNodes();
 
@@ -325,7 +326,7 @@ public class ECS {
     }
 
     public synchronized ECSNode removeNode(ECSNode node) {
-        System.out.println("Removing NODE...");
+        System.out.println(ConsoleColors.PURPLE_UNDERLINED + "Removing NODE..." + ConsoleColors.RESET);
         ECSNode nextNode = this.hashRing.removeNode(node);
         this.nodes.remove(node.getNodeName());
         this.sendMetadataToNodes();
@@ -336,12 +337,12 @@ public class ECS {
 
     public boolean awaitNodes(int count, int timeout) throws Exception {
         long start = System.currentTimeMillis();
-        System.out.println("Before await " + connections.size());
+        System.out.println(ConsoleColors.PURPLE_UNDERLINED + "Before await " + connections.size() + ConsoleColors.RESET);
         while (System.currentTimeMillis() - start < timeout) {}
-        System.out.println("after await " + connections.size());
+        System.out.println(ConsoleColors.PURPLE_UNDERLINED + "after await " + connections.size() + ConsoleColors.RESET);
 
         if(connections.size() == count) return true;
-        throw new Exception("Await nodes timeout expired");
+        throw new Exception(ConsoleColors.RED_UNDERLINED + "Await nodes timeout expired" + ConsoleColors.RESET);
     }
 
     // public boolean removeNodes(Collection<String> nodeNames) {
@@ -359,7 +360,7 @@ public class ECS {
     //         try {
     //             removedNode.closeConnection();
     //         } catch (Exception e) {
-    //             logger.error("Error closing connection with server " + nodeName, e);
+    //             logger.error(ConsoleColors.RED_UNDERLINED + "Error closing connection with server " + nodeName + ConsoleColors.RESET, e);
     //         }
     //     }
 

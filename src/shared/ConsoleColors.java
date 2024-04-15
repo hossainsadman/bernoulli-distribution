@@ -67,6 +67,8 @@ public class ConsoleColors {
 
 /*
 
+import shared.ConsoleColors;
+
 ConsoleColors.RESET
 
 ConsoleColors.BLACK
@@ -113,5 +115,14 @@ ConsoleColors.BLUE_BACKGROUND
 ConsoleColors.PURPLE_BACKGROUND
 ConsoleColors.CYAN_BACKGROUND
 ConsoleColors.WHITE_BACKGROUND
+
+ConsoleColors.BLACK_BOLD_BACKGROUND
+ConsoleColors.RED_BOLD_BACKGROUND
+ConsoleColors.GREEN_BOLD_BACKGROUND
+ConsoleColors.YELLOW_BOLD_BACKGROUND
+ConsoleColors.BLUE_BOLD_BACKGROUND
+ConsoleColors.PURPLE_BOLD_BACKGROUND
+ConsoleColors.CYAN_BOLD_BACKGROUND
+ConsoleColors.WHITE_BOLD_BACKGROUND
 
 */

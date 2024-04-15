@@ -8,6 +8,8 @@ import java.util.*;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import logger.LogSetup;
+import shared.ConsoleColors;
+
 import org.apache.commons.cli.*;
 
 import java.net.ServerSocket;
@@ -24,7 +26,7 @@ public class ECSClient implements IECSClient {
     public boolean clientRunning = false; /* Represents the status of ECSClient not the ECS */
     public boolean ecsRunning = false; /* Represents the status of ECS */
     private ECS ecs;
-    private static final String PROMPT = "ECS-Client> ";
+    private static final String PROMPT = ConsoleColors.BLUE_BOLD_UNDERLINED + "ECS-Client>" + ConsoleColors.RESET + " ";
 
     public ECSClient(String address, int port) {
         ecs = new ECS(address, port, logger);
@@ -51,10 +53,10 @@ public class ECSClient implements IECSClient {
         if (ecs == null)
             return false;
         if(!ecsRunning){
-            System.out.println("[ECSClient] Starting ECS");
+            System.out.println(ConsoleColors.PURPLE_BOLD_UNDERLINED + "[ECSClient] Starting ECS" + ConsoleColors.RESET);
             ecsRunning = ecs.start();
         } else{
-            this.logger.info("[ECSClient] ECS already running");
+            this.logger.info(ConsoleColors.PURPLE_BOLD_UNDERLINED + "[ECSClient] ECS already running" + ConsoleColors.RESET);
         }
         return ecsRunning;
     }
@@ -68,7 +70,7 @@ public class ECSClient implements IECSClient {
                 this.handleUserCommands(br.readLine());
             } catch (IOException e) {
                 this.shutdown();
-                logger.error("Error: ", e);
+                logger.error(ConsoleColors.RED_UNDERLINED + "Error: " + ConsoleColors.RESET, e);
             }
         }
     }
@@ -130,7 +132,7 @@ public class ECSClient implements IECSClient {
     public void listNodes() {
         int counter = 1;
         for(Map.Entry<String, ECSNode> entry : this.ecs.nodes.entrySet()) {
-            System.out.println(counter + ". " + entry.getValue() + " " + entry.getValue().getNodeIdentifier()); 
+            System.out.println(ConsoleColors.RED_UNDERLINED + counter + ". " + entry.getValue() + " " + entry.getValue().getNodeIdentifier() + ConsoleColors.RESET); 
             counter++; 
         }
     }
@@ -156,10 +158,10 @@ public class ECSClient implements IECSClient {
         commands.put("help", "Displays help information about the available commands.");
 
         // Print the usage information
-        System.out.println("Usage:");
+        System.out.println(ConsoleColors.CYAN_BOLD_UNDERLINED + "Usage:" + ConsoleColors.RESET);
         for (Map.Entry<String, String> command : commands.entrySet()) {
-            System.out.println("\t" + command.getKey());
-            System.out.println("\t\t" + command.getValue());
+            System.out.println(ConsoleColors.CYAN_BOLD_UNDERLINED + "\t" + command.getKey() + ConsoleColors.RESET);
+            System.out.println(ConsoleColors.CYAN_BOLD_UNDERLINED + "\t\t" + command.getValue() + ConsoleColors.RESET);
         }
     }
 
@@ -179,7 +181,7 @@ public class ECSClient implements IECSClient {
                     break;
                 case "stop":
                     if (!this.ecsRunning) {
-                        logger.info("[Error] ECSClient is not running in the first place.");
+                        logger.info(ConsoleColors.RED_UNDERLINED + "[Error] ECSClient is not running in the first place." + ConsoleColors.RESET);
                         break;
                     }
 
@@ -187,7 +189,7 @@ public class ECSClient implements IECSClient {
                     break;
                 case "quit":
                     if (!this.ecsRunning) {
-                        System.out.println("[Error] ECSClient is not running in the first place.");
+                        System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] ECSClient is not running in the first place." + ConsoleColors.RESET);
                         break;
                     }
 
@@ -195,7 +197,7 @@ public class ECSClient implements IECSClient {
                     break;
                 case "list":
                     if (!this.ecsRunning) {
-                        System.out.println("[Error] ECSClient is not running in the first place.");
+                        System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] ECSClient is not running in the first place." + ConsoleColors.RESET);
                         break;
                     }
 
@@ -203,7 +205,7 @@ public class ECSClient implements IECSClient {
                     break;
                 case "addnode":
                     if (!this.ecsRunning) {
-                        System.out.println("[Error] ECSClient is not running in the first place.");
+                        System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] ECSClient is not running in the first place." + ConsoleColors.RESET);
                         break;
                     }
 
@@ -212,14 +214,14 @@ public class ECSClient implements IECSClient {
                             int cacheSize = Integer.parseInt(args[2]);
                             this.addNode(args[1], cacheSize);
                         } catch (NumberFormatException e) {
-                            System.out.println("[Error] Invalid cache size. Please enter a valid integer.");
+                            System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] Invalid cache size. Please enter a valid integer." + ConsoleColors.RESET);
                         }
                     } else
-                        System.out.println("[Error] Insufficient arguments for addnode.");
+                        System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] Insufficient arguments for addnode." + ConsoleColors.RESET);
                     break;
                 case "addnodes":
                     if (!this.ecsRunning) {
-                        System.out.println("[Error] ECSClient is not running in the first place.");
+                        System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] ECSClient is not running in the first place." + ConsoleColors.RESET);
                         break;
                     }
 
@@ -229,21 +231,21 @@ public class ECSClient implements IECSClient {
                             int cacheSize = Integer.parseInt(args[3]);
                             this.addNodes(count, args[2], cacheSize);
                         } catch (NumberFormatException e) {
-                            System.out.println("[Error] Invalid count or cache size. Please enter valid integers.");
+                            System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] Invalid count or cache size. Please enter valid integers." + ConsoleColors.RESET);
                         }
                     } else
-                        System.out.println("[Error] Insufficient arguments for addnodes.");
+                        System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] Insufficient arguments for addnodes." + ConsoleColors.RESET);
                     break;
                 case "removenodes":
                     if (!this.clientRunning) {
-                        System.out.println("[Error] ECSClient is not running in the first place.");
+                        System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] ECSClient is not running in the first place." + ConsoleColors.RESET);
                         break;
                     }
 
                     if (args.length > 1)
                         this.removeNodes(Arrays.asList(Arrays.copyOfRange(args, 1, args.length)));
                     else
-                        System.out.println("[Error] Insufficient arguments for removenode.");
+                        System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] Insufficient arguments for removenode." + ConsoleColors.RESET);
                     break;
                 case "help":
                     this.displayHelperMessage();
@@ -259,7 +261,7 @@ public class ECSClient implements IECSClient {
                     break;
             }
         } else {
-            System.out.println("[Error] No command provided.");
+            System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] No command provided." + ConsoleColors.RESET);
         }
     }
 
@@ -301,7 +303,7 @@ public class ECSClient implements IECSClient {
         try {
             cmd = parser.parse(options, args);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.out.println(ConsoleColors.RED_UNDERLINED + e.getMessage() + ConsoleColors.RESET);
             formatter.printHelp("m4-ecs.jar", options);
             System.exit(1);
             return;
@@ -324,12 +326,12 @@ public class ECSClient implements IECSClient {
 
         try {
             new LogSetup(ecsLogFile, LogSetup.getLogLevel(ecsLogLevel));
-            logger.info("logger setup is complete.");
+            logger.info(ConsoleColors.PURPLE_BOLD_UNDERLINED + "logger setup is complete." + ConsoleColors.RESET);
             ECSClient ecsClient = new ECSClient(ecsAddress, Integer.parseInt(ecsPort));
             ecsClient.run();
 
         } catch (Exception e) {
-            System.out.println("[Error] Unable to setup logger: ");
+            System.out.println(ConsoleColors.RED_UNDERLINED + "[Error] Unable to setup logger: " + ConsoleColors.RESET);
             e.printStackTrace();
         }
     }

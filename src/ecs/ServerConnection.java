@@ -12,7 +12,7 @@ import app_kvServer.SQLTable;
 import shared.messages.ECSMessage;
 import shared.messages.ECSMessage.ECSMessageType;
 import shared.messages.MessageService;
-
+import shared.ConsoleColors;
 
 public class ServerConnection implements Runnable {
     private MessageService messageService = new MessageService();
@@ -72,13 +72,13 @@ public class ServerConnection implements Runnable {
             HashMap<String, SQLTable> tables = (HashMap<String, SQLTable>) message.getParameter("SQL_TABLES");
 
             if (kvPairs != null && !kvPairs.isEmpty() && nextNode != null){
-                logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + this.node.getNodeName() + " to " + nextNode.getNodeName());
-                logger.info("kvPairs: " + kvPairs.toString());
+                logger.info(ConsoleColors.GREEN_UNDERLINED + "Transferring " + kvPairs.size() + " key-value pairs from " + this.node.getNodeName() + " to " + nextNode.getNodeName() + ConsoleColors.RESET);
+                logger.info(ConsoleColors.GREEN_UNDERLINED + "kvPairs: " + kvPairs.toString() + ConsoleColors.RESET);
             }
 
             if (tables != null && !tables.isEmpty() && nextNode != null){
-                logger.info("Transferring " + tables.size() + " sql tables from " + this.node.getNodeName() + " to " + nextNode.getNodeName());
-                logger.info("tables: " + tables.toString());
+                logger.info(ConsoleColors.GREEN_UNDERLINED + "Transferring " + tables.size() + " sql tables from " + this.node.getNodeName() + " to " + nextNode.getNodeName() + ConsoleColors.RESET);
+                logger.info(ConsoleColors.GREEN_UNDERLINED + "tables: " + tables.toString() + ConsoleColors.RESET);
             }
 
             if (node != null && nextNode != null && (kvPairs != null && kvPairs.size() > 0) || (tables != null && tables.size() > 0)){
@@ -92,17 +92,17 @@ public class ServerConnection implements Runnable {
             if (serverSocket != null)
                 serverSocket.close();
 
-            logger.info("Connection closed for " + serverSocket.getInetAddress().getHostName());
+            logger.info(ConsoleColors.RED_UNDERLINED + "Connection closed for " + serverSocket.getInetAddress().getHostName() + ConsoleColors.RESET);
             this.serverSocket = null;
         } catch (IOException e) {
-            logger.error("Error! closing connection", e);
+            logger.error(ConsoleColors.RED_UNDERLINED + "Error! closing connection" + ConsoleColors.RESET, e);
         }
     }
 
 
     private void handleInit(ECSMessage message) throws Exception{
         String serverName = (String) message.getParameter("SERVER_NAME");
-        logger.info("ECS connected to KVServer via " +  serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getPort());
+        logger.info(ConsoleColors.GREEN_UNDERLINED + "ECS connected to KVServer via " +  serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getPort() + ConsoleColors.RESET);
 
         // split serverName by : to get the server address and port
         String[] serverInfo = serverName.split(":");
@@ -127,12 +127,12 @@ public class ServerConnection implements Runnable {
         HashMap<String, SQLTable> tables = (HashMap<String, SQLTable>) message.getParameter("SQL_TABLES");
 
         if(kvPairs != null && kvPairs.size() > 0){
-            logger.info("Transferring " + kvPairs.size() + " key-value pairs from " + this.node.getNodeName() + " to " + this.node.getNodeName());
-            logger.info("kvPairs: " + kvPairs.toString());
+            logger.info(ConsoleColors.GREEN_UNDERLINED + "Transferring " + kvPairs.size() + " key-value pairs from " + this.node.getNodeName() + " to " + this.node.getNodeName() + ConsoleColors.RESET);
+            logger.info(ConsoleColors.GREEN_UNDERLINED + "kvPairs: " + kvPairs.toString() + ConsoleColors.RESET);
         }
 
         if(tables != null && tables.size() > 0){
-            logger.info("Transferring " + tables.size() + " sql tables from " + this.node.getNodeName() + " to " + this.node.getNodeName());
+            logger.info(ConsoleColors.GREEN_UNDERLINED + "Transferring " + tables.size() + " sql tables from " + this.node.getNodeName() + " to " + this.node.getNodeName() + ConsoleColors.RESET);
         }
 
         Socket toNodeSocket = this.ecs.nodes.get(toNode.getNodeName()).getServerSocket();

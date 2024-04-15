@@ -42,6 +42,7 @@ import com.google.gson.JsonParseException;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import shared.ConsoleColors;
 
 public class KVServer implements IKVServer {
     /**
@@ -93,9 +94,9 @@ public class KVServer implements IKVServer {
 
     public KVServer(int port, int cacheSize, String strategy, Boolean connectEcs) {
         if (port < 1024 || port > 65535)
-            throw new IllegalArgumentException("port is out of range.");
+            throw new IllegalArgumentException(ConsoleColors.RED_UNDERLINED + "port is out of range." + ConsoleColors.RESET);
         if (cacheSize < 0)
-            throw new IllegalArgumentException("cacheSize is out of range.");
+            throw new IllegalArgumentException(ConsoleColors.RED_UNDERLINED + "cacheSize is out of range." + ConsoleColors.RESET);
 
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
@@ -134,7 +135,7 @@ public class KVServer implements IKVServer {
         if (!dir.exists()) {
             try {
                 if (!dir.mkdir()) {
-                    throw new Exception("Unable to create a directory.");
+                    throw new Exception(ConsoleColors.RED_UNDERLINED + "Unable to create a directory." + ConsoleColors.RESET);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -153,9 +154,9 @@ public class KVServer implements IKVServer {
 
     public KVServer(int port, int cacheSize, String strategy, String dbPath, Boolean connectEcs) {
         if (port < 1024 || port > 65535)
-            throw new IllegalArgumentException("port is out of range.");
+            throw new IllegalArgumentException(ConsoleColors.RED_UNDERLINED + "port is out of range." + ConsoleColors.RESET);
         if (cacheSize < 0)
-            throw new IllegalArgumentException("cacheSize is out of range.");
+            throw new IllegalArgumentException(ConsoleColors.RED_UNDERLINED + "cacheSize is out of range." + ConsoleColors.RESET);
 
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
@@ -192,7 +193,7 @@ public class KVServer implements IKVServer {
         if (!dir.exists()) {
             try {
                 if (!dir.mkdir()) {
-                    throw new Exception("Unable to create a directory.");
+                    throw new Exception(ConsoleColors.RED_UNDERLINED + "Unable to create a directory." + ConsoleColors.RESET);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -211,9 +212,9 @@ public class KVServer implements IKVServer {
 
     public KVServer(int port, int cacheSize, String strategy, String dbPath, String ecsHost, int ecsPort) {
         if (port < 1024 || port > 65535)
-            throw new IllegalArgumentException("port is out of range.");
+            throw new IllegalArgumentException(ConsoleColors.RED_UNDERLINED + "port is out of range." + ConsoleColors.RESET);
         if (cacheSize < 0)
-            throw new IllegalArgumentException("cacheSize is out of range.");
+            throw new IllegalArgumentException(ConsoleColors.RED_UNDERLINED + "cacheSize is out of range." + ConsoleColors.RESET);
 
         this.port = port; // Set port
         this.cacheSize = cacheSize; // Set cache size
@@ -251,7 +252,7 @@ public class KVServer implements IKVServer {
         if (!dir.exists()) {
             try {
                 if (!dir.mkdir()) {
-                    throw new Exception("Unable to create a directory.");
+                    throw new Exception(ConsoleColors.RED_UNDERLINED + "Unable to create a directory." + ConsoleColors.RESET);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -285,7 +286,7 @@ public class KVServer implements IKVServer {
             String colName = entry.getKey();
             String colType = entry.getValue();
             if (!colType.equals("int") && !colType.equals("text")) {
-                throw new IllegalArgumentException("Invalid type for column " + colName + ": " + colType);
+                throw new IllegalArgumentException(ConsoleColors.RED_UNDERLINED + "Invalid type for column " + colName + ": "  + ConsoleColors.RESET+ colType);
             }
             newTable.addCol(colName, colType);
         }
@@ -297,7 +298,7 @@ public class KVServer implements IKVServer {
         File[] db = dir.listFiles();
         for (File kv : db) {
             if(isCoordinatorOrReplicator(kv.getName())) continue;
-            System.out.println("Deleting " + kv.getName());
+            System.out.println(ConsoleColors.YELLOW_BOLD_UNDERLINED + "Deleting " + kv.getName());
             kv.delete();
             cache.remove(unescape(kv.getName()));
         }
@@ -309,7 +310,7 @@ public class KVServer implements IKVServer {
         for (File kv : db) {
             String key = kv.getName();
             if(isCoordinator(key)) {
-                System.out.println("Moving " + key);
+                System.out.println(ConsoleColors.YELLOW_BOLD_UNDERLINED + "Moving " + key);
                 this.replicate(unescape(key), getKV(unescape(key)));
             }
         }
@@ -349,7 +350,7 @@ public class KVServer implements IKVServer {
             }
         }
 
-        System.out.println("setting hash ring");
+        System.out.println(ConsoleColors.GREEN_UNDERLINED + "setting hash ring" + ConsoleColors.RESET);
         this.hashRing = newHashRing;
         this.replicator.connect(newHashRing);
         this.removeKeys();
@@ -358,7 +359,7 @@ public class KVServer implements IKVServer {
             this.moveKeys();
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Error occured when moving keys");
+            System.out.println(ConsoleColors.RED_UNDERLINED + "Error occured when moving keys" + ConsoleColors.RESET);
         }
     }
 
@@ -379,7 +380,7 @@ public class KVServer implements IKVServer {
             return this.replicator.replicate(key, value);
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Error occured when replicating");
+            System.out.println(ConsoleColors.RED_UNDERLINED + "Error occured when replicating" + ConsoleColors.RESET);
         }
         return false;
     }
@@ -389,7 +390,7 @@ public class KVServer implements IKVServer {
             return this.replicator.replicateSQLCommand(key, value, status);
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Error occured when replicating");
+            System.out.println(ConsoleColors.RED_UNDERLINED + "Error occured when replicating" + ConsoleColors.RESET);
         }
         return false;
     }
@@ -399,7 +400,7 @@ public class KVServer implements IKVServer {
             return this.replicator.replicateSQLTable(key, value);
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Error occured when replicating");
+            System.out.println(ConsoleColors.RED_UNDERLINED + "Error occured when replicating" + ConsoleColors.RESET);
         }
         return false;
     }
@@ -506,7 +507,7 @@ public class KVServer implements IKVServer {
     @Override
     public String getKV(String key) throws Exception {
         if (!inStorage(escape(key)))
-            throw new Exception("tuple not found");
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "tuple not found" + ConsoleColors.RESET);
 
         if (!inCache(escape(key))) {
             File path = getStorageAddressOfKey(escape(key));
@@ -522,7 +523,7 @@ public class KVServer implements IKVServer {
 
         String value = cache.get(escape(key));
         if (value == null)
-            throw new Exception("tuple not found");
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "tuple not found" + ConsoleColors.RESET);
 
         return value;
     }
@@ -534,14 +535,14 @@ public class KVServer implements IKVServer {
         }
 
         if (value.equals(""))
-            throw new Exception("unable to delete tuple");
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "unable to delete tuple" + ConsoleColors.RESET);
 
         File file = new File(dirPath + File.separator + escape(key));
 
         if (value.equals("null")) {
             File fileToDel = new File(dirPath, escape(key));
             if (!fileToDel.exists() || fileToDel.isDirectory() || !fileToDel.delete())
-                throw new Exception("unable to delete tuple");
+                throw new Exception(ConsoleColors.RED_UNDERLINED + "unable to delete tuple" + ConsoleColors.RESET);
 
             cache.remove(escape(key));
 
@@ -573,14 +574,14 @@ public class KVServer implements IKVServer {
         }
 
         if (value.equals(""))
-            throw new Exception("unable to delete tuple");
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "unable to delete tuple" + ConsoleColors.RESET);
 
         File file = new File(dirPath + File.separator + escape(key));
 
         if (value.equals("null")) {
             File fileToDel = new File(dirPath, escape(key));
             if (!fileToDel.exists() || fileToDel.isDirectory() || !fileToDel.delete())
-                throw new Exception("unable to delete tuple");
+                throw new Exception(ConsoleColors.RED_UNDERLINED + "unable to delete tuple" + ConsoleColors.RESET);
 
             cache.remove(escape(key));
 
@@ -612,10 +613,10 @@ public class KVServer implements IKVServer {
         }
 
         if (value.equals(""))
-            throw new Exception("empty sql create value");
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "empty sql create value" + ConsoleColors.RESET);
 
         if (sqlTables.containsKey(key)) {
-            throw new Exception("A table with the same name already exists");
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "A table with the same name already exists" + ConsoleColors.RESET);
         }
 
         boolean validSqlCreate = true;
@@ -625,18 +626,18 @@ public class KVServer implements IKVServer {
         for (String pair : colPairs) {
             String[] parts = pair.split(":");
             if (parts.length != 2) {
-                this.logger.error("Invalid column pair: " + pair);
-                throw new Exception("Invalid column pair: " + pair);
+                this.logger.error(ConsoleColors.RED_UNDERLINED + "Invalid column pair: " + pair + ConsoleColors.RESET);
+                throw new Exception(ConsoleColors.RED_UNDERLINED + "Invalid column pair: " + pair + ConsoleColors.RESET);
             }
             String name = parts[0];
             String type = parts[1];
             if (!type.equals("int") && !type.equals("text")) {
-                this.logger.error("Invalid type for column " + name + ": " + type);
-                throw new Exception("Invalid type for column " + name + ": " + type);
+                this.logger.error(ConsoleColors.RED_UNDERLINED + "Invalid type for column " + name + ": "  + ConsoleColors.RESET+ type);
+                throw new Exception(ConsoleColors.RED_UNDERLINED + "Invalid type for column " + name + ": "  + ConsoleColors.RESET+ type);
             }
             if (cols.containsKey(name)) {
-                this.logger.error("Column name " + name + " is repeated");
-                throw new Exception("Column name " + name + " is repeated");
+                this.logger.error(ConsoleColors.RED_UNDERLINED + "Column name " + name + " is repeated" + ConsoleColors.RESET);
+                throw new Exception(ConsoleColors.RED_UNDERLINED + "Column name " + name + " is repeated" + ConsoleColors.RESET);
             }
             cols.put(name, type);
             if (primaryKey == null) {
@@ -647,19 +648,19 @@ public class KVServer implements IKVServer {
         for (Map.Entry<String, String> entry : cols.entrySet()) {
             String name = entry.getKey();
             String type = entry.getValue();
-            logger.info("Column name: " + name + ", Type: " + type);
+            logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Column name: " + name + ", Type: "  + ConsoleColors.RESET+ type);
         }
 
         if (primaryKey == null) {
-            this.logger.error("No primary key found");
-            throw new Exception("No primary key found");
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "No primary key found" + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "No primary key found" + ConsoleColors.RESET);
         }
         
         SQLTable table = createSQLTable(key, primaryKey, cols);
         sqlTables.put(key, table);
 
         // Print out the table
-        this.logger.info(table.toString());
+        this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ table.toString() + ConsoleColors.RESET);
 
         return StatusType.SQLCREATE_SUCCESS;
     }
@@ -667,23 +668,23 @@ public class KVServer implements IKVServer {
     public String sqlSelect(String key, boolean testing) throws Exception {
         SQLTable table = null;
         if (key.contains(" ")) {
-            this.logger.info("Parsing sql select query: " + key);
+            this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Parsing sql select query: " + key + ConsoleColors.RESET);
             String[] parts = key.split("\\s+from\\s+|\\s+where\\s+");
             if (parts.length < 2 || parts.length > 3) {
-                throw new Exception("invalid sql select query");
+                throw new Exception(ConsoleColors.RED_UNDERLINED + "invalid sql select query" + ConsoleColors.RESET);
             }
 
             String columnNames = parts[0];
             String tableName = parts[1];
             String conds = parts.length == 3 ? parts[2] : null;
-            this.logger.info(conds);
+            this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ conds + ConsoleColors.RESET);
 
             List<SQLTable.Condition> conditions = new ArrayList<>();
             if (parts.length == 3) {
-                this.logger.info("Processing parts: " + Arrays.toString(parts));
+                this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Processing parts: " + Arrays.toString(parts) + ConsoleColors.RESET);
                 String[] conditionParts = parts[2].replaceAll("[{}]", "").split(",");
                 for (String conditionPart : conditionParts) {
-                    this.logger.info("Processing condition part: " + conditionPart);
+                    this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Processing condition part: " + conditionPart + ConsoleColors.RESET);
                     Pattern pattern = Pattern.compile("(.*?)(=|<|>)(.*)");
                     Matcher matcher = pattern.matcher(conditionPart);
                     if (matcher.find()) {
@@ -696,23 +697,23 @@ public class KVServer implements IKVServer {
                         SQLTable.Condition condition = new SQLTable.Condition(col, value, comparison);    
                         conditions.add(condition);
                     } else {
-                        this.logger.error("Failed to parse condition part: " + conditionPart);
+                        this.logger.error(ConsoleColors.RED_UNDERLINED + "Failed to parse condition part: " + conditionPart + ConsoleColors.RESET);
                     }
                 }
             } else {
-                this.logger.info("Parts length is not 3: " + Arrays.toString(parts));
+                this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Parts length is not 3: " + Arrays.toString(parts) + ConsoleColors.RESET);
             }
 
-            this.logger.info("Conditions: " + conditions.size());
+            this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Conditions: " + conditions.size() + ConsoleColors.RESET);
             for (SQLTable.Condition condition : conditions) {
-                this.logger.info("Condition: " + condition.toString());
+                this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Condition: " + condition.toString() + ConsoleColors.RESET);
             }
 
             table = sqlSelect(tableName, columnNames.equals("*") ? null : List.of(columnNames.replace("{", "").replace("}", "").split(",")), conditions);
 
         } else {
             if (!sqlTables.containsKey(key)) {
-                throw new Exception("table not found");
+                throw new Exception(ConsoleColors.RED_UNDERLINED + "table not found" + ConsoleColors.RESET);
             }
 
             table = sqlTables.get(key);
@@ -728,7 +729,7 @@ public class KVServer implements IKVServer {
     public SQLTable sqlSelect(String tableName, List<String> columnNames, List<SQLTable.Condition> conditions) {
         SQLTable table = sqlTables.get(tableName);
         if (table == null) {
-            throw new IllegalArgumentException("Table " + tableName + " does not exist.");
+            throw new IllegalArgumentException(ConsoleColors.RED_UNDERLINED + "Table " + tableName + " does not exist." + ConsoleColors.RESET);
         }
 
         SQLTable selectedTable = table.selectRows(conditions);
@@ -745,15 +746,15 @@ public class KVServer implements IKVServer {
         }
 
         if (!sqlTables.containsKey(key)) {
-            this.logger.error("table does not exist");
-            throw new Exception("table does not exist");
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "table does not exist" + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "table does not exist" + ConsoleColors.RESET);
         }
 
         try {
             sqlTables.remove(key);
         } catch (Exception e) {
-            this.logger.error("Error dropping table: " + e.getMessage());
-            throw new Exception("Error dropping table: " + e.getMessage());
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "Error dropping table: " + e.getMessage() + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "Error dropping table: " + e.getMessage() + ConsoleColors.RESET);
         }
 
         return StatusType.SQLDROP_SUCCESS;
@@ -765,16 +766,16 @@ public class KVServer implements IKVServer {
         }
 
         if (value.equals(""))
-            throw new Exception("empty sql insert value");
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "empty sql insert value" + ConsoleColors.RESET);
 
         if (!sqlTables.containsKey(key)) {
-            this.logger.error("table does not exist");
-            throw new Exception("table does not exist");
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "table does not exist" + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "table does not exist" + ConsoleColors.RESET);
         }
 
         if (!checkValidJson(value)) {
-            this.logger.error("table row has invalid formatting");
-            throw new Exception("table row has invalid formatting");
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "table row has invalid formatting" + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "table row has invalid formatting" + ConsoleColors.RESET);
         }
 
         SQLTable table = sqlTables.get(key);
@@ -784,7 +785,7 @@ public class KVServer implements IKVServer {
         try {
             jsonElement = jsonParser.parse(value);
         } catch (JsonParseException e) {
-            this.logger.error("Invalid JSON format: " + e.getMessage());
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "Invalid JSON format: " + e.getMessage() + ConsoleColors.RESET);
         }
 
         try {
@@ -799,33 +800,33 @@ public class KVServer implements IKVServer {
                                 try {
                                     Integer.parseInt(colValue);
                                 } catch (NumberFormatException e) {
-                                    this.logger.error("Value for column " + jsonKey + " must be an integer");
-                                    throw new Exception("Value for column " + jsonKey + " must be an integer");
+                                    this.logger.error(ConsoleColors.RED_UNDERLINED + "Value for column " + jsonKey + " must be an integer" + ConsoleColors.RESET);
+                                    throw new Exception(ConsoleColors.RED_UNDERLINED + "Value for column " + jsonKey + " must be an integer" + ConsoleColors.RESET);
                                 }
                             }
                             rowMap.put(jsonKey, colValue);
                         } else {
-                            this.logger.error(jsonKey + " is not a column in table" + key);
-                            throw new Exception(jsonKey + " is not a column in table" + key);
+                            this.logger.error(ConsoleColors.RED_UNDERLINED + jsonKey + " is not a column in table" + key + ConsoleColors.RESET);
+                            throw new Exception(ConsoleColors.RED_UNDERLINED + jsonKey + " is not a column in table" + key + ConsoleColors.RESET);
                         }
                     } catch (Exception e) {
-                        this.logger.error(e.getMessage());
+                        this.logger.error(ConsoleColors.RED_UNDERLINED + e.getMessage() + ConsoleColors.RESET);
                     }
                 }
             }
         } catch (Exception e) {
-            this.logger.error("Error adding row to table: " + e.getMessage());
-            throw new Exception("Error adding row to table: " + e.getMessage());
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "Error adding row to table: " + e.getMessage() + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "Error adding row to table: " + e.getMessage() + ConsoleColors.RESET);
         }
 
         try {
             table.addRow(rowMap);
         } catch (Exception e) {
-            this.logger.error("Error adding row to table: " + e.getMessage());
-            throw new Exception("Error adding row to table: " + e.getMessage());
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "Error adding row to table: " + e.getMessage() + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "Error adding row to table: " + e.getMessage() + ConsoleColors.RESET);
         }
 
-        this.logger.info(table.toString());
+        this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ table.toString() + ConsoleColors.RESET);
         return StatusType.SQLINSERT_SUCCESS;
     }
     
@@ -835,17 +836,17 @@ public class KVServer implements IKVServer {
         }
 
         if (value.equals(""))
-            throw new Exception("empty sql insert value");
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "empty sql insert value" + ConsoleColors.RESET);
 
 
         if (!sqlTables.containsKey(key)) {
-            this.logger.error("table does not exist");
-            throw new Exception("table does not exist");
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "table does not exist" + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "table does not exist" + ConsoleColors.RESET);
         }
 
         if (!checkValidJson(value)) {
-            this.logger.error("table row has invalid formatting");
-            throw new Exception("table row has invalid formatting");
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "table row has invalid formatting" + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "table row has invalid formatting" + ConsoleColors.RESET);
         }
 
         SQLTable table = sqlTables.get(key);
@@ -855,7 +856,7 @@ public class KVServer implements IKVServer {
         try {
             jsonElement = jsonParser.parse(value);
         } catch (JsonParseException e) {
-            this.logger.error("Invalid JSON format: " + e.getMessage());
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "Invalid JSON format: " + e.getMessage() + ConsoleColors.RESET);
         }
 
         try {
@@ -870,33 +871,33 @@ public class KVServer implements IKVServer {
                                 try {
                                     Integer.parseInt(colValue);
                                 } catch (NumberFormatException e) {
-                                    this.logger.error("Value for column " + jsonKey + " must be an integer");
-                                    throw new Exception("Value for column " + jsonKey + " must be an integer");
+                                    this.logger.error(ConsoleColors.RED_UNDERLINED + "Value for column " + jsonKey + " must be an integer" + ConsoleColors.RESET);
+                                    throw new Exception(ConsoleColors.RED_UNDERLINED + "Value for column " + jsonKey + " must be an integer" + ConsoleColors.RESET);
                                 }
                             }
                             rowMap.put(jsonKey, colValue);
                         } else {
-                            this.logger.error(jsonKey + " is not a column in table" + key);
-                            throw new Exception(jsonKey + " is not a column in table" + key);
+                            this.logger.error(ConsoleColors.RED_UNDERLINED + jsonKey + " is not a column in table" + key + ConsoleColors.RESET);
+                            throw new Exception(ConsoleColors.RED_UNDERLINED + jsonKey + " is not a column in table" + key + ConsoleColors.RESET);
                         }
                     } catch (Exception e) {
-                        this.logger.error(e.getMessage());
+                        this.logger.error(ConsoleColors.RED_UNDERLINED + e.getMessage() + ConsoleColors.RESET);
                     }
                 }
             }
         } catch (Exception e) {
-            this.logger.error("Error updating row in table: " + e.getMessage());
-            throw new Exception("Error updating row in table: " + e.getMessage());
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "Error updating row in table: " + e.getMessage() + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "Error updating row in table: " + e.getMessage() + ConsoleColors.RESET);
         }
 
         try {
             table.updateRow(rowMap);
         } catch (Exception e) {
-            this.logger.error("Error updating row in table: " + e.getMessage());
-            throw new Exception("Error updating row in table: " + e.getMessage());
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "Error updating row in table: " + e.getMessage() + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "Error updating row in table: " + e.getMessage() + ConsoleColors.RESET);
         }
 
-        this.logger.info(table.toString());
+        this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ table.toString() + ConsoleColors.RESET);
         return StatusType.SQLUPDATE_SUCCESS;
     }
 
@@ -906,7 +907,7 @@ public class KVServer implements IKVServer {
         }
 
         if (value.equals(""))
-            throw new Exception("empty sql insert value");
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "empty sql insert value" + ConsoleColors.RESET);
 
         if (sqlTables.containsKey(key)) {
             sqlTables.remove(key);
@@ -915,15 +916,15 @@ public class KVServer implements IKVServer {
         try {
             SQLTable table = SQLTable.fromString(value);
         } catch (Exception e) {
-            this.logger.error("Error building table: " + e.getMessage());
-            throw new Exception("Error building table: " + e.getMessage());
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "Error building table: " + e.getMessage() + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "Error building table: " + e.getMessage() + ConsoleColors.RESET);
         }
 
         try {
             sqlTables.put(key, SQLTable.fromString(value));
         } catch (Exception e) {
-            this.logger.error("Error putting table: " + e.getMessage());
-            throw new Exception("Error putting table: " + e.getMessage());
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "Error putting table: " + e.getMessage() + ConsoleColors.RESET);
+            throw new Exception(ConsoleColors.RED_UNDERLINED + "Error putting table: " + e.getMessage() + ConsoleColors.RESET);
         }
 
         return StatusType.SQLREPLICATE_SUCCESS;
@@ -936,26 +937,26 @@ public class KVServer implements IKVServer {
         File dir = new File(dirPath);
         File[] db = dir.listFiles();
 
-        System.out.println("Storage: ");
+        System.out.println(ConsoleColors.YELLOW_UNDERLINED + "Storage: ");
         if (db == null || db.length == 0)
-            System.out.println("\tStorage is Empty.");
+            System.out.println(ConsoleColors.RED_UNDERLINED + "\tStorage is Empty." + ConsoleColors.RESET);
         else {
             for (File kv : db) {
                 System.out.print("\t" + "Key: " + kv.getName() + ", "); // key
                 try {
                     String content = new String(Files.readAllBytes(kv.toPath()));
-                    System.out.println("Value: " + content); // value
+                    System.out.println(ConsoleColors.YELLOW_UNDERLINED + "Value: " + content); // value
                 } catch (IOException e) {
-                    System.out.println("<Error>"); // could not access value for whatever reason
+                    System.out.println(ConsoleColors.RED_UNDERLINED + "<Error>"); // could not access value for whatever reas + ConsoleColors.RESETon
                 }
             }
         }
 
-        System.out.println("Cache: ");
+        System.out.println(ConsoleColors.YELLOW_UNDERLINED + "Cache: ");
         if (cache == null || cache.size() == 0)
-            System.out.println("\tCache is Empty.");
+            System.out.println(ConsoleColors.RED_UNDERLINED + "\tCache is Empty." + ConsoleColors.RESET);
         for (Map.Entry<String, String> kv : cache.entrySet())
-            System.out.println("\t" + "Key: " + kv.getKey() + ", Value: " + kv.getValue());
+            System.out.println(ConsoleColors.YELLOW_UNDERLINED + "\t" + "Key: " + kv.getKey() + ", Value: " + kv.getValue());
 
         for (int i = 0; i < 40; ++i) // Divider for readability
             System.out.print("-");
@@ -990,24 +991,24 @@ public class KVServer implements IKVServer {
             ECSMessage message = messageService.receiveECSMessage(ecsSocket, this.ecsInStream);
             if (message == null) {
                 // Connection has been closed by ECS, handle gracefully
-                System.out.println("Socket connection closed, stopping listener.");
+                System.out.println(ConsoleColors.RED_UNDERLINED + "Socket connection closed, stopping listener." + ConsoleColors.RESET);
                 break;
             }
 
             switch (message.getType()){
                 case HASHRING: {
-                    System.out.println("RECEIVED HASHRING COMMAND");
+                    System.out.println(ConsoleColors.GREEN_UNDERLINED + "RECEIVED HASHRING COMMAND" + ConsoleColors.RESET);
                     this.setHashRing((ECSHashRing) message.getParameter("HASHRING"));
-                    System.out.println(hashRing.toString());
+                    System.out.println(ConsoleColors.GREEN_BOLD_UNDERLINED + hashRing.toString() + ConsoleColors.RESET);
 
-                    if(metadata != null) this.logger.info("Old hashrange: " + metadata.toString());
+                    if(metadata != null) this.logger.info(ConsoleColors.RED_BOLD_UNDERLINED + "Old hashrange: " + metadata.toString() + ConsoleColors.RESET);
                     setMetadata(hashRing.getNodeForIdentifier(getHostaddress() + ":" + String.valueOf(this.getPort())));
-                    if(metadata != null) this.logger.info("Up to date hashrange: " + metadata.toString());
+                    if(metadata != null) this.logger.info(ConsoleColors.GREEN_BOLD_UNDERLINED + "Up to date hashrange: " + metadata.toString() + ConsoleColors.RESET);
                     break;
                 }
 
                 case TRANSFER_FROM:{
-                    this.logger.info("Received TRANSFER_FROM command from ECS");
+                    this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Received TRANSFER_FROM command from ECS" + ConsoleColors.RESET);
                     ECSNode toNode = (ECSNode) message.getParameter("TO_NODE");
 
                 // get keys & tables to transfer
@@ -1025,7 +1026,7 @@ public class KVServer implements IKVServer {
                 }
                 
                 case RECEIVE:{
-                    this.logger.info("Received RECIEVE command from ECS");
+                    this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Received RECIEVE command from ECS" + ConsoleColors.RESET);
                     ECSNode fromNode = (ECSNode) message.getParameter("FROM_NODE");
                     
                     this.write_lock = true;
@@ -1038,9 +1039,9 @@ public class KVServer implements IKVServer {
                                 StatusType putStatus = putKV(entry.getKey(), entry.getValue(), true);
                                 if (putStatus != StatusType.SERVER_WRITE_LOCK){
                                     if (this.replicate(entry.getKey(), entry.getValue())){
-                                        this.logger.info("Replication success");
+                                        this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Replication success" + ConsoleColors.RESET);
                                     } else {
-                                        this.logger.info("Replication failure");
+                                        this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Replication failure" + ConsoleColors.RESET);
                                     }
                                 }
                             } catch (Exception e) {
@@ -1050,7 +1051,7 @@ public class KVServer implements IKVServer {
                     }
 
                     tables = (HashMap<String, SQLTable>) message.getParameter("SQL_TABLES");
-                    System.out.println("tables");
+                    System.out.println(ConsoleColors.RED_UNDERLINED + "tables" + ConsoleColors.RESET);
                     if (tables != null) {
                         for (Map.Entry<String, SQLTable> entry : tables.entrySet()) {
                             SQLTable table = entry.getValue();
@@ -1062,9 +1063,9 @@ public class KVServer implements IKVServer {
                                 StatusType sqlReplaceStatus = sqlReplace(entry.getKey(), entry.getValue().toStringForTransfer(), true);
                                 if (sqlReplaceStatus != StatusType.SERVER_WRITE_LOCK){
                                     if (this.replicateSQLTable(entry.getKey(), entry.getValue().toStringForTransfer())){
-                                        this.logger.info("SQLREPLICATE_SUCCESS Replication success");
+                                        this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "SQLREPLICATE_SUCCESS Replication success" + ConsoleColors.RESET);
                                     } else {
-                                        this.logger.info("SQLREPLICATE_FAILURE Replication failure");
+                                        this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "SQLREPLICATE_FAILURE Replication failure" + ConsoleColors.RESET);
                                     }
                                 }
                             } catch (Exception e) {
@@ -1081,7 +1082,7 @@ public class KVServer implements IKVServer {
                 }
 
                 case TRANSFER_COMPLETE:{
-                    this.logger.info("Received TRANSFER_COMPLETE command from ECS");
+                    this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Received TRANSFER_COMPLETE command from ECS" + ConsoleColors.RESET);
                     if (kvPairs != null) {
                         for (Map.Entry<String, String> entry : kvPairs.entrySet()) {
                             try {
@@ -1104,13 +1105,13 @@ public class KVServer implements IKVServer {
                 }
 
                 case SHUTDOWN_SERVER: {
-                    System.out.println("Received SHUTDOWN_SERVER command");
+                    System.out.println(ConsoleColors.RED_UNDERLINED + "Received SHUTDOWN_SERVER command" + ConsoleColors.RESET);
                     this.close();
                     break;
                 }
 
                 default:
-                    System.out.println("Unrecognized Command in KVSERVER ");
+                    System.out.println(ConsoleColors.RED_UNDERLINED + "Unrecognized Command in KVSERVER " + ConsoleColors.RESET);
             }
         }
     }
@@ -1119,9 +1120,9 @@ public class KVServer implements IKVServer {
         if (ecsHost != null && ecsPort > -1) {
             try {
                 ecsSocket = new Socket(ecsHost, ecsPort);
-                this.logger.info("Connected to ECS at " + ecsHost + ":" + ecsPort + " via "
+                this.logger.info(ConsoleColors.GREEN_UNDERLINED + "Connected to ECS at " + ecsHost + ":" + ecsPort + " via "
                         + ecsSocket.getInetAddress().getHostAddress()
-                        + ":" + ecsSocket.getLocalPort());
+                        + ":" + ecsSocket.getLocalPort() + ConsoleColors.RESET);
 
 
                 String serverName = getHostaddress() + ":" + String.valueOf(this.getPort());
@@ -1138,13 +1139,13 @@ public class KVServer implements IKVServer {
                             listenToEcsSocket();
                         } catch (Exception e) {
                             e.printStackTrace();
-                            System.out.println("[KVServer] ECS Disconnected.");
+                            System.out.println(ConsoleColors.RED_UNDERLINED + "[KVServer] ECS Disconnected." + ConsoleColors.RESET);
                         }
                     }
                 }).start();
 
             } catch (Exception e) {
-                System.err.println("Error connecting to ECS");
+                System.err.println(ConsoleColors.RED_UNDERLINED + "Error connecting to ECS" + ConsoleColors.RESET + ConsoleColors.RESET);
                 e.printStackTrace();
             }
         }
@@ -1156,15 +1157,15 @@ public class KVServer implements IKVServer {
         try {
             serverSocket = new ServerSocket(port);
             if (ecsHost != null && ecsPort >= 0)
-                this.logger.info("Started server listening at: " + "(" + serverSocket.getInetAddress().getHostName() + ") "
+                this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "Started server listening at: " + "(" + serverSocket.getInetAddress().getHostName() + ")"
                         + serverSocket.getInetAddress().getHostAddress() + ":" + serverSocket.getLocalPort()
                         + "; cache size: "
-                        + cacheSize + "; cache strategy: " + strategy + "; ECS set to: " + ecsHost + ":" + ecsPort);
+                        + cacheSize + "; cache strategy: " + strategy + "; ECS set to: " + ecsHost + ":" + ecsPort + ConsoleColors.RESET);
 
         } catch (IOException e) {
-            this.logger.error("Server Socket cannot be opened: ");
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "Server Socket cannot be opened: " + ConsoleColors.RESET);
             if (e instanceof BindException)
-                this.logger.error("Port " + port + " is already bound.");
+                this.logger.error(ConsoleColors.RED_UNDERLINED + "Port " + port + " is already bound." + ConsoleColors.RESET);
             return;
         }
 
@@ -1183,14 +1184,14 @@ public class KVServer implements IKVServer {
                     ClientConnection connection = new ClientConnection(this, clientSocket);
                     connections.add(connection);
                     new Thread(connection).start();
-                    this.logger.info("Connected to " + "(" + clientSocket.getInetAddress().getHostName() + ") "
-                            + clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort());
+                    this.logger.info(ConsoleColors.GREEN_UNDERLINED+ "Connected to " + "(" + clientSocket.getInetAddress().getHostName() + ") "
+                            + clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort() + ConsoleColors.RESET);
                 } catch (IOException e) {
-                    this.logger.error("Unable to establish connection.\n", e);
+                    this.logger.error(ConsoleColors.RED_UNDERLINED + "Unable to establish connection.\n" + ConsoleColors.RESET, e);
                 }
             }
         }
-        this.logger.info("Server is stopped.");
+        this.logger.info(ConsoleColors.RED_UNDERLINED + "Server is stopped." + ConsoleColors.RESET);
         close();
     }
 
@@ -1200,7 +1201,7 @@ public class KVServer implements IKVServer {
         try {
             serverSocket.close();
         } catch (IOException e) {
-            this.logger.error("Unable to close socket on port: " + port, e);
+            this.logger.error(ConsoleColors.RED_UNDERLINED + "Unable to close socket on port: " + port + ConsoleColors.RESET, e);
         }
 
     }
@@ -1218,7 +1219,7 @@ public class KVServer implements IKVServer {
     public void shutdownHook(){
         HashMap<String, String> kvPairs = null;
         HashMap<String, SQLTable> tables = null;
-        System.out.println("Running shutdown hook");
+        System.out.println(ConsoleColors.RED_UNDERLINED + "Running shutdown hook" + ConsoleColors.RESET);
         try {
             kvPairs = getAllKVPairs();
             tables = sqlTables;
@@ -1237,10 +1238,10 @@ public class KVServer implements IKVServer {
 
                 sqlTables.clear();
             } else {
-                System.out.println("Last server, not transferring KV Pairs and SQL Tables");
+                System.out.println(ConsoleColors.RED_UNDERLINED + "Last server, not transferring KV Pairs and SQL Tables" + ConsoleColors.RESET);
             }
         } catch (Exception e) {
-            System.out.println("GOT AN ERRROR");
+            System.out.println(ConsoleColors.RED_UNDERLINED + "GOT AN ERROR" + ConsoleColors.RESET + ConsoleColors.RESET);
             e.printStackTrace();
         }
         try {
@@ -1262,7 +1263,7 @@ public class KVServer implements IKVServer {
                 }
             }
         }
-        this.logger.info("KVPairs not responsible for: " + kvPairs.toString());
+        this.logger.info(ConsoleColors.YELLOW + "KVPairs not responsible for: " + kvPairs.toString() + ConsoleColors.RESET);
         return kvPairs;
     }
 
@@ -1274,7 +1275,7 @@ public class KVServer implements IKVServer {
                 sqlTablesNotResponsibleFor.put(key, entry.getValue());
             }
         }
-        this.logger.info("SQLTables not responsible for: " + sqlTablesNotResponsibleFor.toString());
+        this.logger.info(ConsoleColors.YELLOW + "SQLTables not responsible for: " + sqlTablesNotResponsibleFor.toString() + ConsoleColors.RESET);
         return sqlTablesNotResponsibleFor;
     }
 
@@ -1312,7 +1313,7 @@ public class KVServer implements IKVServer {
                 kvPairs.put(unescape(key), getKV(unescape(key)));
             }
         }
-        this.logger.info("KVPairs responsible for: " + kvPairs.toString());
+        this.logger.info(ConsoleColors.YELLOW_BOLD_UNDERLINED+ "KVPairs responsible for: " + kvPairs.toString() + ConsoleColors.RESET);
         return kvPairs;
     }
 

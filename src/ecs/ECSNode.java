@@ -17,6 +17,7 @@ import shared.messages.BasicKVMessage;
 import shared.messages.KVMessage.StatusType;
 import shared.MD5;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import shared.ConsoleColors;
 
 public class ECSNode implements IECSNode, Serializable {
     private String name;
@@ -80,9 +81,9 @@ public class ECSNode implements IECSNode, Serializable {
             if (comm != null)
                 comm.disconnect();
 
-            logger.info("Connection closed for " + serverSocket.getInetAddress().getHostName());
+            logger.info(ConsoleColors.GREEN_UNDERLINED + "Connection closed for " + serverSocket.getInetAddress().getHostName() + ConsoleColors.RESET);
         } catch (IOException e) {
-            logger.error("Error! closing connection", e);
+            logger.error(ConsoleColors.RED_UNDERLINED + "Error! closing connection" + ConsoleColors.RESET, e);
         }
     }    
 

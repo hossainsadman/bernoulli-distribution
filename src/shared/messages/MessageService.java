@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
+import shared.ConsoleColors;
 
 import org.apache.log4j.Logger; // import Logger
 
@@ -51,7 +52,7 @@ public class MessageService {
         Object receivedObject = readObjectFromSocket(socket, in);
         if (receivedObject == null) {
             // Connection has been closed, handle gracefully
-            this.logger.info("Socket connection closed, stopping listener.");
+            this.logger.info(ConsoleColors.RED_UNDERLINED + "Socket connection closed, stopping listener." + ConsoleColors.RESET);
             return null;
         }
         // If receivedObject is not null, cast to ECSMessage and process further
@@ -147,10 +148,10 @@ public class MessageService {
         try {
             obj = in.readObject();
         } catch (EOFException e) {
-            System.out.println("[MessageService.readObjectFromSocket] Connection has been closed by the other side.");
+            System.out.println(ConsoleColors.RED_UNDERLINED + "[MessageService.readObjectFromSocket] Connection has been closed by the other side." + ConsoleColors.RESET);
         } catch (SocketException e) {
             System.out.println(
-                    "[MessageService.readObjectFromSocket] java.net.SocketException: Socket most likely closed from other side");
+                    ConsoleColors.RED_UNDERLINED + "[MessageService.readObjectFromSocket] java.net.SocketException: Socket most likely closed from other side" + ConsoleColors.RESET);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

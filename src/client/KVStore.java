@@ -15,6 +15,7 @@ import shared.messages.KVMessage.StatusType;
 import shared.CommunicationService;
 import ecs.ECSHashRing;
 import ecs.ECSNode;
+import shared.ConsoleColors;
 
 public class KVStore implements KVCommInterface {
     /**
@@ -95,7 +96,7 @@ public class KVStore implements KVCommInterface {
 
         do {
             if(this.metaData != null && !this.testing){
-                System.out.println("[KVStore] :: Reconnecting to server");
+                System.out.println(ConsoleColors.GREEN_UNDERLINED + "[KVStore] :: Reconnecting to server" + ConsoleColors.RESET);
                 ECSNode tryServer = this.metaData.getNodeForKey(message.getKey());
                 reconnect(tryServer.getNodeHost(), tryServer.getNodePort());
             }
