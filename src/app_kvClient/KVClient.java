@@ -316,6 +316,7 @@ public class KVClient implements IKVClient {
                                     System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 } else {
                                     System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                    System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getValue() + ConsoleColors.RESET);
                                 }
                             } else {
                                 System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "sqlselect ERROR: null msg!" + ConsoleColors.RESET);
@@ -348,6 +349,7 @@ public class KVClient implements IKVClient {
                                     System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 } else {
                                     System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                    System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getValue() + ConsoleColors.RESET);
                                 }
                             } else {
                                 System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + "sqlselect ERROR: null msg!" + ConsoleColors.RESET);
