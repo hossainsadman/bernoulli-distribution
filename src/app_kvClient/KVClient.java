@@ -3,7 +3,6 @@ package app_kvClient;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.UnknownHostException;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -22,9 +21,8 @@ import shared.ConsoleColors;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
+@SuppressWarnings("unused")
 public class KVClient implements IKVClient {
     private static Logger logger = Logger.getRootLogger();
     private static final String PROMPT = ConsoleColors.BLUE_BOLD_UNDERLINED + "M4-Client>" + ConsoleColors.RESET + " ";
@@ -37,7 +35,7 @@ public class KVClient implements IKVClient {
 
     private KVStore kvStore = null;
 
-    private static Gson gson = new Gson();
+    @SuppressWarnings("deprecation")
     private static JsonParser jsonParser = new JsonParser();
 
     @Override
@@ -154,6 +152,7 @@ public class KVClient implements IKVClient {
         return true;
     }
 
+    @SuppressWarnings("deprecation")
     public static boolean checkValidJson(String str) {
         try {
             jsonParser.parse(str);
