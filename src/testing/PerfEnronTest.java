@@ -521,7 +521,7 @@ public class PerfEnronTest {
         for (int i = startIndex; i < startIndex + numValues && i < files.length; i++) {
             KVStore kvClient = allClients.get(rand.nextInt(allClients.size()));
             try {
-                resCreate = kvClient.sqlcreate(tableName, schema);
+                BasicKVMessage resCreate = kvClient.sqlcreate(tableName, schema);
             } catch (Exception e) {
                 // TODO: handle exception
             }
@@ -535,7 +535,7 @@ public class PerfEnronTest {
         for (int i = startIndex; i < startIndex + numValues && i < files.length; i++) {
             KVStore kvClient = allClients.get(rand.nextInt(allClients.size()));
             try {
-                resCreate = kvClient.sqlinsert(tableName, row);
+                BasicKVMessage resCreate = kvClient.sqlinsert(tableName, row);
             } catch (Exception e) {
                 // TODO: handle exception
             }
@@ -549,7 +549,7 @@ public class PerfEnronTest {
         for (int i = startIndex; i < startIndex + numValues && i < files.length; i++) {
             KVStore kvClient = allClients.get(rand.nextInt(allClients.size()));
             try {
-                resCreate = kvClient.sqlupdate(tableName, updatedRow);
+                BasicKVMessage resCreate = kvClient.sqlupdate(tableName, updatedRow);
             } catch (Exception e) {
                 // TODO: handle exception
             }
@@ -562,7 +562,7 @@ public class PerfEnronTest {
         for (int i = startIndex; i < startIndex + numValues && i < files.length; i++) {
             KVStore kvClient = allClients.get(rand.nextInt(allClients.size()));
             try {
-                resCreate = kvClient.sqlselect(tableName, true);
+                BasicKVMessage resCreate = kvClient.sqlselect(tableName, true);
             } catch (Exception e) {
                 // TODO: handle exception
             }
@@ -575,7 +575,7 @@ public class PerfEnronTest {
         for (int i = startIndex; i < startIndex + numValues && i < files.length; i++) {
             KVStore kvClient = allClients.get(rand.nextInt(allClients.size()));
             try {
-                resCreate = kvClient.sqldrop(tableName);
+                BasicKVMessage resCreate = kvClient.sqldrop(tableName);
             } catch (Exception e) {
                 // TODO: handle exception
             }
@@ -638,7 +638,7 @@ public class PerfEnronTest {
                         System.out.println("timeForDropRequests: " + timeForDropRequests);
 
 
-                        timeTaken(startTime, endTime, TOTAL_PAIRS, numPairsPerClient, numNodes, timeForSetupNodes, numClients, cacheStrat, cacheSize, timeForPutRequests, timeForGetRequests);
+                        // timeTaken(startTime, endTime, TOTAL_PAIRS, numPairsPerClient, numNodes, timeForSetupNodes, numClients, cacheStrat, cacheSize, timeForPutRequests, timeForGetRequests);
                         tearDown();
                     }
                 }
