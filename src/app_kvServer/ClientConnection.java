@@ -68,7 +68,7 @@ public class ClientConnection implements Runnable {
             if (comm != null)
                 comm.disconnect();
 
-            logger.info(ConsoleColors.GREEN_UNDERLINED + "Connection closed for " + clientSocket.getInetAddress().getHostName() + ConsoleColors.RESET);
+            logger.info(ConsoleColors.RED_UNDERLINED + "Connection closed for " + clientSocket.getInetAddress().getHostName() + ConsoleColors.RESET);
         } catch (IOException e) {
             logger.error(ConsoleColors.RED_UNDERLINED + "Error! closing connection" + ConsoleColors.RESET, e);
         }

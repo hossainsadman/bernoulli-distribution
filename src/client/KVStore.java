@@ -95,18 +95,15 @@ public class KVStore implements KVCommInterface {
         int retryCount = 0;
 
         do {
-            if(this.metaData != null && !this.testing){
-                System.out.println(ConsoleColors.GREEN_UNDERLINED + "[KVStore] :: Reconnecting to server" + ConsoleColors.RESET);
-                ECSNode tryServer = this.metaData.getNodeForKey(message.getKey());
-                reconnect(tryServer.getNodeHost(), tryServer.getNodePort());
-            }
-            
             this.communicationService.sendMessage(message);
             response = this.communicationService.receiveMessage();
 
             if (response.getStatus() == StatusType.SERVER_NOT_RESPONSIBLE){
                 System.out.println("[KVStore]: SERVER_NOT_RESPONSIBLE");
                 updateMetadata(response);
+                ECSNode tryServer = this.metaData.getNodeForKey(message.getKey());
+                System.out.println(ConsoleColors.GREEN_UNDERLINED + "[KVStore] :: Reconnecting to server" + ConsoleColors.RESET);
+                reconnect(tryServer.getNodeHost(), tryServer.getNodePort());
                 retryCount++;
             } else {
                 // Request sent to correct server

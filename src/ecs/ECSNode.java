@@ -81,7 +81,7 @@ public class ECSNode implements IECSNode, Serializable {
             if (comm != null)
                 comm.disconnect();
 
-            logger.info(ConsoleColors.GREEN_UNDERLINED + "Connection closed for " + serverSocket.getInetAddress().getHostName() + ConsoleColors.RESET);
+            logger.info(ConsoleColors.RED_UNDERLINED + "Connection closed for " + serverSocket.getInetAddress().getHostName() + ConsoleColors.RESET);
         } catch (IOException e) {
             logger.error(ConsoleColors.RED_UNDERLINED + "Error! closing connection" + ConsoleColors.RESET, e);
         }

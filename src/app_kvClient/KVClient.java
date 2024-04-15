@@ -191,7 +191,7 @@ public class KVClient implements IKVClient {
                     KVMessage msg = kvStore.keyrange();
                     if (msg != null) {
                         if (msg.getStatus().toString().contains("ERROR")) {
-                            System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                            System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                         } else {
                             System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                         }
@@ -210,7 +210,7 @@ public class KVClient implements IKVClient {
                     KVMessage msg = kvStore.keyrangeRead();
                     if (msg != null) {
                         if (msg.getStatus().toString().contains("ERROR")) {
-                            System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                            System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                         } else {
                             System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                         }
@@ -229,7 +229,7 @@ public class KVClient implements IKVClient {
                     KVMessage msg = kvStore.getAllKeys();
                     if (msg != null) {
                         if (msg.getStatus().toString().contains("ERROR")) {
-                            System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                            System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                         } else {
                             System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                         }
@@ -283,7 +283,7 @@ public class KVClient implements IKVClient {
                             KVMessage msg = kvStore.sqlcreate(tableName, colPairs.toString());
                             if (msg != null) {
                                 if (msg.getStatus().toString().contains("ERROR")) {
-                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                    System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 } else {
                                     System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 }
@@ -313,7 +313,7 @@ public class KVClient implements IKVClient {
                             KVMessage msg = kvStore.sqlselect(tableName, false);
                             if (msg != null) {
                                 if (msg.getStatus().toString().contains("ERROR")) {
-                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                    System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 } else {
                                     System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 }
@@ -345,7 +345,7 @@ public class KVClient implements IKVClient {
                             KVMessage msg = kvStore.sqlselect(row.toString(), false);
                             if (msg != null) {
                                 if (msg.getStatus().toString().contains("ERROR")) {
-                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                    System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 } else {
                                     System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 }
@@ -375,7 +375,7 @@ public class KVClient implements IKVClient {
                             KVMessage msg = kvStore.sqldrop(tableName);
                             if (msg != null) {
                                 if (msg.getStatus().toString().contains("ERROR")) {
-                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                    System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 } else {
                                     System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 }
@@ -424,7 +424,7 @@ public class KVClient implements IKVClient {
                             KVMessage msg = kvStore.sqlinsert(tableName, row.toString());
                             if (msg != null) {
                                 if (msg.getStatus().toString().contains("ERROR")) {
-                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                    System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 } else {
                                     System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 }
@@ -474,7 +474,7 @@ public class KVClient implements IKVClient {
                             KVMessage msg = kvStore.sqlupdate(tableName, row.toString());
                             if (msg != null) {
                                 if (msg.getStatus().toString().contains("ERROR")) {
-                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                    System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 } else {
                                     System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 }
@@ -530,7 +530,7 @@ public class KVClient implements IKVClient {
                             KVMessage msg = kvStore.put(tokens[1], value.toString());
                             if (msg != null) {
                                 if (msg.getStatus().toString().contains("ERROR")) {
-                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                    System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 } else {
                                     System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 }
@@ -559,7 +559,7 @@ public class KVClient implements IKVClient {
                             BasicKVMessage msg = kvStore.get(tokens[1]);
                             if (msg != null) {
                                 if (msg.getStatus().toString().contains("ERROR")) {
-                                    System.out.println(PROMPT + ConsoleColors.RED_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
+                                    System.out.println(PROMPT + ConsoleColors.RED_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 } else {
                                     System.out.println(PROMPT + ConsoleColors.GREEN_BOLD_UNDERLINED + msg.getStatus() + " " + msg.getKey() + ConsoleColors.RESET);
                                 }
