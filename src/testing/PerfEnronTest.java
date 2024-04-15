@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.Collections;
 import java.util.HashMap;
@@ -449,6 +448,8 @@ public class PerfEnronTest {
         }
     }
 
+
+
     // @Test
     // public void ExampleTest() {
     //     PerfEnronTest test = new PerfEnronTest();
@@ -511,43 +512,137 @@ public class PerfEnronTest {
         timeTaken(startTime, endTime, TOTAL_PAIRS, numPairsPerClient, numNodes, timeForSetupNodes, numClients, cacheStrat, cacheSize, timeForPutRequests, timeForGetRequests);
         tearDown();
     }
+    
+    public void sqlCreateToRandomClient(int startIndex, int numValues) {
+        String tableName = "testSQLCreateToRandomClient";
+        String schema = "student:text,age:int";
+       
 
-    // @Test
-    // public void AllTests() {
-    //     PerfEnronTest test = new PerfEnronTest();
-    //     int TOTAL_PAIRS = 100;
+        for (int i = startIndex; i < startIndex + numValues && i < files.length; i++) {
+            KVStore kvClient = allClients.get(rand.nextInt(allClients.size()));
+            try {
+                resCreate = kvClient.sqlcreate(tableName, schema);
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
+        }
+    }
+
+    public void sqlInsertToRandomClient(int startIndex, int numValues) {
+        String tableName = "sqlTestTable";
+        String row = "{\"age\":5,\"student\":a}"; 
+
+        for (int i = startIndex; i < startIndex + numValues && i < files.length; i++) {
+            KVStore kvClient = allClients.get(rand.nextInt(allClients.size()));
+            try {
+                resCreate = kvClient.sqlinsert(tableName, row);
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
+        }
+    }
     
-    //     for (int numNodes : NUM_NODES_VALS) {
-    //         for (int numClients : NUM_CLIENTS_VALS) {
-    //             for (String cacheStrat : CACHE_STRAT_VALS) {
-    //                 for (int cacheSize : CACHE_SIZE_VALS) {
-    //                     int numPairsPerClient = TOTAL_PAIRS / numClients;
+    public void sqlUpdateToRandomClient(int startIndex, int numValues) {
+        String tableName = "sqlTestTable";
+        String updatedRow = "{\"age\":888,\"student\":ValidStudent}"; 
+
+        for (int i = startIndex; i < startIndex + numValues && i < files.length; i++) {
+            KVStore kvClient = allClients.get(rand.nextInt(allClients.size()));
+            try {
+                resCreate = kvClient.sqlupdate(tableName, updatedRow);
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
+        }
+    }
     
-    //                     long startTime = System.nanoTime();
-    //                     setupNodes(numNodes, cacheStrat, cacheSize);
-    //                     long endTime = System.nanoTime();
-    //                     long timeForSetupNodes = calculateTimeTaken(startTime, endTime);
+    public void sqlSelectToRandomClient(int startIndex, int numValues) {
+        String tableName = "sqlTestTable";
+
+        for (int i = startIndex; i < startIndex + numValues && i < files.length; i++) {
+            KVStore kvClient = allClients.get(rand.nextInt(allClients.size()));
+            try {
+                resCreate = kvClient.sqlselect(tableName, true);
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
+        }
+    }
     
-    //                     setupClients(numClients, numNodes);
-    //                     connectClients();
+    public void sqlDropToRandomClient(int startIndex, int numValues) {
+        String tableName = "sqlTestTable";
+
+        for (int i = startIndex; i < startIndex + numValues && i < files.length; i++) {
+            KVStore kvClient = allClients.get(rand.nextInt(allClients.size()));
+            try {
+                resCreate = kvClient.sqldrop(tableName);
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
+        }
+    }
+
+
+    @Test
+    public void AllTests() {
+        PerfEnronTest test = new PerfEnronTest();
+        int TOTAL_PAIRS = 100;
     
-    //                     files = test.loadCachedEnron("enron_files.txt");
+        for (int numNodes : NUM_NODES_VALS) {
+            for (int numClients : NUM_CLIENTS_VALS) {
+                for (String cacheStrat : CACHE_STRAT_VALS) {
+                    for (int cacheSize : CACHE_SIZE_VALS) {
+                        int numPairsPerClient = TOTAL_PAIRS / numClients;
     
-    //                     startTime = System.nanoTime();
-    //                     putToRandomClient(0, TOTAL_PAIRS);
-    //                     endTime = System.nanoTime();
-    //                     long timeForPutRequests = calculateTimeTaken(startTime, endTime);
+                        long startTime = System.nanoTime();
+                        setupNodes(numNodes, cacheStrat, cacheSize);
+                        long endTime = System.nanoTime();
+                        long timeForSetupNodes = calculateTimeTaken(startTime, endTime);
     
-    //                     startTime = System.nanoTime();
-    //                     getFromRandomClient(0, TOTAL_PAIRS);
-    //                     endTime = System.nanoTime();
-    //                     long timeForGetRequests = calculateTimeTaken(startTime, endTime);
+                        setupClients(numClients, numNodes);
+                        connectClients();
     
-    //                     timeTaken(startTime, endTime, TOTAL_PAIRS, numPairsPerClient, numNodes, timeForSetupNodes, numClients, cacheStrat, cacheSize, timeForPutRequests, timeForGetRequests);
-    //                     tearDown();
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+                        files = test.loadCachedEnron("enron_files.txt");
+    
+                        startTime = System.nanoTime();
+                        sqlCreateToRandomClient(0, TOTAL_PAIRS);
+                        endTime = System.nanoTime();
+                        long timeForCreateRequests = calculateTimeTaken(startTime, endTime);
+
+                        startTime = System.nanoTime();
+                        sqlInsertToRandomClient(0, TOTAL_PAIRS);
+                        endTime = System.nanoTime();
+                        long timeForInsertRequests = calculateTimeTaken(startTime, endTime);
+
+                        startTime = System.nanoTime();
+                        sqlUpdateToRandomClient(0, TOTAL_PAIRS);
+                        endTime = System.nanoTime();
+                        long timeForUpdateRequests = calculateTimeTaken(startTime, endTime);
+
+                        startTime = System.nanoTime();
+                        sqlSelectToRandomClient(0, TOTAL_PAIRS);
+                        endTime = System.nanoTime();
+                        long timeForSelectRequests = calculateTimeTaken(startTime, endTime);
+
+                        startTime = System.nanoTime();
+                        sqlDropToRandomClient(0, TOTAL_PAIRS);
+                        endTime = System.nanoTime();
+                        long timeForDropRequests = calculateTimeTaken(startTime, endTime);
+
+
+                        long timeForGetRequests = calculateTimeTaken(startTime, endTime);
+                        System.out.println("timeForCreateRequests: " + timeForCreateRequests);
+                        System.out.println("timeForInsertRequests: " + timeForInsertRequests);
+                        System.out.println("timeForUpdateRequests: " + timeForUpdateRequests);
+                        System.out.println("timeForSelectRequests: " + timeForSelectRequests);
+                        System.out.println("timeForDropRequests: " + timeForDropRequests);
+
+
+                        timeTaken(startTime, endTime, TOTAL_PAIRS, numPairsPerClient, numNodes, timeForSetupNodes, numClients, cacheStrat, cacheSize, timeForPutRequests, timeForGetRequests);
+                        tearDown();
+                    }
+                }
+            }
+        }
+    }
 }
