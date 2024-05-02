@@ -230,7 +230,7 @@ public class ECS {
         } else {
             port = serverPort;
         }
-        String[] command = {"java", "-jar", "m4-server.jar", "-p", port.toString(), "-c", String.valueOf(cacheSize), "-s",  cacheStrategy};
+        String[] command = {"java", "-jar", "eagerDB-server.jar", "-p", port.toString(), "-c", String.valueOf(cacheSize), "-s",  cacheStrategy};
 
         try {
             ProcessBuilder builder = new ProcessBuilder(command);

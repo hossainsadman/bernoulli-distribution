@@ -26,7 +26,7 @@ public class ECSClient implements IECSClient {
     public boolean clientRunning = false; /* Represents the status of ECSClient not the ECS */
     public boolean ecsRunning = false; /* Represents the status of ECS */
     private ECS ecs;
-    private static final String PROMPT = ConsoleColors.BLUE_BOLD_UNDERLINED + "ECS-Client>" + ConsoleColors.RESET + " ";
+    private static final String PROMPT = ConsoleColors.BLUE_BOLD_UNDERLINED + "eagerDB-service>" + ConsoleColors.RESET + " ";
 
     public ECSClient(String address, int port) {
         ecs = new ECS(address, port, logger);
@@ -304,13 +304,13 @@ public class ECSClient implements IECSClient {
             cmd = parser.parse(options, args);
         } catch (Exception e) {
             System.out.println(ConsoleColors.RED_UNDERLINED + e.getMessage() + ConsoleColors.RESET);
-            formatter.printHelp("m4-ecs.jar", options);
+            formatter.printHelp("eagerDB-service.jar", options);
             System.exit(1);
             return;
         }
 
         if (cmd.hasOption("help")) {
-            formatter.printHelp("m4-ecs.jar", options);
+            formatter.printHelp("eagerDB-service.jar", options);
             System.exit(0);
         }
 

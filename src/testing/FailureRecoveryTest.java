@@ -23,11 +23,11 @@ import logger.LogSetup;
 import shared.messages.BasicKVMessage;
 import shared.messages.KVMessage.StatusType;
 
-public class M3Test {
+public class FailureRecoveryTest {
     private static ECSClient ecsClient;
     private static ECSNode firstServer, secondServer, thirdServer, fourthServer, fifthServer;
     private static ArrayList<ECSNode> allNodes;
-    private static final Logger logger = Logger.getLogger(M3Test.class);
+    private static final Logger logger = Logger.getLogger(FailureRecoveryTest.class);
     public static KVStore kvClient;
 
     static {

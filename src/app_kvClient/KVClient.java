@@ -25,7 +25,7 @@ import com.google.gson.JsonSyntaxException;
 @SuppressWarnings("unused")
 public class KVClient implements IKVClient {
     private static Logger logger = Logger.getRootLogger();
-    private static final String PROMPT = ConsoleColors.BLUE_BOLD_UNDERLINED + "M4-Client>" + ConsoleColors.RESET + " ";
+    private static final String PROMPT = ConsoleColors.BLUE_BOLD_UNDERLINED + "eagerDB-client>" + ConsoleColors.RESET + " ";
 
     private static final int MAX_KEY_LEN = 20;
     private static final int MAX_KEY_VAL = 120 * 1024; // 120KB
@@ -51,7 +51,7 @@ public class KVClient implements IKVClient {
 
     private void printHelp() {
         StringBuilder sb = new StringBuilder();
-        sb.append(PROMPT).append(ConsoleColors.BLUE_BOLD + "M2 CLIENT HELP (Usage):\n");
+        sb.append(PROMPT).append(ConsoleColors.BLUE_BOLD + "eagerDB-client HELP (Usage):\n");
         sb.append(PROMPT);
         sb.append(ConsoleColors.BLUE_BOLD + "::::::::::::::::::::::::::::::::");
         sb.append(ConsoleColors.BLUE_BOLD + "::::::::::::::::::::::::::::::::\n");

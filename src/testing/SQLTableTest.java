@@ -24,11 +24,11 @@ import logger.LogSetup;
 import shared.messages.BasicKVMessage;
 import shared.messages.KVMessage.StatusType;
 
-public class M4Test {
+public class SQLTableTest {
     private static ECSClient ecsClient;
     private static ECSNode firstServer, secondServer, thirdServer, fourthServer, fifthServer;
     private static ArrayList<ECSNode> allNodes;
-    private static final Logger logger = Logger.getLogger(M4Test.class);
+    private static final Logger logger = Logger.getLogger(SQLTableTest.class);
     public static KVStore kvClient;
 
     static {

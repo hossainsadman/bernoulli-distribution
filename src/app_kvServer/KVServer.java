@@ -1411,7 +1411,7 @@ public class KVServer implements IKVServer {
         }
 
         if (cmd.hasOption("help")) {
-            formatter.printHelp("m4-server.jar", options);
+            formatter.printHelp("eagerDB-server.jar", options);
             System.exit(0);
         }
 

@@ -19,9 +19,9 @@ import junit.framework.TestCase;
 import logger.LogSetup;
 import shared.MD5;
 
-public class M2Test extends TestCase {
+public class ReplicationTest extends TestCase {
     private ECSClient ecsClient;
-    private static final Logger logger = Logger.getLogger(M2Test.class);
+    private static final Logger logger = Logger.getLogger(ReplicationTest.class);
 
     @Before
     public void setUp() {
