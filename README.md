@@ -1,19 +1,38 @@
-## Using Testing Infrastructure
+# eagerDB
 
-### Pushing to Online Tester Repos
+eagerDB is a lightweight, fast, and fault-tolerant NoSQL distributed database written in Java that requires zero configuration. It is built on top of a data-centric eventual consistency model, and is designed to be scalable with hundreds of clients and servers.
 
-1. `git add remote gr10 https://github.com/ds-uot/ms2-group-10`
-2. `git push gr10 <BRANCH>`
+## Supported Operations
 
-Note: 
-- The online tester clones directly from `main` in the group-10 repo, so make sure to push to `main` in the group-10 repo
-- Ideally this can be done by merging your branch to `main` in the `ece419` repo and then pushing to `main` in the group-10 repo
+### Key-Value Operations
+
+#### Put Key-Value Pair
+
+`put <key> <value>`
+
+    –– puts a key-value pair into the database
+    
+    e.g.
+    ```
+    put name Steve
+    put age 12
+    ```
+
+#### Get Value From Key
+
+`get <key>`
+
+    –– gets the value associated with key
+    
+    e.g.
+    ```
+    get name
+    get age
+    ```
 
 ### SQL Operations
 
-The following commands we're added in our milestone 4 feature extension:
-
-##### Creating a Table
+#### Creating a Table
 
 `sqlcreate <tablename> <schema>`
 
@@ -26,7 +45,7 @@ The following commands we're added in our milestone 4 feature extension:
     sqlcreate School student:text,age:int
     ```
 
-##### Inserting rows to a table
+#### Inserting rows to a table
 
 `sqlinsert <tablename> <row>`
     
@@ -40,7 +59,7 @@ The following commands we're added in our milestone 4 feature extension:
     ```
 
 
-##### Updating existing rows in a table
+#### Updating existing rows in a table
 
 `sqlupdate <tablename> <row>`
     
@@ -52,7 +71,7 @@ The following commands we're added in our milestone 4 feature extension:
     sqlupdate School {"age":12,"student":Jason}
     ```
 
-##### Querying a table (i.e. a select command)
+#### Querying a table (i.e. a select command)
 
 `sqlselect <tablename>`
     
@@ -75,7 +94,7 @@ The following commands we're added in our milestone 4 feature extension:
     sqlselect {student} from School where {age>7,student=Jason}
     ```
 
-##### Dropping an existing table
+#### Dropping an existing table
 
 `sqldrop <tablename>` 
     
