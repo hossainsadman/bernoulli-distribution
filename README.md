@@ -2,6 +2,8 @@
 
 eagerDB is a lightweight, fast, and fault-tolerant NoSQL distributed database written in Java that requires zero configuration. It is built on top of a data-centric eventual consistency model, and is designed to be scalable with hundreds of clients and servers.
 
+![image (1)](https://github.com/sadmanca/eagerDB/assets/41028402/2cdd9743-dcb2-4de8-a5a3-8378b896c731)
+
 ## Supported Operations
 
 ### Key-Value Operations
